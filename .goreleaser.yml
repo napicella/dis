@@ -1,9 +1,5 @@
 version: 2
 
-git:
-  ignore_tags:
-    - "nightly"
-
 project_name: dis
 
 builds:
@@ -20,8 +16,16 @@ builds:
       - -s -w
 
 archives:
-  - format: tar.gz
+  - id: binary
+    format: tar.gz
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+
+  - id: packages
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_packages"
+    files:
+      - packages/**/*
+    meta: true
 
 checksum:
   name_template: checksums.txt

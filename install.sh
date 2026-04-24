@@ -6,6 +6,7 @@ set -euo pipefail
 
 REPO="napicella/dis"
 INSTALL_DIR="${INSTALL_DIR:-${HOME}/.local/bin}"
+PACKAGES_DIR="${PACKAGES_DIR:-${HOME}/.local/share/dis/packages}"
 BINARY_NAME="dis"
 
 # --- Require token for private repo ---
@@ -39,26 +40,35 @@ fi
 
 echo "==> Installing dis ${TAG} (${OS}/${ARCH})"
 
-# --- Download and extract ---
-TARBALL="${BINARY_NAME}_${OS}_${ARCH}.tar.gz"
-DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${TAG}/${TARBALL}"
-
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "${TMP_DIR}"' EXIT
 
-curl -fsSL \
-  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-  -H "Accept: application/octet-stream" \
-  -L "${DOWNLOAD_URL}" \
-  -o "${TMP_DIR}/${TARBALL}"
-
-tar -xzf "${TMP_DIR}/${TARBALL}" -C "${TMP_DIR}"
+gh_download() {
+  local filename="$1"
+  local url="https://github.com/${REPO}/releases/download/${TAG}/${filename}"
+  curl -fsSL \
+    -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+    -H "Accept: application/octet-stream" \
+    -L "${url}" \
+    -o "${TMP_DIR}/${filename}"
+}
 
 # --- Install binary ---
+BINARY_TARBALL="${BINARY_NAME}_${OS}_${ARCH}.tar.gz"
+gh_download "${BINARY_TARBALL}"
+tar -xzf "${TMP_DIR}/${BINARY_TARBALL}" -C "${TMP_DIR}"
 mkdir -p "${INSTALL_DIR}"
 install -m 755 "${TMP_DIR}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
-
 echo "==> Installed ${BINARY_NAME} to ${INSTALL_DIR}/${BINARY_NAME}"
+
+# --- Install packages ---
+PACKAGES_TARBALL="${BINARY_NAME}_packages.tar.gz"
+gh_download "${PACKAGES_TARBALL}"
+# The tarball contains packages/ at the root; extract then move contents to PACKAGES_DIR.
+tar -xzf "${TMP_DIR}/${PACKAGES_TARBALL}" -C "${TMP_DIR}"
+mkdir -p "${PACKAGES_DIR}"
+cp -r "${TMP_DIR}/packages/." "${PACKAGES_DIR}/"
+echo "==> Installed packages to ${PACKAGES_DIR}"
 
 # --- Add to PATH if needed ---
 add_to_path() {
