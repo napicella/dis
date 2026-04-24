@@ -1,0 +1,152 @@
+{
+    "remote.SSH.defaultExtensions": [
+        "amazonwebservices.aws-toolkit-vscode"
+    ],
+    "aws.suppressPrompts": {
+        "remoteConnected": true
+    },
+    "remote.portsAttributes": {
+        "443": {
+            "protocol": "https"
+        },
+        "8443": {
+            "protocol": "https"
+        }
+    },
+    "remote.SSH.lockfilesInTmp": true,
+    "remote.SSH.connectTimeout": 60,
+    "remote.SSH.remotePlatform": {
+        "aws-devenv-2a338861-54e4-4993-b969-bbc2fc02fe4f": "linux",
+        "34.253.209.178": "windows",
+        "winzoz": "windows"
+    },
+    "terminal.integrated.profiles.linux": {
+        // Configures VS Code to use a login shell for the integrated terminal.
+        // This ensures that the interactive terminal started by VS Code will
+        // inherit environment variables set in your bashrc or zshrc files.
+        // Ensure that your .bash_profile sources .bashrc, as that's where environment variables 
+        // are typically defined or exported.
+        //
+        // Note that launch configs and tasks will NOT inherit env variables from the integrated terminal.
+        // You need to set them in the launch/task config.
+        "bash": {
+            "path": "bash",
+            "args": [
+                "--login"
+            ]
+        },
+        "zsh": {
+            "path": "zsh"
+        }
+    },
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "C_Cpp.clang_format_fallbackStyle": "Google",
+    "files.autoSave": "afterDelay",
+    "[go]": {
+        "editor.insertSpaces": false,
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    },
+    "cmake.showOptionsMovedNotification": false,
+    "diffEditor.ignoreTrimWhitespace": false,
+    "editor.fontFamily": "CaskaydiaMono Nerd Font",
+    "aws.telemetry": false,
+    "telemetry.telemetryLevel": "off",
+    "viceroy.config.lastVersion": "0.53.201857",
+    "files.watcherExclude": {
+        "**/build/**": true,
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/node_modules/*/**": true,
+        "**/.hg/store/**": true
+    },
+    "files.exclude": {
+        ".viceroy": true,
+        "apollo-overrides": true,
+        "release-info": true,
+        "src/*/build": false,
+        "build": false,
+        "env": true,
+        "packageInfo*": true,
+        ".bemol": true,
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true
+    },
+    "search.exclude": {
+        "env": true,
+        "src/*/build": true,
+        "build": true,
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/*.code-search": true
+    },
+    "[brazilPackageConfig]": {
+        "workbench.editor.languageDetection": false
+    },
+    "viceroy.config.internal.lastUpdateTime": "2025-02-19T09:06:01.598Z",
+    "viceroy.doc.welcome.showAtStartup": false,
+    "viceroy.config.setup.amazonQ": false,
+    "viceroy.config.notifyGlibcIssue": false,
+    "security.workspace.trust.untrustedFiles": "open",
+    // settings for:
+    // ext install streetsidesoftware.code-spell-checker
+    "cSpell.languageSettings": [
+        // GoLang settings        // Configures VS Code to use a login shell for the integrated terminal.
+        // This ensures that the interactive terminal started by VS Code will
+        // inherit environment variables set in your bashrc or zshrc files.
+        // Ensure that your .bash_profile sources .bashrc, as that's where environment variables 
+        // are typically defined or exported.
+        //
+        // Note that launch configs and tasks will NOT inherit env variables from the integrated terminal.
+        // You need to set them in the launch/task config.
+        {
+            "languageId": "go",
+            // Turn off compound words, because it is only checking strings.
+            "allowCompoundWords": false,
+            // Only check comments and strings
+            "includeRegExpList": [
+                "CStyleComment",
+                "string"
+            ],
+            // Exclude imports, because they are also strings.
+            "ignoreRegExpList": [
+                // ignore mulltiline imports
+                "import\\s*\\((.|[\r\n])*?\\)",
+                // ignore single line imports
+                "import\\s*.*\".*?\"",
+                // ignore go generate directive
+                "//\\s*go:generate.*",
+                // ignore nolint directive
+                "//\\s*nolint:.*"
+            ]
+        }
+    ],
+    "cSpell.userWords": [
+        "moontide"
+    ],
+    "viceroy.workspaceSyncStrategy": "automatic",
+    "cmake.pinnedCommands": [
+        "workbench.action.tasks.configureTaskRunner",
+        "workbench.action.tasks.runTask"
+    ],
+    "workbench.editor.enablePreview": false,
+    "window.titleBarStyle": "custom",
+    "editor.renderWhitespace": "all",
+    "workbench.colorTheme": "Tokyo Night Storm",
+    "amazonQ.telemetry": false,
+    "update.mode": "none",
+    "window.zoomLevel": 1,
+    "workbench.settings.enableNaturalLanguageSearch": false,
+    "workbench.commandPalette.experimental.enableNaturalLanguageSearch": false,
+    "rewrap.wrappingColumn": 120,
+    "editor.rulers": [
+        120
+    ],
+    "diffEditor.hideUnchangedRegions.enabled": true
+}

@@ -1,0 +1,10 @@
+os: test
+sources:
+  - ./packages
+
+packages:
+  - test/consumer
+  - test/jq
+
+config_generators:
+  - script: ./generators/gen_greeting.sh

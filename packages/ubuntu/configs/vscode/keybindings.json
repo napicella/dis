@@ -1,0 +1,267 @@
+// Place your key bindings in this file to override the defaults
+[
+    {
+        "key": "ctrl+shift+l",
+        "command": "editor.action.formatDocument",
+        "when": "editorHasDocumentFormattingProvider && editorTextFocus && !editorReadonly && !inCompositeEditor"
+    },
+    {
+        "key": "ctrl+shift+i",
+        "command": "-editor.action.formatDocument",
+        "when": "editorHasDocumentFormattingProvider && editorTextFocus && !editorReadonly && !inCompositeEditor"
+    },
+    {
+        "key": "shift+alt+left",
+        "command": "workbench.action.navigateBack",
+        "when": "canNavigateBack"
+    },
+    {
+        "key": "ctrl+alt+left",
+        "command": "-workbench.action.navigateBack",
+        "when": "canNavigateBack"
+    },
+    {
+        "key": "shift+alt+right",
+        "command": "workbench.action.navigateForward",
+        "when": "canNavigateForward"
+    },
+    {
+        "key": "ctrl+alt+right",
+        "command": "-workbench.action.navigateForward",
+        "when": "canNavigateForward"
+    },
+    {
+        "key": "ctrl+shift+alt+m",
+        "command": "markdownEditor.openCustomEditor",
+        "when": "!markdownEditor.editorIsActive && resourceLangId == 'markdown'"
+    },
+    {
+        "key": "ctrl+shift+e",
+        "command": "-markdownEditor.openCustomEditor",
+        "when": "!markdownEditor.editorIsActive && resourceLangId == 'markdown'"
+    },
+    {
+        "key": "ctrl+shift+alt+m",
+        "command": "markdownEditor.openDefaultEditor",
+        "when": "markdownEditor.editorIsActive && resourceLangId == 'markdown'"
+    },
+    {
+        "key": "ctrl+shift+e",
+        "command": "-markdownEditor.openDefaultEditor",
+        "when": "markdownEditor.editorIsActive && resourceLangId == 'markdown'"
+    },
+    {
+        "key": "ctrl+k ctrl+k",
+        "command": "-editor.action.defineKeybinding",
+        "when": "resource == 'vscode-userdata:/home/ANT.AMAZON.COM/napicell/.config/Code/User/keybindings.json'"
+    },
+    {
+        "key": "ctrl+k ctrl+k",
+        "command": "-editor.action.selectFromAnchorToCursor",
+        "when": "editorTextFocus && selectionAnchorSet"
+    },
+    {
+        "key": "ctrl+k k",
+        "command": "workbench.action.toggleMultiCursorModifier"
+    },
+    {
+        "key": "ctrl+shift+down",
+        "command": "-editor.action.moveLinesDownAction",
+        "when": "editorTextFocus && !editorReadonly"
+    },
+    {
+        "key": "ctrl+shift+up",
+        "command": "-editor.action.moveLinesUpAction",
+        "when": "editorTextFocus && !editorReadonly"
+    },
+    {
+        "key": "alt+numpad1",
+        "command": "-workbench.view.explorer",
+        "when": "viewContainer.workbench.view.explorer.enabled && !explorerViewletFocus"
+    },
+    {
+        "key": "ctrl+k ctrl+1",
+        "command": "-editor.foldLevel1",
+        "when": "editorTextFocus && foldingEnabled"
+    },
+    {
+        "key": "ctrl+shift+e",
+        "command": "workbench.view.explorer",
+        "when": "viewContainer.workbench.view.explorer.enabled && !explorerViewletFocus"
+    },
+    {
+        "key": "alt+1",
+        "command": "-workbench.view.explorer",
+        "when": "viewContainer.workbench.view.explorer.enabled && !explorerViewletFocus"
+    },
+    {
+        "key": "ctrl+shift+e",
+        "command": "workbench.action.toggleSidebarVisibility",
+        "when": "explorerViewletFocus"
+    },
+    {
+        "key": "alt+1",
+        "command": "-workbench.action.toggleSidebarVisibility",
+        "when": "explorerViewletFocus"
+    },
+    {
+        "key": "ctrl+shift+d",
+        "command": "workbench.debug.action.toggleRepl",
+        "when": "workbench.panel.repl.view.active"
+    },
+    {
+        "key": "ctrl+shift+y",
+        "command": "-workbench.debug.action.toggleRepl",
+        "when": "workbench.panel.repl.view.active"
+    },
+    {
+        "key": "ctrl+shift+n",
+        "command": "-workbench.action.quickOpen"
+    },
+    {
+        "key": "ctrl+shift+n",
+        "command": "workbench.files.action.createFileFromExplorer",
+        "when": "explorerViewletFocus"
+    },
+    {
+        "key": "ctrl+shift+n",
+        "command": "-workbench.action.newWindow"
+    },
+    {
+        "key": "ctrl+shift+.",
+        "command": "references-view.findImplementations"
+    },
+    {
+        "key": "ctrl+shift+'",
+        "command": "-workbench.action.toggleMaximizedPanel",
+        "when": "inDebugRepl && panelAlignment == 'center' || problemFocus && panelAlignment == 'center' || terminalFocus && panelAlignment == 'center' || focusedView == 'workbench.panel.output' && panelAlignment == 'center' || inDebugRepl && panelPosition != 'bottom' && panelPosition != 'top' || problemFocus && panelPosition != 'bottom' && panelPosition != 'top' || terminalFocus && panelPosition != 'bottom' && panelPosition != 'top' || focusedView == 'workbench.panel.output' && panelPosition != 'bottom' && panelPosition != 'top'"
+    },
+    {
+        "key": "ctrl+shift+'",
+        "command": "rewrap.rewrapComment",
+        "when": "editorTextFocus"
+    },
+    {
+        "key": "alt+q",
+        "command": "-rewrap.rewrapComment",
+        "when": "editorTextFocus"
+    },
+    // harpoon key bindings
+    //
+    {
+        "key": "ctrl+shift+a",
+        "commands": [
+            "vscode-harpoon.addEditor"
+        ]
+    },
+    {
+        "key": "ctrl+shift+h",
+        "commands": [
+            "vscode-harpoon.editEditors"
+        ]
+    },
+    // {
+    //     "key": "ctrl+shift+p",
+    //     "commands": [
+    //         "vscode-harpoon.editorQuickPick"
+    //     ]
+    // },
+    {
+        "key": "ctrl+shift+1",
+        "command": "vscode-harpoon.gotoEditor1"
+    },
+    {
+        "key": "ctrl+shift+2",
+        "command": "vscode-harpoon.gotoEditor2"
+    },
+    {
+        "key": "ctrl+shift+3",
+        "command": "vscode-harpoon.gotoEditor3"
+    },
+    {
+        "key": "ctrl+shift+4",
+        "command": "vscode-harpoon.gotoEditor4"
+    },
+    {
+        "key": "ctrl+shift+5",
+        "command": "vscode-harpoon.gotoEditor5"
+    },
+    {
+        "key": "ctrl+shift+a",
+        "command": "vscode-harpoon.addEditor"
+    },
+    {
+        "key": "ctrl+shift+h",
+        "command": "vscode-harpoon.editEditors"
+    },
+    // end harpoon
+    {
+        "key": "ctrl+left",
+        "command": "-cursorWordLeft",
+        "when": "textInputFocus"
+    },
+    {
+        "key": "ctrl+left",
+        "command": "-cursorWordLeft",
+        "when": "editorTextFocus && !config.intellij-idea-keybindings.useCamelHumpsWords"
+    },
+    {
+        "key": "ctrl+right",
+        "command": "-cursorWordRight",
+        "when": "editorTextFocus && !config.intellij-idea-keybindings.useCamelHumpsWords && !inlineSuggestionVisible"
+    },
+    {
+        "key": "ctrl+shift+left",
+        "command": "-cursorWordLeftSelect",
+        "when": "textInputFocus"
+    },
+    {
+        "key": "ctrl+shift+left",
+        "command": "-cursorWordLeftSelect",
+        "when": "editorTextFocus && !config.intellij-idea-keybindings.useCamelHumpsWords"
+    },
+    {
+        "key": "ctrl+shift+right",
+        "command": "-cursorWordRightSelect",
+        "when": "editorTextFocus && !config.intellij-idea-keybindings.useCamelHumpsWords"
+    },
+    {
+        "key": "ctrl+left",
+        "command": "cursorWordPartLeft"
+    },
+    {
+        "key": "ctrl+right",
+        "command": "cursorWordPartRight"
+    },
+    {
+        "key": "ctrl+right",
+        "command": "-cursorWordPartRight",
+        "when": "config.intellij-idea-keybindings.useCamelHumpsWords && editorTextFocus && !inlineSuggestionVisible"
+    },
+    {
+        "key": "ctrl+shift+left",
+        "command": "cursorWordPartLeftSelect"
+    },
+    {
+        "key": "ctrl+shift+left",
+        "command": "-cursorWordPartStartLeftSelect",
+        "when": "config.intellij-idea-keybindings.useCamelHumpsWords && editorTextFocus"
+    },
+    {
+        "key": "ctrl+shift+right",
+        "command": "cursorWordPartRightSelect"
+    },
+    {
+        "key": "ctrl+shift+right",
+        "command": "-cursorWordPartRightSelect",
+        "when": "config.intellij-idea-keybindings.useCamelHumpsWords && editorTextFocus"
+    },
+    {
+        "key": "ctrl+w",
+        "command": "workbench.action.closeActiveEditor"
+    },
+    {
+        "key": "ctrl+f4",
+        "command": "-workbench.action.closeActiveEditor"
+    }
+]
