@@ -45,11 +45,27 @@ trap 'rm -rf "${TMP_DIR}"' EXIT
 
 gh_download() {
   local filename="$1"
-  local url="https://github.com/${REPO}/releases/download/${TAG}/${filename}"
+  # For private repos we must resolve the asset ID via the API first.
+  local release_url="https://api.github.com/repos/${REPO}/releases/tags/${TAG}"
+  local asset_id
+  asset_id="$(curl -fsSL \
+    -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+    -H "Accept: application/vnd.github+json" \
+    "${release_url}" \
+    | grep -A2 "\"name\": \"${filename}\"" \
+    | grep '"id":' \
+    | head -1 \
+    | sed 's/.*"id": *\([0-9]*\).*/\1/')"
+
+  if [[ -z "${asset_id}" ]]; then
+    echo "Error: could not find asset '${filename}' in release ${TAG}."
+    exit 1
+  fi
+
   curl -fsSL \
     -H "Authorization: Bearer ${GITHUB_TOKEN}" \
     -H "Accept: application/octet-stream" \
-    -L "${url}" \
+    "https://api.github.com/repos/${REPO}/releases/assets/${asset_id}" \
     -o "${TMP_DIR}/${filename}"
 }
 
