@@ -1,5 +1,9 @@
 version: 2
 
+git:
+  ignore_tags:
+    - "nightly"
+
 project_name: dis
 
 builds:
