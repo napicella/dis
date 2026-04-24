@@ -14,7 +14,7 @@ if [[ $(whoami) == 'root' ]]; then
 fi
 
 sudo apt update -y
-sudo apt install -y make wget curl zip unzip tar git tree gpg apt-utils gettext-base \
+sudo apt install -y make wget curl zip unzip tar git tree gpg apt-utils gettext-base jq \
 	build-essential pkg-config autoconf bash-completion bison clang \
 	libssl-dev libreadline-dev zlib1g-dev libyaml-dev libreadline-dev libncurses5-dev libffi-dev libgdbm-dev libjemalloc2 \
 	libvips imagemagick libmagickwand-dev \

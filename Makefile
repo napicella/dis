@@ -1,7 +1,7 @@
 BIN       := dist/dis
 BIN_LINUX := dist/dis-linux-amd64
 
-.PHONY: all build build-linux test test-integration release clean
+.PHONY: all build build-linux test test-integration release redo-release clean
 
 all: build
 
@@ -26,6 +26,12 @@ test-integration: build-linux
 ## Usage: make release VERSION=v0.1.0
 release:
 	@if [ -z "$(VERSION)" ]; then echo "Usage: make release VERSION=v0.x.x"; exit 1; fi
+	git tag $(VERSION)
+	git push origin $(VERSION)
+
+redo-release:
+	@if [ -z "$(VERSION)" ]; then echo "Usage: make release VERSION=v0.x.x"; exit 1; fi
+	git tag -d $(VERSION) && git push origin :$(VERSION)
 	git tag $(VERSION)
 	git push origin $(VERSION)
 

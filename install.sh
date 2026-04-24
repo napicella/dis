@@ -52,21 +52,7 @@ RELEASE_JSON="$(curl -fsSL \
   "https://api.github.com/repos/${REPO}/releases/tags/${TAG}")"
 
 ASSET_ID="$(echo "${RELEASE_JSON}" \
-  | grep -B1 "\"name\": \"${BINARY_TARBALL}\"" \
-  | grep '"id":' | tail -1 \
-  | sed 's/.*"id": *\([0-9]*\).*/\1/')"
-
-# Fallback: use python if grep approach fails (python is more available than jq)
-if [[ -z "${ASSET_ID}" ]] && command -v python3 &>/dev/null; then
-  ASSET_ID="$(echo "${RELEASE_JSON}" | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-for a in data['assets']:
-    if a['name'] == '${BINARY_TARBALL}':
-        print(a['id'])
-        break
-")"
-fi
+  | jq -r --arg name "${BINARY_TARBALL}" '.assets[] | select(.name == $name) | .id')"
 
 if [[ -z "${ASSET_ID}" ]]; then
   echo "Error: could not find asset '${BINARY_TARBALL}' in release ${TAG}."

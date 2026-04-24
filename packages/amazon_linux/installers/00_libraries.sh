@@ -13,6 +13,7 @@ fi
 
 # Install the required packages
 sudo yum groupinstall -y "Development Tools"
+sudo yum install -y jq
 sudo yum install -y \
     autoconf bison clang \
     openssl-devel readline-devel zlib-devel libyaml-devel readline-devel ncurses-devel libffi-devel gdbm-devel jemalloc-devel \
