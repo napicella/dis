@@ -19,7 +19,7 @@ for auditing what will be installed and debugging unexpected transitive
 dependencies.
 
 Example:
-  dotfiles plan --distro ~/dotfiles/dis/distros/home-server.yml`,
+  dis plan --distro ~/dotfiles/dis/distros/home-server.yml`,
 	RunE: planCmdFn,
 }
 

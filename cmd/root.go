@@ -8,7 +8,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "dotfiles",
+	Use:   "dis",
 	Short: "A tool for managing dotfiles and package installations",
 }
 
