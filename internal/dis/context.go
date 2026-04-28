@@ -26,7 +26,11 @@ type InstallContext struct {
 // installer manifests, builds the package dependency graph, writes the
 // binding helper script, and initialises parameters from the static distro
 // parameters. Config generators and preconditions are not run here.
-func NewInstallContext(distroFile string) (*InstallContext, error) {
+//
+// If commonSources is non-empty it is used as the resolution target for any
+// "${common_sources}" token in the distro YAML, overriding the default XDG
+// probe performed by commonSourceDir.
+func NewInstallContext(distroFile string, commonSources string) (*InstallContext, error) {
 	var err error
 	distroFile, err = filepath.Abs(distroFile)
 	if err != nil {
@@ -42,7 +46,13 @@ func NewInstallContext(distroFile string) (*InstallContext, error) {
 	var resolvedSources []string
 	for _, src := range cfg.Sources {
 		if src == commonSourceToken {
-			if dir := commonSourceDir(); dir != "" {
+			var dir string
+			if commonSources != "" {
+				dir = commonSources
+			} else {
+				dir = commonSourceDir()
+			}
+			if dir != "" {
 				resolvedSources = append(resolvedSources, dir)
 			}
 			continue

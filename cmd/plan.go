@@ -24,15 +24,17 @@ Example:
 }
 
 var planDistroFile string
+var planCommonSources string
 
 func init() {
 	planCmd.Flags().StringVarP(&planDistroFile, "distro", "d", "", "Path to the distro YAML file (required)")
+	planCmd.Flags().StringVarP(&planCommonSources, "sources", "s", "", "Path to use for ${common_sources} (overrides auto-detection)")
 	_ = planCmd.MarkFlagRequired("distro")
 	rootCmd.AddCommand(planCmd)
 }
 
 func planCmdFn(cmd *cobra.Command, _ []string) error {
-	ic, err := dis.NewInstallContext(planDistroFile)
+	ic, err := dis.NewInstallContext(planDistroFile, planCommonSources)
 	if err != nil {
 		return err
 	}

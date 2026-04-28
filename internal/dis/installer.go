@@ -83,10 +83,20 @@ func (r *Installer) RunPreconditions(ctx context.Context, ic *InstallContext) er
 }
 
 // RunInstaller looks up pkgName in ic.packages, then executes its installer
-// script. After the installer finishes, any values it exported via
-// DIS_EXPORTS_FILE are merged into ic.parameters under qualified keys
-// ("pkg:VAR") for downstream installers.
+// script. It is a no-op if the package is already recorded in the state file.
+// After the installer finishes, any values it exported via DIS_EXPORTS_FILE are
+// merged into ic.parameters under qualified keys ("pkg:VAR") for downstream
+// installers. On success the package is recorded in the state file.
 func (r *Installer) RunInstaller(ctx context.Context, ic *InstallContext, pkgName string) error {
+	alreadyInstalled, err := IsInstalled(pkgName)
+	if err != nil {
+		return fmt.Errorf("checking install state for %q: %w", pkgName, err)
+	}
+	if alreadyInstalled {
+		fmt.Printf("==> Skipping %s (already installed)\n", pkgName)
+		return nil
+	}
+
 	manifest, ok := ic.pkgm.get(pkgName)
 	if !ok {
 		return fmt.Errorf("package %q not found in any of the configured sources", pkgName)
@@ -127,6 +137,10 @@ func (r *Installer) RunInstaller(ctx context.Context, ic *InstallContext, pkgNam
 		if err := ic.addExports(exportsFile.Name(), manifest.Provides); err != nil {
 			return fmt.Errorf("reading exports from %q: %w", manifest.Provides, err)
 		}
+	}
+
+	if err := RecordInstalled(manifest.Provides); err != nil {
+		return fmt.Errorf("recording install state for %q: %w", manifest.Provides, err)
 	}
 
 	return nil

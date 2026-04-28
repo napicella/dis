@@ -34,10 +34,11 @@ then
     exit 0
 fi
 
-git clone https://github.com/cxreg/smartcd.git /tmp/smartcd
-cd /tmp/smartcd && make install && cd -
-# remove repo after the installation
-rm -rf /tmp/smartcd
+tmp_dir=$(mktemp -d)
+trap 'rm -rf "$tmp_dir"' EXIT
+
+git clone https://github.com/cxreg/smartcd.git "$tmp_dir"
+cd "$tmp_dir" && make install && cd -
 
 # do not use the interactive command to create the config (source load_smartcd && smartcd config). Use the one defined
 # in the dis installer.

@@ -91,6 +91,21 @@ func TestInstallIntegration(t *testing.T) {
 			cmd:      []string{"which", "jq"},
 			contains: "jq",
 		},
+		{
+			desc:     "test/producer recorded in state",
+			cmd:      []string{"/usr/local/bin/disgo", "list"},
+			contains: "test/producer",
+		},
+		{
+			desc:     "test/consumer recorded in state",
+			cmd:      []string{"/usr/local/bin/disgo", "list"},
+			contains: "test/consumer",
+		},
+		{
+			desc:     "test/jq recorded in state",
+			cmd:      []string{"/usr/local/bin/disgo", "list"},
+			contains: "test/jq",
+		},
 	}
 
 	for _, c := range checks {

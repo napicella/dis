@@ -26,9 +26,11 @@ Examples:
 }
 
 var runDistroFile string
+var runCommonSources string
 
 func init() {
 	runCmd.Flags().StringVarP(&runDistroFile, "distro", "d", "", "Path to the distro YAML file (required)")
+	runCmd.Flags().StringVarP(&runCommonSources, "sources", "s", "", "Path to use for ${common_sources} (overrides auto-detection)")
 	_ = runCmd.MarkFlagRequired("distro")
 	rootCmd.AddCommand(runCmd)
 }
@@ -37,7 +39,7 @@ func runCmdFn(cmd *cobra.Command, args []string) error {
 	pkgName := args[0]
 	ctx := cmd.Context()
 
-	ic, err := dis.NewInstallContext(runDistroFile)
+	ic, err := dis.NewInstallContext(runDistroFile, runCommonSources)
 	if err != nil {
 		return err
 	}

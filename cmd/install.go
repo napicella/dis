@@ -27,15 +27,17 @@ Installers run on the host machine.`,
 }
 
 var distroFile string
+var installCommonSources string
 
 func init() {
 	installCmd.Flags().StringVarP(&distroFile, "distro", "d", "", "Path to the distro YAML file (required)")
+	installCmd.Flags().StringVarP(&installCommonSources, "sources", "s", "", "Path to use for ${common_sources} (overrides auto-detection)")
 	_ = installCmd.MarkFlagRequired("distro")
 	rootCmd.AddCommand(installCmd)
 }
 
 func installCmdFn(cmd *cobra.Command, _ []string) error {
-	ic, err := dis.NewInstallContext(distroFile)
+	ic, err := dis.NewInstallContext(distroFile, installCommonSources)
 	if err != nil {
 		return err
 	}
