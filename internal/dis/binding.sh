@@ -2,9 +2,12 @@
 #
 # Sourced by every installer via: source $DIS_BINDING
 #
-# The disgo runner sets the following env vars before sourcing this file:
-#   DIS_PKG_ROOT  - root of the source folder that owns this installer
-#   DIS_INSTALLER - absolute path to the installer script being executed
+# The dis runner sets the following env vars before sourcing this file:
+#   DIS_PKG_ROOT  - root of the source folder that contains this installer
+#                   (e.g. dis/packages/ubuntu)
+#   DIS_INSTALLER - absolute path to the installer script being executed;
+#                   equivalent to $DIS_PKG_ROOT/<installers/.../<script>.sh>
+#                   (e.g. dis/packages/ubuntu/installers/gui/03_fonts.sh)
 #   DIS_DISTRO    - os name from the distro YAML (e.g. "ubuntu")
 #
 # This file provides:
@@ -18,13 +21,6 @@ set -e
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
 #                                Private Functions                             #
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#
-
-function __gum_install() {
-    if ! command -v gum &> /dev/null
-    then
-        sudo cp "$DIS_PKG_ROOT/../dis/bin/gum_0.14.1_Linux_x86_64/gum" /usr/bin/ 2>/dev/null || true
-    fi
-}
 
 function __bootstrap() {
   local RC_CFG_GEN_FOLDER="$HOME/rc/configs-generated"

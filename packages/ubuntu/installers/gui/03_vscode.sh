@@ -1,5 +1,5 @@
 ### -- Manifest
-### provides: common/vscode
+### provides: gui/vscode
 ### depends_on: [common/os-libs]
 ### distro: [ubuntu]
 ### -- End

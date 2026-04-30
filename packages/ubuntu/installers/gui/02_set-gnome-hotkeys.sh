@@ -1,5 +1,5 @@
 ### -- Manifest
-### provides: common/gnome-hotkeys
+### provides: gui/gnome-hotkeys
 ### depends_on: []
 ### distro: [ubuntu]
 ### -- End

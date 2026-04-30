@@ -1,5 +1,5 @@
 ### -- Manifest
-### provides: common/gnome-tweak-tool
+### provides: gui/gnome-tweak-tool
 ### depends_on: []
 ### distro: [ubuntu]
 ### -- End

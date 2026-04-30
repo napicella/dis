@@ -1,5 +1,5 @@
 ### -- Manifest
-### provides: common/gnome-theme
+### provides: gui/gnome-theme
 ### depends_on: []
 ### distro: [ubuntu]
 ### -- End

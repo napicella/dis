@@ -1,5 +1,5 @@
 ### -- Manifest
-### provides: common/ulauncher
+### provides: gui/ulauncher
 ### depends_on: []
 ### distro: [ubuntu]
 ### -- End

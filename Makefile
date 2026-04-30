@@ -1,7 +1,8 @@
-BIN       := dist/dis
-BIN_LINUX := dist/dis-linux-amd64
+BIN        := dist/dis
+BIN_LINUX  := dist/dis-linux-amd64
+INSTALL_DIR ?= $(HOME)/.local/bin
 
-.PHONY: all build build-linux test test-integration release redo-release clean
+.PHONY: all build build-linux test test-integration release redo-release clean install
 
 all: build
 
@@ -34,6 +35,12 @@ redo-release:
 	git tag -d $(VERSION) && git push origin :$(VERSION)
 	git tag $(VERSION)
 	git push origin $(VERSION)
+
+## install: build and install dis to INSTALL_DIR (default: ~/.local/bin)
+install: build
+	mkdir -p $(INSTALL_DIR)
+	install -m 755 $(BIN) $(INSTALL_DIR)/dis
+	@echo "==> Installed dis to $(INSTALL_DIR)/dis"
 
 ## clean: remove build artifacts
 clean:

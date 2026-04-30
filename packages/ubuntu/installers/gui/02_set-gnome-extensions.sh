@@ -1,5 +1,5 @@
 ### -- Manifest
-### provides: common/gnome-extensions
+### provides: gui/gnome-extensions
 ### depends_on: []
 ### distro: [ubuntu]
 ### -- End

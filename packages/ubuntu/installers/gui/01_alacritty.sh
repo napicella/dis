@@ -1,5 +1,5 @@
 ### -- Manifest
-### provides: common/alacritty
+### provides: gui/alacritty
 ### depends_on: []
 ### distro: [ubuntu]
 ### -- End

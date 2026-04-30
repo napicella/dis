@@ -12,10 +12,10 @@ import (
 	"testing"
 )
 
-const testImage = "disgo-test"
+const testImage = "dis-test"
 
 // TestInstallIntegration builds the test Docker image, spins up a container,
-// copies the disgo binary and testdata into it, runs disgo install, and verifies
+// copies the dis binary and testdata into it, runs dis install, and verifies
 // that the installers ran correctly (config generator injection, cross-package
 // env var export, dependency ordering, and apt package installation).
 func TestInstallIntegration(t *testing.T) {
