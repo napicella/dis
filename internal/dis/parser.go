@@ -16,6 +16,13 @@ import (
 //	### provides: common/tools
 //	### depends_on: [common/mise,common/os-libs]
 //	### distro: [ubuntu]
+//
+// List fields (depends_on, distro, requires_env, exports_env) may span
+// multiple lines. Continuation lines start with "### " and contain only the
+// rest of the list value (no key prefix):
+//
+//	### requires_env: [DOCKER_MOUNT_FOLDER, WIREGUARD_KEY_PATH,
+//	###                GID_RENDER, GID_ADM, UID_CONTAINER]
 func parseManifest(path, sourceDir, pkgRoot, configsDir string) (Manifest, bool, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -24,13 +31,35 @@ func parseManifest(path, sourceDir, pkgRoot, configsDir string) (Manifest, bool,
 	defer f.Close()
 
 	var (
-		inBlock     bool
-		provides    string
-		dependsOn   []string
-		distros     []string
-		requiresEnv []string
-		exportsEnv  []string
+		inBlock      bool
+		provides     string
+		dependsOn    []string
+		distros      []string
+		requiresEnv  []string
+		exportsEnv   []string
+		currentField string // which list field is being accumulated
+		currentRaw   string // raw accumulated value (may span lines)
 	)
+
+	// flushField parses and stores whatever is in currentRaw into the
+	// appropriate slice, then resets the accumulator.
+	flushField := func() {
+		if currentField == "" {
+			return
+		}
+		switch currentField {
+		case "depends_on":
+			dependsOn = parseList(currentRaw)
+		case "distro":
+			distros = parseList(currentRaw)
+		case "requires_env":
+			requiresEnv = parseList(currentRaw)
+		case "exports_env":
+			exportsEnv = parseList(currentRaw)
+		}
+		currentField = ""
+		currentRaw = ""
+	}
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
@@ -53,17 +82,31 @@ func parseManifest(path, sourceDir, pkgRoot, configsDir string) (Manifest, bool,
 		content := strings.TrimPrefix(line, "### ")
 
 		if val, ok := parseField(content, "provides"); ok {
+			flushField()
 			provides = strings.TrimSpace(val)
 		} else if val, ok := parseField(content, "depends_on"); ok {
-			dependsOn = parseList(val)
+			flushField()
+			currentField = "depends_on"
+			currentRaw = val
 		} else if val, ok := parseField(content, "distro"); ok {
-			distros = parseList(val)
+			flushField()
+			currentField = "distro"
+			currentRaw = val
 		} else if val, ok := parseField(content, "requires_env"); ok {
-			requiresEnv = parseList(val)
+			flushField()
+			currentField = "requires_env"
+			currentRaw = val
 		} else if val, ok := parseField(content, "exports_env"); ok {
-			exportsEnv = parseList(val)
+			flushField()
+			currentField = "exports_env"
+			currentRaw = val
+		} else if currentField != "" {
+			// Continuation line: append to the raw accumulator.
+			currentRaw += strings.TrimSpace(content)
 		}
 	}
+	flushField()
+
 	if err := scanner.Err(); err != nil {
 		return Manifest{}, false, err
 	}
