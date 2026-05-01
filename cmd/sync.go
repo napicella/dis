@@ -66,6 +66,14 @@ func runSync(_ *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+	// Wipe the destination directory before extracting so stale files from
+	// previous layouts do not conflict with the new package structure.
+	if err := os.RemoveAll(destDir); err != nil {
+		return fmt.Errorf("clearing packages dir: %w", err)
+	}
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		return fmt.Errorf("recreating packages dir: %w", err)
+	}
 	if err := downloadAndExtract(token, assetID, destDir); err != nil {
 		return fmt.Errorf("extracting packages: %w", err)
 	}

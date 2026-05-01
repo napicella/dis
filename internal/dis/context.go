@@ -43,8 +43,18 @@ func NewInstallContext(distroFile string, commonSources string) (*InstallContext
 	}
 	distroDir := filepath.Dir(distroFile)
 
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("resolving home directory: %w", err)
+	}
+
+	expandHome := func(s string) string {
+		return strings.ReplaceAll(s, "${home}", home)
+	}
+
 	var resolvedSources []string
 	for _, src := range cfg.Sources {
+		src = expandHome(src)
 		if src == commonSourceToken {
 			var dir string
 			if commonSources != "" {
@@ -88,7 +98,7 @@ func NewInstallContext(distroFile string, commonSources string) (*InstallContext
 
 	params := make(map[string]string, len(cfg.Parameters))
 	for k, v := range cfg.Parameters {
-		params[k] = v
+		params[k] = expandHome(v)
 	}
 
 	return &InstallContext{
