@@ -16,6 +16,9 @@ type Installer struct {
 	// machine is the target on which scripts are executed.
 	machine     command.Machine
 	bindingPath string
+	// Reinstall skips the already-installed check so every package is
+	// re-executed regardless of its recorded state.
+	Reinstall bool
 }
 
 // NewInstaller writes the binding.sh helper to a temp file and returns an
@@ -87,13 +90,19 @@ func (r *Installer) RunPreconditions(ctx context.Context, ic *InstallContext) er
 // merged into ic.parameters under qualified keys ("pkg:VAR") for downstream
 // installers. On success the package is recorded in the state file.
 func (r *Installer) RunInstaller(ctx context.Context, ic *InstallContext, pkgName string) error {
-	alreadyInstalled, err := IsInstalled(pkgName)
-	if err != nil {
-		return fmt.Errorf("checking install state for %q: %w", pkgName, err)
-	}
-	if alreadyInstalled {
-		fmt.Printf("==> Skipping %s (already installed)\n", pkgName)
-		return nil
+	if r.Reinstall {
+		if err := RemoveInstalled(pkgName); err != nil {
+			return fmt.Errorf("removing install state for %q: %w", pkgName, err)
+		}
+	} else {
+		alreadyInstalled, err := IsInstalled(pkgName)
+		if err != nil {
+			return fmt.Errorf("checking install state for %q: %w", pkgName, err)
+		}
+		if alreadyInstalled {
+			fmt.Printf("==> Skipping %s (already installed)\n", pkgName)
+			return nil
+		}
 	}
 
 	manifest, ok := ic.pkgm.get(pkgName)

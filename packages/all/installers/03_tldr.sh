@@ -1,6 +1,6 @@
 ### -- Manifest
 ### provides: common/tldr
-### depends_on: [common/languages]
+### depends_on: [common/node]
 ### distro: [all]
 ### -- End
 

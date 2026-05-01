@@ -27,10 +27,12 @@ Examples:
 
 var runDistroFile string
 var runCommonSources string
+var runReinstall bool
 
 func init() {
 	runCmd.Flags().StringVarP(&runDistroFile, "distro", "d", "", "Path to the distro YAML file (required)")
 	runCmd.Flags().StringVarP(&runCommonSources, "sources", "s", "", "Path to use for ${common_sources} (overrides auto-detection)")
+	runCmd.Flags().BoolVar(&runReinstall, "reinstall", false, "Re-run the installer even if already recorded as installed")
 	_ = runCmd.MarkFlagRequired("distro")
 	rootCmd.AddCommand(runCmd)
 }
@@ -49,6 +51,7 @@ func runCmdFn(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	defer runner.Close()
+	runner.Reinstall = runReinstall
 
 	if err := runner.RunGenerators(ctx, ic); err != nil {
 		return err

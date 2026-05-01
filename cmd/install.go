@@ -28,10 +28,12 @@ Installers run on the host machine.`,
 
 var distroFile string
 var installCommonSources string
+var installReinstall bool
 
 func init() {
 	installCmd.Flags().StringVarP(&distroFile, "distro", "d", "", "Path to the distro YAML file (required)")
 	installCmd.Flags().StringVarP(&installCommonSources, "sources", "s", "", "Path to use for ${common_sources} (overrides auto-detection)")
+	installCmd.Flags().BoolVar(&installReinstall, "reinstall", false, "Re-run all installers even if already recorded as installed")
 	_ = installCmd.MarkFlagRequired("distro")
 	rootCmd.AddCommand(installCmd)
 }
@@ -49,6 +51,7 @@ func installCmdFn(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	defer runner.Close()
+	runner.Reinstall = installReinstall
 
 	if err := runner.RunGenerators(ctx, ic); err != nil {
 		return err

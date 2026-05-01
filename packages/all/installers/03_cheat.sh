@@ -1,6 +1,6 @@
 ### -- Manifest
 ### provides: common/cheat
-### depends_on: [common/languages]
+### depends_on: [common/go]
 ### distro: [all]
 ### -- End
 source $DIS_BINDING
