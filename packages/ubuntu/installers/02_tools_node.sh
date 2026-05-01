@@ -1,7 +1,7 @@
 ### -- Manifest
 ### provides: common/node
 ### depends_on: [common/mise]
-### distro: [all]
+### distro: [ubuntu]
 ### -- End
 
 source $DIS_BINDING
