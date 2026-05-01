@@ -158,11 +158,77 @@ After `source "$DIS_BINDING"`, the following variables are set:
 
 | Variable | Description |
 |---|---|
-| `DIS_PKG_ROOT` | Root directory of the package that owns this installer |
+| `DIS_PKG_ROOT` | The `root` declared in `dis.ws.yml` for this package, or the source directory itself when no workspace file is present |
 | `DIS_CONFIG_FOLDER` | Configs directory (set from `dis.ws.yml`; empty if not declared) |
 | `DIS_INSTALLER` | Absolute path to the installer script |
 | `DIS_DISTRO` | OS name from the distro YAML |
 | `DIS_EXPORTS_FILE` | Temp file to write `KEY=value` exports for downstream installers |
+
+### Concrete examples
+
+**Example 1 — source without a workspace file** (e.g. a single-tool directory)
+
+Given this distro source entry:
+```
+~/dotfiles/tools/env-manager
+```
+with no `dis.ws.yml` present, and an installer at:
+```
+~/dotfiles/tools/env-manager/env_manager_installer.sh
+```
+dis sets:
+```
+DIS_PKG_ROOT   = /home/nicola/dotfiles/tools/env-manager
+DIS_INSTALLER  = /home/nicola/dotfiles/tools/env-manager/env_manager_installer.sh
+DIS_CONFIG_FOLDER = (empty — not declared)
+```
+
+**Example 2 — source with a dis.ws.yml** (e.g. the built-in packages)
+
+Given this `dis.ws.yml` in `~/.local/share/dis/packages`:
+```yaml
+packages:
+  - root: ./all
+    configs: ./all/configs
+```
+and an installer at:
+```
+~/.local/share/dis/packages/all/installers/00_bash_config.sh
+```
+dis sets:
+```
+DIS_PKG_ROOT      = /home/nicola/.local/share/dis/packages/all
+DIS_INSTALLER     = /home/nicola/.local/share/dis/packages/all/installers/00_bash_config.sh
+DIS_CONFIG_FOLDER = /home/nicola/.local/share/dis/packages/all/configs
+```
+
+**Example 3 — exporting and importing values between packages**
+
+`producer.sh` exports a value:
+```bash
+### -- Manifest
+### provides: myapp/docker
+### exports_env: [GID_DOCKER]
+### -- End
+source "$DIS_BINDING"
+
+GID_DOCKER=$(getent group docker | cut -d: -f3)
+dis_export GID_DOCKER "$GID_DOCKER"
+```
+
+`consumer.sh` imports it using the qualified `pkg:VAR` syntax:
+```bash
+### -- Manifest
+### provides: myapp/containers
+### depends_on: [myapp/docker]
+### requires_env: [myapp/docker:GID_DOCKER]
+### -- End
+source "$DIS_BINDING"
+
+echo "Docker GID is: ${GID_DOCKER}"
+```
+
+dis injects `GID_DOCKER` (the bare name, without the `myapp/docker:` prefix) into the consumer's environment.
 
 ---
 
