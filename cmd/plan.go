@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/napicella/dis/internal/dis"
 	"github.com/spf13/cobra"
@@ -38,7 +37,6 @@ func planCmdFn(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	
 
 	toRun, err := ic.ResolveInstallOrder()
 	if err != nil {
@@ -48,8 +46,9 @@ func planCmdFn(cmd *cobra.Command, _ []string) error {
 	fmt.Printf("Distro: %s  (OS: %s)\n", planDistroFile, ic.Cfg.OS)
 	fmt.Printf("Packages to install (%d total, in order):\n\n", len(toRun))
 	for i, m := range toRun {
-		installerPath := filepath.Join(m.SourceDir, m.RelativeFilepath)
-		fmt.Printf("  %3d. %-40s  %s\n", i+1, m.Provides, installerPath)
+		fmt.Printf("  %3d. %-40s  %s\n", i+1, m.Provides, m.InstallerPath)
+		fmt.Printf("       source_dir:   %s\n", m.SourceDir)
+		fmt.Printf("     package_root:   %s\n", m.PkgRoot)
 		if len(m.RequiresEnv) > 0 {
 			fmt.Printf("       requires_env: %v\n", m.RequiresEnv)
 		}

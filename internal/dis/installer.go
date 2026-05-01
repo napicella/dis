@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"lesiw.io/command"
@@ -102,8 +101,7 @@ func (r *Installer) RunInstaller(ctx context.Context, ic *InstallContext, pkgNam
 		return fmt.Errorf("package %q not found in any of the configured sources", pkgName)
 	}
 
-	pkgRoot := manifest.SourceDir
-	installerPath := filepath.Join(pkgRoot, manifest.RelativeFilepath)
+	installerPath := manifest.InstallerPath
 	fmt.Printf("==> Installing %s (%s)\n", manifest.Provides, installerPath)
 
 	exportsFile, err := os.CreateTemp("", "dis-exports-*")
@@ -114,11 +112,14 @@ func (r *Installer) RunInstaller(ctx context.Context, ic *InstallContext, pkgNam
 	defer os.Remove(exportsFile.Name())
 
 	envVars := map[string]string{
-		"DIS_PKG_ROOT":     pkgRoot,
+		"DIS_PKG_ROOT":     manifest.PkgRoot,
 		"DIS_INSTALLER":    installerPath,
 		"DIS_DISTRO":       ic.Cfg.OS,
 		"DIS_BINDING":      r.bindingPath,
 		"DIS_EXPORTS_FILE": exportsFile.Name(),
+	}
+	if manifest.ConfigsDir != "" {
+		envVars["DIS_CONFIG_FOLDER"] = manifest.ConfigsDir
 	}
 	pkgEnv, err := ic.envForInstaller(manifest)
 	if err != nil {

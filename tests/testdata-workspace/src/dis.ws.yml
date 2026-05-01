@@ -1,0 +1,3 @@
+packages:
+  - root: ./hello
+    configs: ./hello/configs

@@ -3,7 +3,6 @@ package dis
 import (
 	"bufio"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -17,7 +16,7 @@ import (
 //	### provides: common/tools
 //	### depends_on: [common/mise,common/os-libs]
 //	### distro: [ubuntu]
-func parseManifest(path, sourceDir string) (Manifest, bool, error) {
+func parseManifest(path, sourceDir, pkgRoot, configsDir string) (Manifest, bool, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return Manifest{}, false, err
@@ -73,19 +72,16 @@ func parseManifest(path, sourceDir string) (Manifest, bool, error) {
 		return Manifest{}, false, nil
 	}
 
-	rel, err := filepath.Rel(sourceDir, path)
-	if err != nil {
-		rel = path
-	}
-
 	return Manifest{
-		Provides:         provides,
-		RelativeFilepath: rel,
-		Distros:          distros,
-		DependsOn:        dependsOn,
-		RequiresEnv:      requiresEnv,
-		ExportsEnv:       exportsEnv,
-		SourceDir:        sourceDir,
+		Provides:      provides,
+		InstallerPath: path,
+		Distros:       distros,
+		DependsOn:     dependsOn,
+		RequiresEnv:   requiresEnv,
+		ExportsEnv:    exportsEnv,
+		SourceDir:     sourceDir,
+		PkgRoot:       pkgRoot,
+		ConfigsDir:    configsDir,
 	}, true, nil
 }
 

@@ -1,0 +1,7 @@
+packages:
+  - root: ./all
+    configs: ./all/configs
+  - root: ./amazon_linux
+    configs: ./amazon_linux/configs
+  - root: ./ubuntu
+    configs: ./ubuntu/configs

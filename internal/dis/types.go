@@ -43,18 +43,43 @@ type DistroConfig struct {
 	Preconditions []Precondition `yaml:"preconditions"`
 }
 
+// WorkspacePackage describes one package entry within a dis.workspace file.
+// After loading, Root and Configs are always absolute paths.
+type WorkspacePackage struct {
+	// Root is the absolute path to the package root directory.
+	Root string `yaml:"root"`
+	// Configs is the optional absolute path to the configs directory for this
+	// package. Empty when not declared.
+	Configs string `yaml:"configs"`
+}
+
+// WorkspaceConfig is the structure of a dis.workspace file.
+// When present in a source directory it tells dis how to map sub-directories
+// to package roots and their associated configs.
+type WorkspaceConfig struct {
+	Packages []WorkspacePackage `yaml:"packages"`
+}
+
 // Manifest describes a single installer script parsed from a .sh file header.
 type Manifest struct {
 	// Provides is the fully-qualified name of this installer, e.g. "common/tools".
-	Provides         string
-	RelativeFilepath string
-	Distros          []string
-	DependsOn        []string
+	Provides string
+	// InstallerPath is the absolute path to the installer .sh file.
+	InstallerPath string
+	Distros       []string
+	DependsOn     []string
 	// RequiresEnv lists the env vars this installer needs injected at runtime.
 	// Entries may be bare ("FOO") or qualified ("pkg:VAR").
 	RequiresEnv []string
 	// ExportsEnv lists the env var names this installer exports for downstream installers.
 	ExportsEnv []string
-	// SourceDir is the root directory from which RelativeFilepath is relative.
+	// SourceDir is the raw source root entry from the distro YAML.
 	SourceDir string
+	// PkgRoot is the root of the package that owns this installer. It is the
+	// workspace entry root (if a dis.workspace file is present), otherwise it
+	// equals SourceDir.
+	PkgRoot string
+	// ConfigsDir is the optional configs folder for this package. Set from the
+	// dis.workspace entry; empty when not declared.
+	ConfigsDir string
 }
