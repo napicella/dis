@@ -1,6 +1,7 @@
-BIN        := dist/dis
-BIN_LINUX  := dist/dis-linux-amd64
-INSTALL_DIR ?= $(HOME)/.local/bin
+BIN          := dist/dis
+BIN_LINUX    := dist/dis-linux-amd64
+INSTALL_DIR  ?= $(HOME)/.local/bin
+PACKAGES_DIR ?= $(HOME)/.local/share/dis/packages
 
 .PHONY: all build build-linux test test-integration release redo-release clean install
 
@@ -37,10 +38,14 @@ redo-release:
 	git push origin $(VERSION)
 
 ## install: build and install dis to INSTALL_DIR (default: ~/.local/bin)
+##          also copies packages/ to PACKAGES_DIR (default: ~/.local/share/dis/packages)
 install: build
 	mkdir -p $(INSTALL_DIR)
 	install -m 755 $(BIN) $(INSTALL_DIR)/dis
 	@echo "==> Installed dis to $(INSTALL_DIR)/dis"
+	rm -rf $(PACKAGES_DIR)
+	cp -r packages $(PACKAGES_DIR)
+	@echo "==> Installed packages to $(PACKAGES_DIR)"
 
 ## clean: remove build artifacts
 clean:
