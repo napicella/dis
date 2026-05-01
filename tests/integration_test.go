@@ -122,6 +122,94 @@ func TestInstallIntegration(t *testing.T) {
 	}
 }
 
+// TestInstallIntegrationExportsCache verifies that exported values from a
+// previously-installed package are available from the cache when that package
+// is skipped on a subsequent run.
+//
+// Flow:
+//  1. dis install  → producer runs (exports TOKEN to cache), consumer runs.
+//  2. dis run --reinstall test/consumer → producer is already installed (skipped),
+//     but TOKEN comes from the exports cache; consumer re-runs successfully.
+func TestInstallIntegrationExportsCache(t *testing.T) {
+	if _, err := exec.LookPath("docker"); err != nil {
+		t.Skip("docker not found in PATH; skipping integration test")
+	}
+
+	binPath := os.Getenv("DISGO_BIN")
+	if binPath == "" {
+		t.Fatal("DISGO_BIN env var not set; run tests via 'make test-integration'")
+	}
+	if _, err := os.Stat(binPath); err != nil {
+		t.Fatalf("DISGO_BIN %q not found: %v", binPath, err)
+	}
+
+	testdataAbs, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatalf("resolving testdata path: %v", err)
+	}
+	dockerfilePath := filepath.Join(testdataAbs, "Dockerfile")
+	mustRun(t, "docker", "build", "-t", testImage, "-f", dockerfilePath, testdataAbs)
+
+	containerID := mustRun(t, "docker", "run", "-d", "--rm", testImage, "sleep", "300")
+	containerID = strings.TrimSpace(containerID)
+	t.Cleanup(func() {
+		exec.Command("docker", "rm", "-f", containerID).Run() //nolint:errcheck
+	})
+
+	mustRun(t, "docker", "cp", binPath, containerID+":/usr/local/bin/disgo")
+	mustDockerExec(t, containerID, "sudo", "chmod", "+x", "/usr/local/bin/disgo")
+	mustRun(t, "docker", "cp", testdataAbs, containerID+":/testdata")
+	mustDockerExec(t, containerID, "sudo", "chown", "-R", "dev:dev", "/testdata")
+	mustDockerExec(t, containerID, "chmod", "-R", "+x", "/testdata")
+
+	// Step 1: full install — producer runs and exports TOKEN to the cache.
+	mustDockerExec(t, containerID,
+		"/usr/local/bin/disgo", "install",
+		"--distro", "/testdata/distro.yml",
+	)
+
+	// Remove consumer-ran so we can confirm the consumer executes again.
+	mustDockerExec(t, containerID, "rm", "-f", "/tmp/consumer-ran")
+
+	// Step 2: re-run consumer only; producer is already installed (skipped)
+	// but TOKEN must come from the exports cache.
+	mustDockerExec(t, containerID,
+		"/usr/local/bin/disgo", "run",
+		"--distro", "/testdata/distro.yml",
+		"--reinstall",
+		"test/consumer",
+	)
+
+	checks := []struct {
+		desc     string
+		cmd      []string
+		contains string
+	}{
+		{
+			desc: "consumer ran again after reinstall",
+			cmd:  []string{"test", "-f", "/tmp/consumer-ran"},
+		},
+		{
+			desc:     "TOKEN injected from exports cache",
+			cmd:      []string{"cat", "/tmp/token"},
+			contains: "abc123",
+		},
+	}
+
+	for _, c := range checks {
+		t.Run(c.desc, func(t *testing.T) {
+			args := append([]string{"exec", containerID}, c.cmd...)
+			out, err := exec.Command("docker", args...).CombinedOutput()
+			if err != nil {
+				t.Fatalf("check %q failed: %v\noutput: %s", c.desc, err, out)
+			}
+			if c.contains != "" && !strings.Contains(string(out), c.contains) {
+				t.Fatalf("expected output to contain %q, got: %q", c.contains, string(out))
+			}
+		})
+	}
+}
+
 // TestInstallIntegrationWorkspace verifies the dis.workspace code path: a source
 // directory with a dis.workspace file is walked only for the declared package
 // roots, and the installer receives correct DIS_PKG_ROOT and DIS_CONFIG_FOLDER.

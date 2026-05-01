@@ -109,6 +109,28 @@ func NewInstallContext(distroFile string, commonSources string) (*InstallContext
 	}, nil
 }
 
+// NewInstallContextWithCache is like NewInstallContext but also loads the
+// persistent exports cache into ic.parameters. Use this in the install/run
+// command so that packages skipped as already-installed still contribute
+// their exported values to downstream installers.
+func NewInstallContextWithCache(distroFile string, commonSources string) (*InstallContext, error) {
+	ic, err := NewInstallContext(distroFile, commonSources)
+	if err != nil {
+		return nil, err
+	}
+	cache, err := ReadExportsCache()
+	if err != nil {
+		return nil, fmt.Errorf("loading exports cache: %w", err)
+	}
+	for k, v := range cache {
+		// Only populate if not already set by a generator or static param.
+		if ic.parameters[k] == "" {
+			ic.parameters[k] = v
+		}
+	}
+	return ic, nil
+}
+
 // ResolveInstallOrder returns the full ordered list of manifests to install
 // for the packages declared in ic.Cfg, respecting transitive dependencies.
 func (ic *InstallContext) ResolveInstallOrder() ([]Manifest, error) {
@@ -209,12 +231,14 @@ func (rc *InstallContext) envForPrecondition(pc Precondition) (map[string]string
 
 // addExports reads the exportsFilePath and merges the exported values into
 // rc.parameters under qualified keys ("pkg:VAR"), making them available to
-// downstream installers via requires_env.
+// downstream installers via requires_env. It also persists the values to the
+// exports cache so they are available in future runs when the package is skipped.
 func (rc *InstallContext) addExports(exportsFilePath, providerPkg string) error {
 	data, err := os.ReadFile(exportsFilePath)
 	if err != nil {
 		return err
 	}
+	newEntries := make(map[string]string)
 	for _, line := range strings.Split(string(data), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
@@ -226,7 +250,9 @@ func (rc *InstallContext) addExports(exportsFilePath, providerPkg string) error 
 		}
 		key := strings.TrimSpace(line[:idx])
 		val := line[idx+1:]
-		rc.parameters[providerPkg+":"+key] = val
+		qualifiedKey := providerPkg + ":" + key
+		rc.parameters[qualifiedKey] = val
+		newEntries[qualifiedKey] = val
 	}
-	return nil
+	return UpdateExportsCache(newEntries)
 }

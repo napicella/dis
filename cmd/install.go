@@ -39,7 +39,7 @@ func init() {
 }
 
 func installCmdFn(cmd *cobra.Command, _ []string) error {
-	ic, err := dis.NewInstallContext(distroFile, installCommonSources)
+	ic, err := dis.NewInstallContextWithCache(distroFile, installCommonSources)
 	if err != nil {
 		return err
 	}

@@ -41,7 +41,7 @@ func runCmdFn(cmd *cobra.Command, args []string) error {
 	pkgName := args[0]
 	ctx := cmd.Context()
 
-	ic, err := dis.NewInstallContext(runDistroFile, runCommonSources)
+	ic, err := dis.NewInstallContextWithCache(runDistroFile, runCommonSources)
 	if err != nil {
 		return err
 	}
