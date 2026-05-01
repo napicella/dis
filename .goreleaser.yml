@@ -24,6 +24,7 @@ archives:
     format: tar.gz
     name_template: "{{ .ProjectName }}_packages"
     files:
+      - packages/*
       - packages/**/*
     meta: true
 
