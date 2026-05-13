@@ -95,7 +95,7 @@ source $DIS_BINDING
 				t.Fatalf("writing temp script: %v", err)
 			}
 
-			m, ok, err := parseManifest(path, dir, dir, "")
+			m, ok, err := parseManifest(path, dir, "")
 			if err != nil {
 				t.Fatalf("parseManifest error: %v", err)
 			}

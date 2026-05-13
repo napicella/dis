@@ -47,7 +47,6 @@ func planCmdFn(cmd *cobra.Command, _ []string) error {
 	fmt.Printf("Packages to install (%d total, in order):\n\n", len(toRun))
 	for i, m := range toRun {
 		fmt.Printf("  %3d. %-40s  %s\n", i+1, m.Provides, m.InstallerPath)
-		fmt.Printf("       source_dir:   %s\n", m.SourceDir)
 		fmt.Printf("     package_root:   %s\n", m.PkgRoot)
 		if len(m.RequiresEnv) > 0 {
 			fmt.Printf("       requires_env: %v\n", m.RequiresEnv)

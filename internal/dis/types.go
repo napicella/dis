@@ -1,5 +1,54 @@
 package dis
 
+import "gopkg.in/yaml.v3"
+
+// PackageEntry is one item in the distro packages list.
+// It can be unmarshalled from a plain string:
+//
+//	- mypkg/foo
+//
+// or from a map with an optional scoped parameters block:
+//
+//	- name: mypkg/foo
+//	  parameters:
+//	    KEY: value
+//
+// or with multiple names sharing the same parameters:
+//
+//	- names: [mypkg/foo, mypkg/bar]
+//	  parameters:
+//	    KEY: value
+type PackageEntry struct {
+	// Name is a single package name (mutually exclusive with Names).
+	Name string `yaml:"name"`
+	// Names is a list of package names that share the same scoped parameters.
+	Names []string `yaml:"names"`
+	// Parameters are injected only into the packages listed in Name/Names.
+	// They override globals with the same key.
+	Parameters map[string]string `yaml:"parameters"`
+}
+
+// ResolvedNames returns the effective list of package names for this entry.
+func (e PackageEntry) ResolvedNames() []string {
+	if e.Name != "" {
+		return []string{e.Name}
+	}
+	return e.Names
+}
+
+// UnmarshalYAML lets a PackageEntry be written as a bare string in YAML,
+// preserving full backward-compatibility with plain list entries.
+func (e *PackageEntry) UnmarshalYAML(value *yaml.Node) error {
+	if value.Kind == yaml.ScalarNode {
+		e.Name = value.Value
+		return nil
+	}
+	// Map form — delegate to the default struct decoder using an alias to
+	// avoid infinite recursion.
+	type plain PackageEntry
+	return value.Decode((*plain)(e))
+}
+
 // Precondition is a check script that runs before any installer.
 // The script receives only the variables listed in Uses as env vars.
 // The script must exit 0 on success, non-zero on failure.
@@ -24,14 +73,16 @@ type ConfigGenerator struct {
 // Sources is a plain list of folder paths; the namespace for each installer
 // comes from its own provides: field.
 type DistroConfig struct {
-	OS       string   `yaml:"os"`
-	Sources  []string `yaml:"sources"`
-	Packages []string `yaml:"packages"`
+	OS       string         `yaml:"os"`
+	Sources  []string       `yaml:"sources"`
+	Packages []PackageEntry `yaml:"packages"`
 
-	// Parameters is the single source of truth for all config values in this
-	// distro. Each installer declares which parameters it needs via
+	// Parameters is the single source of truth for all global config values
+	// in this distro. Each installer declares which parameters it needs via
 	// requires_env in its manifest. Preconditions declare their needs via Uses.
 	// Only declared parameters are injected.
+	// For package-scoped parameters attach a parameters block to the relevant
+	// entry in Packages instead.
 	Parameters map[string]string `yaml:"parameters"`
 
 	// ConfigGenerators is a list of shell scripts that run before any
@@ -73,11 +124,9 @@ type Manifest struct {
 	RequiresEnv []string
 	// ExportsEnv lists the env var names this installer exports for downstream installers.
 	ExportsEnv []string
-	// SourceDir is the raw source root entry from the distro YAML.
-	SourceDir string
-	// PkgRoot is the root of the package that owns this installer. It is the
-	// workspace entry root (if a dis.workspace file is present), otherwise it
-	// equals SourceDir.
+	// PkgRoot is the directory dis treats as the root for this package.
+	// When a dis.ws.yml is present it is the entry's declared root directory;
+	// otherwise it is the source directory itself.
 	PkgRoot string
 	// ConfigsDir is the optional configs folder for this package. Set from the
 	// dis.workspace entry; empty when not declared.

@@ -14,10 +14,18 @@ type InstallContext struct {
 	// DistroDir is the directory that contains the distro YAML file.
 	DistroDir string
 
-	// parameters is a flat map of all configuration values available to installers:
-	// static values from the distro file, values produced by config generators, and
-	// runtime exports from prior installers (stored as qualified "pkg:VAR" keys).
+	// parameters is a flat map of all global configuration values available to
+	// installers: static values from the distro file, values produced by config
+	// generators, and runtime exports from prior installers (stored as qualified
+	// "pkg:VAR" keys).
 	parameters map[string]string
+	// scopedParameters maps each package name to the extra parameters declared
+	// on its packages entry. Scoped values override globals with the same key.
+	scopedParameters map[string]map[string]string
+	// packages is the flat, ordered list of package names derived from
+	// Cfg.Packages. It is pre-computed so callers never need to inspect
+	// PackageEntry directly.
+	packages []string
 	// pkgm is the dependency graph of all installer manifests for this distro.
 	pkgm *packageManager
 }
@@ -101,11 +109,31 @@ func NewInstallContext(distroFile string, commonSources string) (*InstallContext
 		params[k] = expandHome(v)
 	}
 
+	// Flatten packages list and build scoped parameters map.
+	var packages []string
+	scopedParameters := make(map[string]map[string]string)
+	for _, entry := range cfg.Packages {
+		for _, pkgName := range entry.ResolvedNames() {
+			packages = append(packages, pkgName)
+			if len(entry.Parameters) == 0 {
+				continue
+			}
+			if scopedParameters[pkgName] == nil {
+				scopedParameters[pkgName] = make(map[string]string)
+			}
+			for k, v := range entry.Parameters {
+				scopedParameters[pkgName][k] = expandHome(v)
+			}
+		}
+	}
+
 	return &InstallContext{
-		Cfg:        cfg,
-		parameters: params,
-		DistroDir:  distroDir,
-		pkgm:       pkgm,
+		Cfg:              cfg,
+		parameters:       params,
+		scopedParameters: scopedParameters,
+		packages:         packages,
+		DistroDir:        distroDir,
+		pkgm:             pkgm,
 	}, nil
 }
 
@@ -134,16 +162,19 @@ func NewInstallContextWithCache(distroFile string, commonSources string) (*Insta
 // ResolveInstallOrder returns the full ordered list of manifests to install
 // for the packages declared in ic.Cfg, respecting transitive dependencies.
 func (ic *InstallContext) ResolveInstallOrder() ([]Manifest, error) {
-	return ic.pkgm.depsForAll(ic.Cfg.Packages)
+	return ic.pkgm.depsForAll(ic.packages)
 }
 
 // envForInstaller returns the env var map for the given installer, resolved
-// from rc.parameters. RequiresEnv entries come in four forms:
+// from rc.parameters and rc.scopedParameters. RequiresEnv entries come in
+// four forms:
 //
-//  1. Bare name ("FOO"): looked up directly in rc.parameters.
-//  2. Bare glob ("FOO_*"): all rc.parameters keys matching the prefix are injected.
-//  3. Qualified name ("pkg:VAR"): looked up in rc.parameters under the qualified
-//     key and injected under the bare name (VAR).
+//  1. Bare name ("FOO"): looked up first in the package's scoped parameters,
+//     then in rc.parameters (globals).
+//  2. Bare glob ("FOO_*"): all keys matching the prefix are collected from
+//     scoped parameters first, then globals (scoped wins on conflict).
+//  3. Qualified name ("pkg:VAR"): looked up in rc.parameters under the
+//     qualified key and injected under the bare name (VAR).
 //  4. Qualified glob ("pkg:PREFIX*"): all rc.parameters keys matching the
 //     qualified prefix are injected under their bare names.
 func (rc *InstallContext) envForInstaller(manifest Manifest) (map[string]string, error) {
@@ -185,7 +216,14 @@ func (rc *InstallContext) envForInstaller(manifest Manifest) (map[string]string,
 		if strings.HasSuffix(envVar, "*") {
 			prefix := envVar[:len(envVar)-1]
 			matched := 0
+			// Globals first, then scoped overrides.
 			for k, v := range rc.parameters {
+				if strings.HasPrefix(k, prefix) {
+					env[k] = v
+					matched++
+				}
+			}
+			for k, v := range rc.scopedParameters[manifest.Provides] {
 				if strings.HasPrefix(k, prefix) {
 					env[k] = v
 					matched++
@@ -200,7 +238,11 @@ func (rc *InstallContext) envForInstaller(manifest Manifest) (map[string]string,
 			continue
 		}
 
-		val := rc.parameters[envVar]
+		// Bare name: scoped parameters take priority over globals.
+		val := rc.scopedParameters[manifest.Provides][envVar]
+		if val == "" {
+			val = rc.parameters[envVar]
+		}
 		if val == "" {
 			return nil, fmt.Errorf(
 				"installer %q requires env var %q but it is not set in distro parameters",

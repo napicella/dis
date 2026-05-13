@@ -102,13 +102,13 @@ func walkSource(srcDir, targetOS string) ([]Manifest, error) {
 
 	if !hasWS {
 		// Legacy / simple mode: walk entire source dir, PkgRoot = srcDir.
-		return walkDir(srcDir, srcDir, srcDir, "", targetOS)
+		return walkDir(srcDir, srcDir, "", targetOS)
 	}
 
 	// Workspace mode: walk each declared package root.
 	var manifests []Manifest
 	for _, pkg := range ws.Packages {
-		ms, err := walkDir(pkg.Root, srcDir, pkg.Root, pkg.Configs, targetOS)
+		ms, err := walkDir(pkg.Root, pkg.Root, pkg.Configs, targetOS)
 		if err != nil {
 			return nil, err
 		}
@@ -117,9 +117,9 @@ func walkSource(srcDir, targetOS string) ([]Manifest, error) {
 	return manifests, nil
 }
 
-// walkDir recursively walks walkRoot for .sh installer files, using sourceDir
-// as the SourceDir on each manifest and pkgRoot/configsDir as PkgRoot/ConfigsDir.
-func walkDir(walkRoot, sourceDir, pkgRoot, configsDir, targetOS string) ([]Manifest, error) {
+// walkDir recursively walks walkRoot for .sh installer files, using
+// pkgRoot/configsDir as PkgRoot/ConfigsDir on each manifest.
+func walkDir(walkRoot, pkgRoot, configsDir, targetOS string) ([]Manifest, error) {
 	var manifests []Manifest
 	err := filepath.WalkDir(walkRoot, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -128,7 +128,7 @@ func walkDir(walkRoot, sourceDir, pkgRoot, configsDir, targetOS string) ([]Manif
 		if d.IsDir() || !strings.HasSuffix(path, ".sh") {
 			return nil
 		}
-		m, ok, parseErr := parseManifest(path, sourceDir, pkgRoot, configsDir)
+		m, ok, parseErr := parseManifest(path, pkgRoot, configsDir)
 		if parseErr != nil {
 			return fmt.Errorf("parsing manifest in %q: %w", path, parseErr)
 		}

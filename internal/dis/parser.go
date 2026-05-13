@@ -23,7 +23,7 @@ import (
 //
 //	### requires_env: [DOCKER_MOUNT_FOLDER, WIREGUARD_KEY_PATH,
 //	###                GID_RENDER, GID_ADM, UID_CONTAINER]
-func parseManifest(path, sourceDir, pkgRoot, configsDir string) (Manifest, bool, error) {
+func parseManifest(path, pkgRoot, configsDir string) (Manifest, bool, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return Manifest{}, false, err
@@ -122,7 +122,6 @@ func parseManifest(path, sourceDir, pkgRoot, configsDir string) (Manifest, bool,
 		DependsOn:     dependsOn,
 		RequiresEnv:   requiresEnv,
 		ExportsEnv:    exportsEnv,
-		SourceDir:     sourceDir,
 		PkgRoot:       pkgRoot,
 		ConfigsDir:    configsDir,
 	}, true, nil

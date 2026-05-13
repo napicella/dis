@@ -1,0 +1,14 @@
+os: test
+sources:
+  - ./packages
+
+parameters:
+  GLOBAL_PARAM: global-value
+
+packages:
+  - names: [test/pkg-a, test/pkg-b]
+    parameters:
+      SHARED_PARAM: shared-value
+  - name: test/pkg-b
+    parameters:
+      EXCLUSIVE_PARAM: exclusive-value

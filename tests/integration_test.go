@@ -296,6 +296,122 @@ func TestInstallIntegrationWorkspace(t *testing.T) {
 	}
 }
 
+// TestInstallIntegrationScopedParameters verifies that scoped parameters
+// declared on packages entries are injected only into the packages they target.
+//
+// distro layout:
+//   - GLOBAL_PARAM is a top-level global available to every package.
+//   - SHARED_PARAM is scoped to both test/pkg-a and test/pkg-b via names:[...].
+//   - EXCLUSIVE_PARAM is scoped only to test/pkg-b via name: test/pkg-b.
+//
+// Expected outcomes:
+//   - pkg-a receives GLOBAL_PARAM and SHARED_PARAM but NOT EXCLUSIVE_PARAM.
+//   - pkg-b receives all three.
+func TestInstallIntegrationScopedParameters(t *testing.T) {
+	if _, err := exec.LookPath("docker"); err != nil {
+		t.Skip("docker not found in PATH; skipping integration test")
+	}
+
+	binPath := os.Getenv("DISGO_BIN")
+	if binPath == "" {
+		t.Fatal("DISGO_BIN env var not set; run tests via 'make test-integration'")
+	}
+	if _, err := os.Stat(binPath); err != nil {
+		t.Fatalf("DISGO_BIN %q not found: %v", binPath, err)
+	}
+
+	testdataAbs, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatalf("resolving testdata path: %v", err)
+	}
+	dockerfilePath := filepath.Join(testdataAbs, "Dockerfile")
+	mustRun(t, "docker", "build", "-t", testImage, "-f", dockerfilePath, testdataAbs)
+
+	containerID := mustRun(t, "docker", "run", "-d", "--rm", testImage, "sleep", "300")
+	containerID = strings.TrimSpace(containerID)
+	t.Cleanup(func() {
+		exec.Command("docker", "rm", "-f", containerID).Run() //nolint:errcheck
+	})
+
+	mustRun(t, "docker", "cp", binPath, containerID+":/usr/local/bin/disgo")
+	mustDockerExec(t, containerID, "sudo", "chmod", "+x", "/usr/local/bin/disgo")
+
+	testdataScopedAbs, err := filepath.Abs("testdata-scoped")
+	if err != nil {
+		t.Fatalf("resolving testdata-scoped path: %v", err)
+	}
+	mustRun(t, "docker", "cp", testdataScopedAbs, containerID+":/testdata-scoped")
+	mustDockerExec(t, containerID, "sudo", "chown", "-R", "dev:dev", "/testdata-scoped")
+	mustDockerExec(t, containerID, "chmod", "-R", "+x", "/testdata-scoped")
+
+	mustDockerExec(t, containerID,
+		"/usr/local/bin/disgo", "install",
+		"--distro", "/testdata-scoped/distro.yml",
+	)
+
+	checks := []struct {
+		desc        string
+		cmd         []string
+		contains    string
+		notContains string
+	}{
+		{
+			desc: "pkg-a ran",
+			cmd:  []string{"test", "-f", "/tmp/pkg-a-ran"},
+		},
+		{
+			desc: "pkg-b ran",
+			cmd:  []string{"test", "-f", "/tmp/pkg-b-ran"},
+		},
+		{
+			desc:     "pkg-a received global param",
+			cmd:      []string{"cat", "/tmp/pkg-a-env"},
+			contains: "GLOBAL_PARAM=global-value",
+		},
+		{
+			desc:     "pkg-a received shared scoped param",
+			cmd:      []string{"cat", "/tmp/pkg-a-env"},
+			contains: "SHARED_PARAM=shared-value",
+		},
+		{
+			desc:        "pkg-a did NOT receive exclusive param (isolation)",
+			cmd:         []string{"cat", "/tmp/pkg-a-env"},
+			notContains: "EXCLUSIVE_PARAM",
+		},
+		{
+			desc:     "pkg-b received global param",
+			cmd:      []string{"cat", "/tmp/pkg-b-env"},
+			contains: "GLOBAL_PARAM=global-value",
+		},
+		{
+			desc:     "pkg-b received shared scoped param",
+			cmd:      []string{"cat", "/tmp/pkg-b-env"},
+			contains: "SHARED_PARAM=shared-value",
+		},
+		{
+			desc:     "pkg-b received exclusive scoped param",
+			cmd:      []string{"cat", "/tmp/pkg-b-env"},
+			contains: "EXCLUSIVE_PARAM=exclusive-value",
+		},
+	}
+
+	for _, c := range checks {
+		t.Run(c.desc, func(t *testing.T) {
+			args := append([]string{"exec", containerID}, c.cmd...)
+			out, err := exec.Command("docker", args...).CombinedOutput()
+			if err != nil {
+				t.Fatalf("check %q failed: %v\noutput: %s", c.desc, err, out)
+			}
+			if c.contains != "" && !strings.Contains(string(out), c.contains) {
+				t.Fatalf("expected output to contain %q, got: %q", c.contains, string(out))
+			}
+			if c.notContains != "" && strings.Contains(string(out), c.notContains) {
+				t.Fatalf("expected output NOT to contain %q, got: %q", c.notContains, string(out))
+			}
+		})
+	}
+}
+
 // mustRun runs a command and returns its stdout, failing the test on error.
 func mustRun(t *testing.T, name string, args ...string) string {
 	t.Helper()
