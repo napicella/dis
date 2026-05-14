@@ -104,28 +104,26 @@ func NewInstallContext(distroFile string, commonSources string) (*InstallContext
 		}
 	}
 
+	// Split parameters into globals and per-package scoped maps.
 	params := make(map[string]string, len(cfg.Parameters))
-	for k, v := range cfg.Parameters {
-		params[k] = expandHome(v)
-	}
-
-	// Flatten packages list and build scoped parameters map.
-	var packages []string
 	scopedParameters := make(map[string]map[string]string)
-	for _, entry := range cfg.Packages {
-		for _, pkgName := range entry.ResolvedNames() {
-			packages = append(packages, pkgName)
-			if len(entry.Parameters) == 0 {
-				continue
-			}
-			if scopedParameters[pkgName] == nil {
-				scopedParameters[pkgName] = make(map[string]string)
-			}
-			for k, v := range entry.Parameters {
-				scopedParameters[pkgName][k] = expandHome(v)
+	for k, pv := range cfg.Parameters {
+		expanded := expandHome(pv.Value)
+		if len(pv.Packages) == 0 {
+			// Global parameter — available to every package.
+			params[k] = expanded
+		} else {
+			// Scoped parameter — inject only into the listed packages.
+			for _, pkgName := range pv.Packages {
+				if scopedParameters[pkgName] == nil {
+					scopedParameters[pkgName] = make(map[string]string)
+				}
+				scopedParameters[pkgName][k] = expanded
 			}
 		}
 	}
+
+	packages := cfg.Packages
 
 	return &InstallContext{
 		Cfg:              cfg,

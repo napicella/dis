@@ -64,7 +64,7 @@ packages:
 - **`os`** — the target operating system (`ubuntu`, `amazon_linux`, or `all`).
 - **`parameters`** — static key/value pairs injected into installers that declare them in `requires_env`. These are *global* parameters available to every package. Supports `${home}` which expands to the user's home directory.
 - **`sources`** — directories dis walks to discover installer scripts. If a `dis.ws.yml` is present in a source, dis uses it to scope which subdirectories to walk.
-- **`packages`** — the list of package names to install, in the order you declare them. Transitive dependencies are resolved automatically. Each entry can optionally carry scoped `parameters` that are injected only into the listed packages (see [Scoped parameters](#scoped-parameters)).
+- **`packages`** — the list of package names to install, in the order you declare them. Transitive dependencies are resolved automatically.
 
 ### 3. Write an installer
 
@@ -278,56 +278,45 @@ parameters:
 
 ## Scoped parameters
 
-By default every entry in `parameters` is *global* — available to any installer that declares it in `requires_env`. If you want to restrict a parameter to a specific set of packages you can attach a `parameters` block directly to one or more entries in the `packages` list.
-
-### Single package
-
-```yaml
-packages:
-  - name: mydis/package1
-    parameters:
-      MY_PARAM: my-value
-```
-
-`MY_PARAM` is injected only when `mydis/package1` runs.
-
-### Multiple packages sharing the same parameters
-
-List several package names under `names` to avoid repeating the values:
-
-```yaml
-packages:
-  - names: [mydis/package1, mydis/package2]
-    parameters:
-      MY_PARAM: my-value      # injected into both packages, declared once
-```
-
-### Mixing plain entries, grouped entries, and globals
-
-All three forms can coexist freely in the same `packages` list:
+By default every entry in `parameters` is *global* — available to any installer that declares it in `requires_env`. If you want to restrict a parameter to a specific set of packages, add a `packages` list to the parameter definition:
 
 ```yaml
 parameters:
-  GLOBAL_PARAM: global-value   # available to every package
+  MY_PARAM:
+    value: my-value
+    packages: [mydis/package1, mydis/package2]
+```
+
+`MY_PARAM` is injected only when `mydis/package1` or `mydis/package2` runs.
+
+### Mixing globals and scoped parameters
+
+Both forms coexist freely in the same `parameters` block:
+
+```yaml
+parameters:
+  GLOBAL_PARAM: global-value   # plain string — available to every package
+
+  MY_PARAM:
+    value: my-value
+    packages: [mydis/package1, mydis/package2]   # only injected into package1 and package2
+
+  ANOTHER:
+    value: foo
+    packages: [mydis/package2]                   # only injected into package2
 
 packages:
-  - hello/greet                # plain string — no scoped parameters
-
-  - names: [mydis/package1, mydis/package2]
-    parameters:
-      MY_PARAM: my-value       # only injected into package1 and package2
-
-  - name: mydis/package2
-    parameters:
-      ANOTHER: foo             # additionally injected into package2 only
+  - hello/greet
+  - mydis/package1
+  - mydis/package2
 ```
 
 ### Resolution order
 
 When dis builds the environment for a package it applies parameters in this order (later entries win on key conflicts):
 
-1. Global `parameters` from the top-level block.
-2. Scoped `parameters` from every matching `packages` entry, in declaration order.
+1. Global `parameters` (plain string values).
+2. Scoped `parameters` whose `packages` list includes this package.
 
 So a scoped value always overrides a global with the same name.
 

@@ -2,51 +2,47 @@ package dis
 
 import "gopkg.in/yaml.v3"
 
-// PackageEntry is one item in the distro packages list.
-// It can be unmarshalled from a plain string:
+// ParameterValue represents a single entry in the distro parameters map.
+// It can be unmarshalled from a plain string (global parameter):
 //
-//	- mypkg/foo
+//	MY_PARAM: my-value
 //
-// or from a map with an optional scoped parameters block:
+// or from a map with an optional packages scope (scoped parameter):
 //
-//	- name: mypkg/foo
-//	  parameters:
-//	    KEY: value
+//	MY_PARAM:
+//	  value: my-value
+//	  packages: [mypkg/foo, mypkg/bar]
 //
-// or with multiple names sharing the same parameters:
-//
-//	- names: [mypkg/foo, mypkg/bar]
-//	  parameters:
-//	    KEY: value
-type PackageEntry struct {
-	// Name is a single package name (mutually exclusive with Names).
-	Name string `yaml:"name"`
-	// Names is a list of package names that share the same scoped parameters.
-	Names []string `yaml:"names"`
-	// Parameters are injected only into the packages listed in Name/Names.
-	// They override globals with the same key.
-	Parameters map[string]string `yaml:"parameters"`
+// When Packages is empty the parameter is global — available to every package
+// that declares it in requires_env. When Packages is non-empty the parameter
+// is injected only into the listed packages.
+type ParameterValue struct {
+	// Value is the parameter value string.
+	Value string
+	// Packages is the optional list of package names this parameter is scoped to.
+	// Empty means the parameter is global.
+	Packages []string
 }
 
-// ResolvedNames returns the effective list of package names for this entry.
-func (e PackageEntry) ResolvedNames() []string {
-	if e.Name != "" {
-		return []string{e.Name}
-	}
-	return e.Names
-}
-
-// UnmarshalYAML lets a PackageEntry be written as a bare string in YAML,
-// preserving full backward-compatibility with plain list entries.
-func (e *PackageEntry) UnmarshalYAML(value *yaml.Node) error {
+// UnmarshalYAML allows ParameterValue to be written as either a bare string
+// or as a map with value/packages keys.
+func (p *ParameterValue) UnmarshalYAML(value *yaml.Node) error {
 	if value.Kind == yaml.ScalarNode {
-		e.Name = value.Value
+		p.Value = value.Value
 		return nil
 	}
-	// Map form — delegate to the default struct decoder using an alias to
-	// avoid infinite recursion.
-	type plain PackageEntry
-	return value.Decode((*plain)(e))
+	// Map form — decode into a temporary struct to avoid infinite recursion.
+	type plain struct {
+		Value    string   `yaml:"value"`
+		Packages []string `yaml:"packages"`
+	}
+	var tmp plain
+	if err := value.Decode(&tmp); err != nil {
+		return err
+	}
+	p.Value = tmp.Value
+	p.Packages = tmp.Packages
+	return nil
 }
 
 // Precondition is a check script that runs before any installer.
@@ -73,20 +69,18 @@ type ConfigGenerator struct {
 // Sources is a plain list of folder paths; the namespace for each installer
 // comes from its own provides: field.
 type DistroConfig struct {
-	OS       string         `yaml:"os"`
-	Sources  []string       `yaml:"sources"`
-	Packages []PackageEntry `yaml:"packages"`
+	OS       string   `yaml:"os"`
+	Sources  []string `yaml:"sources"`
+	Packages []string `yaml:"packages"`
 
-	// Parameters is the single source of truth for all global config values
-	// in this distro. Each installer declares which parameters it needs via
-	// requires_env in its manifest. Preconditions declare their needs via Uses.
-	// Only declared parameters are injected.
-	// For package-scoped parameters attach a parameters block to the relevant
-	// entry in Packages instead.
-	Parameters map[string]string `yaml:"parameters"`
+	// Parameters is the single source of truth for all config values in this
+	// distro. Each value can be a plain string (global, available to every
+	// package that declares it in requires_env) or an object with a value and
+	// an optional packages list (scoped, injected only into the listed packages).
+	Parameters map[string]ParameterValue `yaml:"parameters"`
 
 	// ConfigGenerators is a list of shell scripts that run before any
-	// installer. Each script prints KEY=VALUE lines to stdout; disgo merges
+	// installer. Each script prints KEY=VALUE lines to stdout; dis merges
 	// the output into Parameters.
 	ConfigGenerators []ConfigGenerator `yaml:"config_generators"`
 

@@ -5,10 +5,14 @@ sources:
 parameters:
   GLOBAL_PARAM: global-value
 
+  SHARED_PARAM:
+    value: shared-value
+    packages: [test/pkg-a, test/pkg-b]
+
+  EXCLUSIVE_PARAM:
+    value: exclusive-value
+    packages: [test/pkg-b]
+
 packages:
-  - names: [test/pkg-a, test/pkg-b]
-    parameters:
-      SHARED_PARAM: shared-value
-  - name: test/pkg-b
-    parameters:
-      EXCLUSIVE_PARAM: exclusive-value
+  - test/pkg-a
+  - test/pkg-b
