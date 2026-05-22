@@ -46,7 +46,12 @@ export PATH=$HOME/.local/bin:$PATH
 # Gnome extensions and does not always work. So for this works only if:
 # - this is running from a gnome session
 # - you are ready to ack the prompt that the Gnome shows when installing extensions.
-gum confirm "To install Gnome extensions, you need to accept some confirmations. Are you ready?"
+read -p "To install Gnome extensions, you need to accept some confirmations. Are you ready? " -n 1 -r
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    # handle exits from shell or function but don't exit interactive shell
+    [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 
+fi
 
 gext install switcher@landau.fi                                      # Switch windows or launch applications quickly by typing, similar to Alfred/Albert.
 gext install tactile@lundal.io                                       # Tile windows on a custom grid using your keyboard.
