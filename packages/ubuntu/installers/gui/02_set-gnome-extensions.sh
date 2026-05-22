@@ -53,6 +53,7 @@ gext install tactile@lundal.io                                       # Tile wind
 gext install clipboard-indicator@tudmotu.com                         # Clipboard manager.
 gext install ddterm@amezin.github.com                                # Drop down terminal extension for GNOME Shell. With tabs. Works on Wayland natively.
 gext install Current_screen_only_for_Alternate_Tab@bourcereau.fr     # Limits the windows shown on the switcher to those of the current monitor (https://extensions.gnome.org/extension/1437/current-screen-only-for-alternate-tab/)
+gext install tilingshell@ferrarodomenico.com                         # Extend Gnome Shell with advanced tiling window management (https://extensions.gnome.org/extension/7065/tiling-shell/). 
 
 # for some reason, I need to make the extension binary executable, at least for ddterm.
 chmod +x $HOME/.local/share/gnome-shell/extensions/ddterm@amezin.github.com/bin/com.github.amezin.ddterm
