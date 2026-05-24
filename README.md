@@ -4,28 +4,14 @@
 
 ## Install
 
-Set your GitHub personal access token first:
-
 ```bash
-export GITHUB_TOKEN=ghp_...
-```
-
-Then install:
-
-```bash
-curl -fsSL \
-  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-  https://raw.githubusercontent.com/napicella/dis/main/install.sh \
-  | GITHUB_TOKEN="${GITHUB_TOKEN}" bash
+curl -fsSL https://raw.githubusercontent.com/napicella/dis/main/install.sh | bash
 ```
 
 To install to a custom location:
 
 ```bash
-INSTALL_DIR=/usr/local/bin bash <(
-  curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-    https://raw.githubusercontent.com/napicella/dis/main/install.sh
-)
+INSTALL_DIR=/usr/local/bin bash <(curl -fsSL https://raw.githubusercontent.com/napicella/dis/main/install.sh)
 ```
 
 ## Usage

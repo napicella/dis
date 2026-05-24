@@ -3,20 +3,11 @@ set -euo pipefail
 
 # dis installer
 # Usage:
-#   export GITHUB_TOKEN=ghp_...
-#   curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-#     https://raw.githubusercontent.com/napicella/dis/main/install.sh \
-#     | GITHUB_TOKEN="${GITHUB_TOKEN}" bash
+#   curl -fsSL https://raw.githubusercontent.com/napicella/dis/main/install.sh | bash
 
 REPO="napicella/dis"
 INSTALL_DIR="${INSTALL_DIR:-${HOME}/.local/bin}"
 BINARY_NAME="dis"
-
-# --- Require token ---
-if [[ -z "${GITHUB_TOKEN:-}" ]]; then
-  echo "Error: GITHUB_TOKEN is required."
-  exit 1
-fi
 
 # --- Detect OS and arch ---
 OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
@@ -32,7 +23,6 @@ esac
 
 # --- Fetch latest release tag ---
 TAG="$(curl -fsSL \
-  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
   -H "Accept: application/vnd.github+json" \
   "https://api.github.com/repos/${REPO}/releases/latest" \
   | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/')"
@@ -47,7 +37,6 @@ echo "==> Installing dis ${TAG} (${OS}/${ARCH})"
 # --- Download binary via asset ID ---
 BINARY_TARBALL="${BINARY_NAME}_${OS}_${ARCH}.tar.gz"
 RELEASE_JSON="$(curl -fsSL \
-  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
   -H "Accept: application/vnd.github+json" \
   "https://api.github.com/repos/${REPO}/releases/tags/${TAG}")"
 
@@ -63,7 +52,6 @@ TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "${TMP_DIR}"' EXIT
 
 curl -fsSL \
-  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
   -H "Accept: application/octet-stream" \
   "https://api.github.com/repos/${REPO}/releases/assets/${ASSET_ID}" \
   -o "${TMP_DIR}/${BINARY_TARBALL}"
@@ -93,6 +81,6 @@ fi
 
 # --- Sync common packages using the binary ---
 echo "==> Syncing common packages..."
-"${INSTALL_DIR}/${BINARY_NAME}" sync --token "${GITHUB_TOKEN}"
+"${INSTALL_DIR}/${BINARY_NAME}" sync
 
 echo "==> Done. Run 'dis --help' to get started."
