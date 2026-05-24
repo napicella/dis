@@ -26,37 +26,24 @@ var syncCmd = &cobra.Command{
 and extracts it to ~/.local/share/dis/packages.
 
 Run this after installing dis or when a new release is available to keep
-your common package library up to date.
-
-The token can also be provided via the GITHUB_TOKEN environment variable.`,
+your common package library up to date.`,
 	RunE: runSync,
 }
 
-var syncToken string
-
 func init() {
-	syncCmd.Flags().StringVar(&syncToken, "token", "", "GitHub personal access token (or set GITHUB_TOKEN env var)")
 	rootCmd.AddCommand(syncCmd)
 }
 
 func runSync(_ *cobra.Command, _ []string) error {
-	token := syncToken
-	if token == "" {
-		token = os.Getenv("GITHUB_TOKEN")
-	}
-	if token == "" {
-		return fmt.Errorf("a GitHub token is required: use --token or set GITHUB_TOKEN")
-	}
-
 	// Resolve latest release tag.
-	tag, err := latestReleaseTag(token)
+	tag, err := latestReleaseTag()
 	if err != nil {
 		return fmt.Errorf("fetching latest release: %w", err)
 	}
 	fmt.Printf("==> Syncing packages from %s\n", tag)
 
 	// Resolve asset ID.
-	assetID, err := releaseAssetID(token, tag, packagesAsset)
+	assetID, err := releaseAssetID(tag, packagesAsset)
 	if err != nil {
 		return fmt.Errorf("finding asset %q in release %s: %w", packagesAsset, tag, err)
 	}
@@ -74,7 +61,7 @@ func runSync(_ *cobra.Command, _ []string) error {
 	if err := os.MkdirAll(destDir, 0o755); err != nil {
 		return fmt.Errorf("recreating packages dir: %w", err)
 	}
-	if err := downloadAndExtract(token, assetID, destDir); err != nil {
+	if err := downloadAndExtract(assetID, destDir); err != nil {
 		return fmt.Errorf("extracting packages: %w", err)
 	}
 
@@ -95,19 +82,18 @@ func packagesDir() (string, error) {
 	return dir, nil
 }
 
-func ghGet(token, url string, accept string) (*http.Response, error) {
+func ghGet(url string, accept string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Accept", accept)
 	return http.DefaultClient.Do(req)
 }
 
-func latestReleaseTag(token string) (string, error) {
+func latestReleaseTag() (string, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", githubRepo)
-	resp, err := ghGet(token, url, "application/vnd.github+json")
+	resp, err := ghGet(url, "application/vnd.github+json")
 	if err != nil {
 		return "", err
 	}
@@ -127,9 +113,9 @@ func latestReleaseTag(token string) (string, error) {
 	return release.TagName, nil
 }
 
-func releaseAssetID(token, tag, assetName string) (int64, error) {
+func releaseAssetID(tag, assetName string) (int64, error) {
 	url := fmt.Sprintf("https://api.github.com/repos/%s/releases/tags/%s", githubRepo, tag)
-	resp, err := ghGet(token, url, "application/vnd.github+json")
+	resp, err := ghGet(url, "application/vnd.github+json")
 	if err != nil {
 		return 0, err
 	}
@@ -154,9 +140,9 @@ func releaseAssetID(token, tag, assetName string) (int64, error) {
 	return 0, fmt.Errorf("asset %q not found in release %s", assetName, tag)
 }
 
-func downloadAndExtract(token string, assetID int64, destDir string) error {
+func downloadAndExtract(assetID int64, destDir string) error {
 	url := fmt.Sprintf("https://api.github.com/repos/%s/releases/assets/%d", githubRepo, assetID)
-	resp, err := ghGet(token, url, "application/octet-stream")
+	resp, err := ghGet(url, "application/octet-stream")
 	if err != nil {
 		return err
 	}
