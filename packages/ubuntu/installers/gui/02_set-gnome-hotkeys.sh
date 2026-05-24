@@ -3,6 +3,9 @@
 ### depends_on: [gui/gnome-extensions]
 ### distro: [ubuntu]
 ### -- End
+
+source $DIS_BINDING
+
 # Alt+F4 is very cumbersome
 gsettings set org.gnome.desktop.wm.keybindings close "['<Super>w']"
 

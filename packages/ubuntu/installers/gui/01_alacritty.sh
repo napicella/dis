@@ -3,6 +3,8 @@
 ### depends_on: []
 ### distro: [ubuntu]
 ### -- End
+source $DIS_BINDING
+
 # Alacritty is a GPU-powered and highly extensible terminal. See https://alacritty.org/
 sudo snap install alacritty --classic
 mkdir -p ~/.config/alacritty

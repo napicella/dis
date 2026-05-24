@@ -18,6 +18,8 @@
 # or
 # gsettings list-recursively org.gnome.shell.extensions.switcher
 
+source $DIS_BINDING
+
 if [[ "$XDG_SESSION_TYPE" == "tty" ]]; then
     echo "GUI install not available on tty session type"
     exit 0

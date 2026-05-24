@@ -8,6 +8,8 @@
 # Just need to set the shortcut to open the window from the ubuntu keyboard shortcut instead of the ulancher preferences.
 # What did not work: dmenu_run, bemnu_run, rofi.
 
+source $DIS_BINDING
+
 if [[ "$XDG_SESSION_TYPE" == "tty" ]]; then
     echo "GUI install not available on tty session type"
     exit 0
