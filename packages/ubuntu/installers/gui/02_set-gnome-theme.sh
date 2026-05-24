@@ -1,6 +1,6 @@
 ### -- Manifest
 ### provides: gui/gnome-theme
-### depends_on: []
+### depends_on: [gui/gnome-extensions]
 ### distro: [ubuntu]
 ### -- End
 OMAKUB_THEME_COLOR="purple"

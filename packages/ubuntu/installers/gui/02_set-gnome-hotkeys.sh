@@ -1,6 +1,6 @@
 ### -- Manifest
 ### provides: gui/gnome-hotkeys
-### depends_on: []
+### depends_on: [gui/gnome-extensions]
 ### distro: [ubuntu]
 ### -- End
 # Alt+F4 is very cumbersome

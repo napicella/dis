@@ -1,6 +1,6 @@
 ### -- Manifest
 ### provides: gui/gnome-extensions
-### depends_on: []
+### depends_on: [gui/gnome-tweak-tool]
 ### distro: [ubuntu]
 ### -- End
 # Quick guide on gnome extensions
