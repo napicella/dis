@@ -43,13 +43,13 @@ cheatpaths:
   # Community cheatsheets (https://github.com/cheat/cheatsheets):
   # To install: git clone https://github.com/cheat/cheatsheets /home/napicell/.config/cheat/cheatsheets/community
   - name: community
-    path: /home/napicell/.config/cheat/cheatsheets/community
+    path: ${HOME}/.config/cheat/cheatsheets/community
     tags: [ community ]
     readonly: true
 
   # Cheatsheets that are tagged "work" are stored here by default:
   - name: work
-    path: /home/napicell/.config/cheat/cheatsheets/work
+    path: ${HOME}/.config/cheat/cheatsheets/work
     tags: [ work ]
     readonly: false
 
