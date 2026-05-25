@@ -22,10 +22,8 @@ type InstallContext struct {
 	// scopedParameters maps each package name to the extra parameters declared
 	// on its packages entry. Scoped values override globals with the same key.
 	scopedParameters map[string]map[string]string
-	// packages is the flat, ordered list of package names derived from
-	// Cfg.Packages. It is pre-computed so callers never need to inspect
-	// PackageEntry directly.
-	packages []string
+	// manifests is the list of all manifests loaded from the sources defined in the distro.
+	manifests []Manifest
 	// pkgm is the dependency graph of all installer manifests for this distro.
 	pkgm *packageManager
 }
@@ -90,7 +88,6 @@ func NewInstallContext(distroFile string, commonSources string) (*InstallContext
 		return nil, fmt.Errorf("building package graph: %w", err)
 	}
 
-
 	// Resolve all script paths in preconditions and config generators to
 	// absolute paths so callers never need to handle relative paths.
 	for i, pc := range cfg.Preconditions {
@@ -123,15 +120,13 @@ func NewInstallContext(distroFile string, commonSources string) (*InstallContext
 		}
 	}
 
-	packages := cfg.Packages
-
 	return &InstallContext{
 		Cfg:              cfg,
+		DistroDir:        distroDir,
+		manifests:        manifests,
+		pkgm:             pkgm,
 		parameters:       params,
 		scopedParameters: scopedParameters,
-		packages:         packages,
-		DistroDir:        distroDir,
-		pkgm:             pkgm,
 	}, nil
 }
 
@@ -160,7 +155,16 @@ func NewInstallContextWithCache(distroFile string, commonSources string) (*Insta
 // ResolveInstallOrder returns the full ordered list of manifests to install
 // for the packages declared in ic.Cfg, respecting transitive dependencies.
 func (ic *InstallContext) ResolveInstallOrder() ([]Manifest, error) {
-	return ic.pkgm.depsForAll(ic.packages)
+	return ic.pkgm.depsForAll(ic.Cfg.Packages)
+}
+
+// ListAvailablePackages returns the list of all the packages that have been loaded from the provided sources.
+func (ic *InstallContext) ListAvailablePackages() []PackageInfo {
+	var pkgInfos []PackageInfo
+	for _, v := range ic.manifests {
+		pkgInfos = append(pkgInfos, PackageInfo{v.Provides, v.InstallerPath})
+	}
+	return pkgInfos
 }
 
 // envForInstaller returns the env var map for the given installer, resolved

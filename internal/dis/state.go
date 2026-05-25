@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -183,6 +184,7 @@ func ListInstalled() ([]string, error) {
 	}
 
 	lines, err := readStateLines(path)
+	sort.Strings(lines)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil

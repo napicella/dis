@@ -126,3 +126,12 @@ type Manifest struct {
 	// dis.workspace entry; empty when not declared.
 	ConfigsDir string
 }
+
+// PackageInfo contains read only info about a package.
+// It's a subset of a manifest.
+type PackageInfo struct {
+	// Provides is the fully-qualified name of this installer, e.g. "common/tools".
+	Provides string
+	// InstallerPath is the absolute path to the installer .sh file.
+	InstallerPath string
+}
