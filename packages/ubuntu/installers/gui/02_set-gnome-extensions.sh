@@ -59,7 +59,6 @@ gext install switcher@landau.fi                                      # Switch wi
 gext install tactile@lundal.io                                       # Tile windows on a custom grid using your keyboard.
 gext install clipboard-indicator@tudmotu.com                         # Clipboard manager.
 gext install ddterm@amezin.github.com                                # Drop down terminal extension for GNOME Shell. With tabs. Works on Wayland natively.
-gext install Current_screen_only_for_Alternate_Tab@bourcereau.fr     # Limits the windows shown on the switcher to those of the current monitor (https://extensions.gnome.org/extension/1437/current-screen-only-for-alternate-tab/)
 gext install tilingshell@ferrarodomenico.com                         # Extend Gnome Shell with advanced tiling window management (https://extensions.gnome.org/extension/7065/tiling-shell/). 
 
 # for some reason, I need to make the extension binary executable, at least for ddterm.
@@ -81,7 +80,7 @@ gsettings set org.gnome.shell.extensions.tactile row-1 1
 gsettings set org.gnome.shell.extensions.tactile gap-size 32
 
 # Configure Switcher
-gsettings set org.gnome.shell.extensions.switcher show-switcher "['<Super>q']"
+gsettings set org.gnome.shell.extensions.switcher show-switcher "['<Super>home']"
 gsettings set org.gnome.shell.extensions.switcher max-width-percentage 60
 gsettings set org.gnome.shell.extensions.switcher font-size 20
 gsettings set org.gnome.shell.extensions.switcher icon-size 32

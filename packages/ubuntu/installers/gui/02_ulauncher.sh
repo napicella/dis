@@ -3,10 +3,15 @@
 ### depends_on: []
 ### distro: [ubuntu]
 ### -- End
+
 # https://github.com/Ulauncher/Ulauncher
 # It's the only launcher that seems to work with Wayland and Gnome. 
 # Just need to set the shortcut to open the window from the ubuntu keyboard shortcut instead of the ulancher preferences.
 # What did not work: dmenu_run, bemnu_run, rofi.
+#
+# Recommended ulauncher extensions to install: 
+# - https://ext.ulauncher.io/-/github-claudiosanches-ulauncher-window-switcher
+# - https://ext.ulauncher.io/-/github-rlvendramini-ulauncher-gitmoji-ext
 
 source $DIS_BINDING
 
