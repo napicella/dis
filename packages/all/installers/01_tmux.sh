@@ -4,8 +4,6 @@
 ### distro: [ubuntu]
 ### -- End
 
-source $DIS_BINDING
-
 sudo apt install -y tmux
 
 # copy tmux config in the HOME dir

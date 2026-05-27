@@ -17,7 +17,7 @@
 #      See "Why bashrc?" below.
 #   3. Enables and starts the ssh-agent systemd user service.
 #   4. Adds SSH_AUTH_SOCK export to ~/rc/configs-generated/bash_init via
-#      bashrc_init_add, so every shell (SSH or local) sees the agent.
+#      dis tools add-rc-init, so every shell (SSH or local) sees the agent.
 #
 # --------------------------------------------------------------------
 # Why bashrc and not just environment.d?
@@ -68,7 +68,6 @@
 #   - Add your key once: ssh-add ~/.ssh/<your_key>
 #   - From then on, the agent persists across logins and shells.
 # --------------------------------------------------------------------
-source $DIS_BINDING
 set -euo pipefail
 
 SERVICE_DIR="$HOME/.config/systemd/user"
@@ -115,8 +114,9 @@ EOF
 
 echo "🔄 Reloading systemd user environment..."
 systemctl --user import-environment SSH_AUTH_SOCK || true
-bashrc_init_add "SSH agent socket" \
-  'export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket"'
+dis tools add-rc-init \
+  --name 'SSH agent socket' \
+  --content 'export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket"'
 
 echo "🎉 Done!"
 echo "➡️  Log out and back in, or run:"

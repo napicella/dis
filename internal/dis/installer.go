@@ -4,36 +4,60 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"lesiw.io/command"
 )
 
 // Installer executes installers, config generators, and precondition scripts
-// against a specific machine. It owns the binding.sh helper file for the
+// against a specific machine. It owns the wrapper.sh helper file for the
 // lifetime of the session; call Close when done.
 type Installer struct {
 	// machine is the target on which scripts are executed.
 	machine     command.Machine
-	bindingPath string
+	wrapperPath string
+	// disBinDir is the directory containing the dis binary, added to PATH so
+	// that installer scripts can call `dis tools ...` directly.
+	disBinDir string
 	// Reinstall skips the already-installed check so every package is
 	// re-executed regardless of its recorded state.
 	Reinstall bool
 }
 
-// NewInstaller writes the binding.sh helper to a temp file and returns an
+// NewInstaller writes the wrapper.sh helper to a temp file and returns an
 // Installer that runs scripts on m. Call Close to remove the temp file.
 func NewInstaller(m command.Machine) (*Installer, error) {
-	bindingPath, err := writeBinding()
+	wrapperPath, err := writeWrapper()
 	if err != nil {
-		return nil, fmt.Errorf("could not write binding.sh: %w", err)
+		return nil, fmt.Errorf("could not write wrapper.sh: %w", err)
 	}
-	return &Installer{machine: m, bindingPath: bindingPath}, nil
+
+	disBinDir := ""
+	exe, err := os.Executable()
+	if err == nil {
+		disBinDir = filepath.Dir(exe)
+	}
+
+	return &Installer{machine: m, wrapperPath: wrapperPath, disBinDir: disBinDir}, nil
 }
 
-// Close removes the binding.sh temp file written at construction time.
+// Close removes the wrapper.sh temp file written at construction time.
 func (r *Installer) Close() error {
-	return os.Remove(r.bindingPath)
+	return os.Remove(r.wrapperPath)
+}
+
+// pathEnv returns a PATH value that prepends disBinDir to the current PATH so
+// that installer scripts can call `dis tools ...` directly.
+func (r *Installer) pathEnv() string {
+	current := os.Getenv("PATH")
+	if r.disBinDir == "" {
+		return current
+	}
+	if current == "" {
+		return r.disBinDir
+	}
+	return r.disBinDir + ":" + current
 }
 
 // RunGenerators executes all config_generator scripts declared in ic.Cfg,
@@ -72,12 +96,12 @@ func (r *Installer) RunPreconditions(ctx context.Context, ic *InstallContext) er
 			return err
 		}
 		pcEnvVars["DIS_DISTRO"] = ic.Cfg.OS
-		pcEnvVars["DIS_BINDING"] = r.bindingPath
+		pcEnvVars["PATH"] = r.pathEnv()
 
 		fmt.Printf("==> Checking precondition: %s\n", pc.Script)
 		pcCtx := command.WithEnv(ctx, pcEnvVars)
 
-		if err := command.Exec(pcCtx, r.machine, "/bin/bash", pc.Script); err != nil {
+		if err := command.Exec(pcCtx, r.machine, r.wrapperPath, pc.Script); err != nil {
 			return fmt.Errorf("precondition %q failed: %w", pc.Script, err)
 		}
 	}
@@ -85,7 +109,8 @@ func (r *Installer) RunPreconditions(ctx context.Context, ic *InstallContext) er
 }
 
 // RunInstaller looks up pkgName in ic.packages, then executes its installer
-// script. It is a no-op if the package is already recorded in the state file.
+// script via the wrapper so that previously-written RC paths are available.
+// It is a no-op if the package is already recorded in the state file.
 // After the installer finishes, any values it exported via DIS_EXPORTS_FILE are
 // merged into ic.parameters under qualified keys ("pkg:VAR") for downstream
 // installers. On success the package is recorded in the state file.
@@ -124,8 +149,8 @@ func (r *Installer) RunInstaller(ctx context.Context, ic *InstallContext, pkgNam
 		"DIS_PKG_ROOT":     manifest.PkgRoot,
 		"DIS_INSTALLER":    installerPath,
 		"DIS_DISTRO":       ic.Cfg.OS,
-		"DIS_BINDING":      r.bindingPath,
 		"DIS_EXPORTS_FILE": exportsFile.Name(),
+		"PATH":             r.pathEnv(),
 	}
 	if manifest.ConfigsDir != "" {
 		envVars["DIS_CONFIG_FOLDER"] = manifest.ConfigsDir
@@ -139,7 +164,7 @@ func (r *Installer) RunInstaller(ctx context.Context, ic *InstallContext, pkgNam
 	}
 
 	installerCtx := command.WithEnv(ctx, envVars)
-	if err := command.Exec(installerCtx, r.machine, "/bin/bash", installerPath); err != nil {
+	if err := command.Exec(installerCtx, r.machine, r.wrapperPath, installerPath); err != nil {
 		return err
 	}
 

@@ -3,7 +3,6 @@
 ### depends_on: [common/os-libs]
 ### distro: [ubuntu]
 ### -- End
-source $DIS_BINDING
 
 if command -v gum &> /dev/null
 then

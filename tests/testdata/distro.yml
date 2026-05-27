@@ -5,6 +5,7 @@ sources:
 packages:
   - test/consumer
   - test/jq
+  - test/rc-tools
 
 config_generators:
   - script: ./generators/gen_greeting.sh

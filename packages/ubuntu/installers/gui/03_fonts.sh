@@ -3,7 +3,6 @@
 ### depends_on: [common/gum]
 ### distro: [ubuntu]
 ### -- End
-source $DIS_BINDING
 
 # Make fonts.sh available as a standalone tool in the user's shell.
 # DIS_PKG_ROOT is expanded now (at install time) so the absolute path is baked

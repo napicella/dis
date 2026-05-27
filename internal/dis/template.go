@@ -12,8 +12,6 @@ func InstallerTemplate() string {
 ### exports_env: []
 ### -- End
 
-source $DIS_BINDING
-
 # TODO: add installer logic here
 `
 }

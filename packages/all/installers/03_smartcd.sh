@@ -26,8 +26,6 @@
 # To remove smartcd from your system run the following command:
 # rm -rf $HOME/.smartcd $HOME/.smartcd_config && source $HOME/.bashrc
 
-source $DIS_BINDING
-
 if command -v smartcd &> /dev/null
 then
     echo "smartcd is installed"
@@ -45,4 +43,6 @@ cd "$tmp_dir" && make install && cd -
 cp $DIS_CONFIG_FOLDER/.smartcd_config $HOME/
 # Manual activation is required. 
 # The following adds the activation in the bash init which is included in bashrc
-bashrc_init_add "smartcd (https://github.com/cxreg/smartcd)" '[ -r "$HOME/.smartcd_config" ] && ( [ -n $BASH_VERSION ] || [ -n $ZSH_VERSION ] ) && source ~/.smartcd_config'
+dis tools add-rc-init \
+  --name 'smartcd (https://github.com/cxreg/smartcd)' \
+  --content '[ -r "$HOME/.smartcd_config" ] && ( [ -n $BASH_VERSION ] || [ -n $ZSH_VERSION ] ) && source ~/.smartcd_config'

@@ -1,0 +1,9 @@
+os: ubuntu
+sources:
+  - /sandbox/packages   # scratch/packages/ — sample installers
+  - /dis/packages       # dis built-in packages
+
+packages:
+  - common/os-libs
+  - common/bash-config
+  - sample/hello

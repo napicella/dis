@@ -6,7 +6,6 @@
 ### distro: [all]
 ### -- End
 
-source $DIS_BINDING
 
 # Install bash tests: https://github.com/bats-core/bats-core
 # The executable is named bats, so we rename it to bash-test to avoid conflicts and for clarity

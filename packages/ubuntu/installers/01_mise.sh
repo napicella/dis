@@ -4,8 +4,6 @@
 ### distro: [ubuntu]
 ### -- End
 
-source $DIS_BINDING
-
 if command -v mise &> /dev/null
 then
     echo "mise is installed"
@@ -21,7 +19,7 @@ sudo apt update -y
 sudo apt install -y mise
 
 # apt installs the mise cli under /usr/bin, so no need to add that to the path.
-bashrc_path_add "Mise path" 'export PATH="$HOME/.local/share/mise/shims:$PATH"'
+dis tools add-rc-path --name 'Mise path' --content 'export PATH="$HOME/.local/share/mise/shims:$PATH"'
 
 # Adding shims to path so other installers can rely on the languages we are going to install without
 # sourcing  bashrc.

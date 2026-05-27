@@ -47,18 +47,18 @@ func TestInstallIntegration(t *testing.T) {
 		exec.Command("docker", "rm", "-f", containerID).Run() //nolint:errcheck
 	})
 
-	// --- Copy binary into container (accessible to dev user) ---
-	mustRun(t, "docker", "cp", binPath, containerID+":/usr/local/bin/disgo")
-	mustDockerExec(t, containerID, "sudo", "chmod", "+x", "/usr/local/bin/disgo")
+	// --- Copy binary into container as "dis" ---
+	mustRun(t, "docker", "cp", binPath, containerID+":/usr/local/bin/dis")
+	mustDockerExec(t, containerID, "sudo", "chmod", "+x", "/usr/local/bin/dis")
 
 	// --- Copy testdata into container ---
 	mustRun(t, "docker", "cp", testdataAbs, containerID+":/testdata")
 	mustDockerExec(t, containerID, "sudo", "chown", "-R", "dev:dev", "/testdata")
 	mustDockerExec(t, containerID, "chmod", "-R", "+x", "/testdata")
 
-	// --- Run disgo install ---
+	// --- Run dis install ---
 	mustDockerExec(t, containerID,
-		"/usr/local/bin/disgo", "install",
+		"/usr/local/bin/dis", "install",
 		"--distro", "/testdata/distro.yml",
 	)
 
@@ -93,17 +93,17 @@ func TestInstallIntegration(t *testing.T) {
 		},
 		{
 			desc:     "test/producer recorded in state",
-			cmd:      []string{"/usr/local/bin/disgo", "list"},
+			cmd:      []string{"/usr/local/bin/dis", "list"},
 			contains: "test/producer",
 		},
 		{
 			desc:     "test/consumer recorded in state",
-			cmd:      []string{"/usr/local/bin/disgo", "list"},
+			cmd:      []string{"/usr/local/bin/dis", "list"},
 			contains: "test/consumer",
 		},
 		{
 			desc:     "test/jq recorded in state",
-			cmd:      []string{"/usr/local/bin/disgo", "list"},
+			cmd:      []string{"/usr/local/bin/dis", "list"},
 			contains: "test/jq",
 		},
 	}
@@ -156,15 +156,15 @@ func TestInstallIntegrationExportsCache(t *testing.T) {
 		exec.Command("docker", "rm", "-f", containerID).Run() //nolint:errcheck
 	})
 
-	mustRun(t, "docker", "cp", binPath, containerID+":/usr/local/bin/disgo")
-	mustDockerExec(t, containerID, "sudo", "chmod", "+x", "/usr/local/bin/disgo")
+	mustRun(t, "docker", "cp", binPath, containerID+":/usr/local/bin/dis")
+	mustDockerExec(t, containerID, "sudo", "chmod", "+x", "/usr/local/bin/dis")
 	mustRun(t, "docker", "cp", testdataAbs, containerID+":/testdata")
 	mustDockerExec(t, containerID, "sudo", "chown", "-R", "dev:dev", "/testdata")
 	mustDockerExec(t, containerID, "chmod", "-R", "+x", "/testdata")
 
 	// Step 1: full install — producer runs and exports TOKEN to the cache.
 	mustDockerExec(t, containerID,
-		"/usr/local/bin/disgo", "install",
+		"/usr/local/bin/dis", "install",
 		"--distro", "/testdata/distro.yml",
 	)
 
@@ -174,7 +174,7 @@ func TestInstallIntegrationExportsCache(t *testing.T) {
 	// Step 2: re-run consumer only; producer is already installed (skipped)
 	// but TOKEN must come from the exports cache.
 	mustDockerExec(t, containerID,
-		"/usr/local/bin/disgo", "run",
+		"/usr/local/bin/dis", "run",
 		"--distro", "/testdata/distro.yml",
 		"--reinstall",
 		"test/consumer",
@@ -240,8 +240,8 @@ func TestInstallIntegrationWorkspace(t *testing.T) {
 		exec.Command("docker", "rm", "-f", containerID).Run() //nolint:errcheck
 	})
 
-	mustRun(t, "docker", "cp", binPath, containerID+":/usr/local/bin/disgo")
-	mustDockerExec(t, containerID, "sudo", "chmod", "+x", "/usr/local/bin/disgo")
+	mustRun(t, "docker", "cp", binPath, containerID+":/usr/local/bin/dis")
+	mustDockerExec(t, containerID, "sudo", "chmod", "+x", "/usr/local/bin/dis")
 
 	testdataWsAbs, err := filepath.Abs("testdata-workspace")
 	if err != nil {
@@ -252,7 +252,7 @@ func TestInstallIntegrationWorkspace(t *testing.T) {
 	mustDockerExec(t, containerID, "chmod", "-R", "+x", "/testdata-workspace")
 
 	mustDockerExec(t, containerID,
-		"/usr/local/bin/disgo", "install",
+		"/usr/local/bin/dis", "install",
 		"--distro", "/testdata-workspace/distro.yml",
 	)
 
@@ -277,7 +277,7 @@ func TestInstallIntegrationWorkspace(t *testing.T) {
 		},
 		{
 			desc:     "ws/hello recorded in state",
-			cmd:      []string{"/usr/local/bin/disgo", "list"},
+			cmd:      []string{"/usr/local/bin/dis", "list"},
 			contains: "ws/hello",
 		},
 	}
@@ -333,8 +333,8 @@ func TestInstallIntegrationScopedParameters(t *testing.T) {
 		exec.Command("docker", "rm", "-f", containerID).Run() //nolint:errcheck
 	})
 
-	mustRun(t, "docker", "cp", binPath, containerID+":/usr/local/bin/disgo")
-	mustDockerExec(t, containerID, "sudo", "chmod", "+x", "/usr/local/bin/disgo")
+	mustRun(t, "docker", "cp", binPath, containerID+":/usr/local/bin/dis")
+	mustDockerExec(t, containerID, "sudo", "chmod", "+x", "/usr/local/bin/dis")
 
 	testdataScopedAbs, err := filepath.Abs("testdata-scoped")
 	if err != nil {
@@ -345,7 +345,7 @@ func TestInstallIntegrationScopedParameters(t *testing.T) {
 	mustDockerExec(t, containerID, "chmod", "-R", "+x", "/testdata-scoped")
 
 	mustDockerExec(t, containerID,
-		"/usr/local/bin/disgo", "install",
+		"/usr/local/bin/dis", "install",
 		"--distro", "/testdata-scoped/distro.yml",
 	)
 
@@ -410,6 +410,181 @@ func TestInstallIntegrationScopedParameters(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestInstallIntegrationRCTools verifies that the `dis tools add-rc-*` commands
+// correctly upsert named sections in the generated RC files.
+//
+// The test installer (testdata/packages/rc_tools.sh) calls:
+//   - dis tools add-rc-init    --name test-init    --content 'export TEST_INIT=1'
+//   - dis tools add-rc-path    --name test-path    --content 'export PATH="/test/bin:$PATH"'
+//   - dis tools add-rc-aliases --name test-aliases --content 'alias ll="ls -la"'
+//
+// Verifications:
+//  1. Each RC file contains the expected BEGIN/END section with the correct content.
+//  2. Running the installer a second time (idempotency) does NOT duplicate the section.
+func TestInstallIntegrationRCTools(t *testing.T) {
+	if _, err := exec.LookPath("docker"); err != nil {
+		t.Skip("docker not found in PATH; skipping integration test")
+	}
+
+	binPath := os.Getenv("DISGO_BIN")
+	if binPath == "" {
+		t.Fatal("DISGO_BIN env var not set; run tests via 'make test-integration'")
+	}
+	if _, err := os.Stat(binPath); err != nil {
+		t.Fatalf("DISGO_BIN %q not found: %v", binPath, err)
+	}
+
+	testdataAbs, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatalf("resolving testdata path: %v", err)
+	}
+	dockerfilePath := filepath.Join(testdataAbs, "Dockerfile")
+	mustRun(t, "docker", "build", "-t", testImage, "-f", dockerfilePath, testdataAbs)
+
+	containerID := mustRun(t, "docker", "run", "-d", "--rm", testImage, "sleep", "300")
+	containerID = strings.TrimSpace(containerID)
+	t.Cleanup(func() {
+		exec.Command("docker", "rm", "-f", containerID).Run() //nolint:errcheck
+	})
+
+	mustRun(t, "docker", "cp", binPath, containerID+":/usr/local/bin/dis")
+	mustDockerExec(t, containerID, "sudo", "chmod", "+x", "/usr/local/bin/dis")
+	mustRun(t, "docker", "cp", testdataAbs, containerID+":/testdata")
+	mustDockerExec(t, containerID, "sudo", "chown", "-R", "dev:dev", "/testdata")
+	mustDockerExec(t, containerID, "chmod", "-R", "+x", "/testdata")
+
+	// --- First run ---
+	mustDockerExec(t, containerID,
+		"/usr/local/bin/dis", "install",
+		"--distro", "/testdata/distro.yml",
+	)
+
+	rcBase := "/home/dev/rc/configs-generated"
+
+	checks := []struct {
+		desc     string
+		cmd      []string
+		contains string
+	}{
+		{
+			desc: "rc-tools installer ran",
+			cmd:  []string{"test", "-f", "/tmp/rc-tools-ran"},
+		},
+		{
+			desc:     "bash_init contains BEGIN marker for test-init",
+			cmd:      []string{"grep", "-F", "# BEGIN test-init import generated by dis config", rcBase + "/bash_init"},
+			contains: "BEGIN test-init",
+		},
+		{
+			desc:     "bash_init contains END marker for test-init",
+			cmd:      []string{"grep", "-F", "# END test-init import generated by dis config", rcBase + "/bash_init"},
+			contains: "END test-init",
+		},
+		{
+			desc:     "bash_init contains init content",
+			cmd:      []string{"grep", "-F", "export TEST_INIT=1", rcBase + "/bash_init"},
+			contains: "TEST_INIT",
+		},
+		{
+			desc:     "bash_paths contains BEGIN marker for test-path",
+			cmd:      []string{"grep", "-F", "# BEGIN test-path import generated by dis config", rcBase + "/bash_paths"},
+			contains: "BEGIN test-path",
+		},
+		{
+			desc:     "bash_paths contains path content",
+			cmd:      []string{"grep", "-F", "/test/bin", rcBase + "/bash_paths"},
+			contains: "/test/bin",
+		},
+		{
+			desc:     "bash_aliases contains BEGIN marker for test-aliases",
+			cmd:      []string{"grep", "-F", "# BEGIN test-aliases import generated by dis config", rcBase + "/bash_aliases"},
+			contains: "BEGIN test-aliases",
+		},
+		{
+			desc:     "bash_aliases contains aliases content",
+			cmd:      []string{"grep", "-F", `alias ll="ls -la"`, rcBase + "/bash_aliases"},
+			contains: "ll",
+		},
+		{
+			desc:     "test/rc-tools recorded in state",
+			cmd:      []string{"/usr/local/bin/dis", "list"},
+			contains: "test/rc-tools",
+		},
+	}
+
+	for _, c := range checks {
+		t.Run(c.desc, func(t *testing.T) {
+			args := append([]string{"exec", containerID}, c.cmd...)
+			out, err := exec.Command("docker", args...).CombinedOutput()
+			if err != nil {
+				t.Fatalf("check %q failed: %v\noutput: %s", c.desc, err, out)
+			}
+			if c.contains != "" && !strings.Contains(string(out), c.contains) {
+				t.Fatalf("expected output to contain %q, got: %q", c.contains, string(out))
+			}
+		})
+	}
+
+	// --- Idempotency: reinstall rc-tools and verify sections appear only once ---
+	mustDockerExec(t, containerID,
+		"/usr/local/bin/dis", "run",
+		"--distro", "/testdata/distro.yml",
+		"--reinstall",
+		"test/rc-tools",
+	)
+
+	idempotencyChecks := []struct {
+		desc      string
+		file      string
+		marker    string
+		wantExact int
+	}{
+		{
+			desc:      "test-init section appears exactly once after reinstall",
+			file:      rcBase + "/bash_init",
+			marker:    "# BEGIN test-init import generated by dis config",
+			wantExact: 1,
+		},
+		{
+			desc:      "test-path section appears exactly once after reinstall",
+			file:      rcBase + "/bash_paths",
+			marker:    "# BEGIN test-path import generated by dis config",
+			wantExact: 1,
+		},
+		{
+			desc:      "test-aliases section appears exactly once after reinstall",
+			file:      rcBase + "/bash_aliases",
+			marker:    "# BEGIN test-aliases import generated by dis config",
+			wantExact: 1,
+		},
+	}
+
+	for _, c := range idempotencyChecks {
+		t.Run(c.desc, func(t *testing.T) {
+			// Use grep -c to count occurrences of the marker.
+			args := []string{"exec", containerID, "bash", "-c",
+				fmt.Sprintf("grep -cF %q %s", c.marker, c.file)}
+			out, err := exec.Command("docker", args...).CombinedOutput()
+			if err != nil {
+				t.Fatalf("grep -c failed: %v\noutput: %s", err, out)
+			}
+			count := strings.TrimSpace(string(out))
+			if count != fmt.Sprintf("%d", c.wantExact) {
+				t.Fatalf("expected marker %q to appear %d time(s) in %s, got count=%s\nfile contents:\n%s",
+					c.marker, c.wantExact, c.file, count,
+					mustDockerCat(t, containerID, c.file))
+			}
+		})
+	}
+}
+
+// mustDockerCat reads the contents of a file inside the container.
+func mustDockerCat(t *testing.T, containerID, path string) string {
+	t.Helper()
+	out, _ := exec.Command("docker", "exec", containerID, "cat", path).CombinedOutput()
+	return string(out)
 }
 
 // mustRun runs a command and returns its stdout, failing the test on error.

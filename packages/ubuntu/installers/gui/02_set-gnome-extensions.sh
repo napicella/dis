@@ -18,7 +18,6 @@
 # or
 # gsettings list-recursively org.gnome.shell.extensions.switcher
 
-source $DIS_BINDING
 
 if [[ "$XDG_SESSION_TYPE" == "tty" ]]; then
     echo "GUI install not available on tty session type"
@@ -59,10 +58,7 @@ gext install switcher@landau.fi                                      # Switch wi
 gext install tactile@lundal.io                                       # Tile windows on a custom grid using your keyboard.
 gext install clipboard-indicator@tudmotu.com                         # Clipboard manager.
 gext install ddterm@amezin.github.com                                # Drop down terminal extension for GNOME Shell. With tabs. Works on Wayland natively.
-gext install tilingshell@ferrarodomenico.com                         # Extend Gnome Shell with advanced tiling window management (https://extensions.gnome.org/extension/7065/tiling-shell/). 
-
-# for some reason, I need to make the extension binary executable, at least for ddterm.
-# chmod +x $HOME/.local/share/gnome-shell/extensions/ddterm@amezin.github.com/bin/com.github.amezin.ddterm
+gext install tilingshell@ferrarodomenico.com                         # Extend Gnome Shell with advanced tiling window management (https://extensions.gnome.org/extension/7065/tiling-shell/).
 
 # Compile gsettings schemas in order to be able to set extension configs
 sudo cp ~/.local/share/gnome-shell/extensions/tactile@lundal.io/schemas/org.gnome.shell.extensions.tactile.gschema.xml /usr/share/glib-2.0/schemas/

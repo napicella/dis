@@ -3,7 +3,6 @@
 ### depends_on: [common/os-libs]
 ### distro: [all]
 ### -- End
-source $DIS_BINDING
 
 cd /tmp
 LAZYDOCKER_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazydocker/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')

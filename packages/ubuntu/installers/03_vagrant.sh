@@ -4,7 +4,6 @@
 ### distro: [ubuntu]
 ### -- End
 
-source $DIS_BINDING
 
 if command -v vagrant &> /dev/null
 then

@@ -122,7 +122,6 @@ packages:
 ### distro: [ubuntu]
 ### requires_env: [MY_PARAM, MY_SCOPED_PARAM]
 ### -- End
-source "$DIS_BINDING"
 
 echo "Hello from dis! MY_PARAM=${MY_PARAM}  MY_SCOPED_PARAM=${MY_SCOPED_PARAM}"
 `,

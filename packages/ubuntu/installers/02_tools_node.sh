@@ -4,7 +4,5 @@
 ### distro: [ubuntu]
 ### -- End
 
-source $DIS_BINDING
-
 echo "Installing Node.js via mise"
 mise use --global node@lts

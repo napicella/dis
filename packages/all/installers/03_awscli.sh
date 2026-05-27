@@ -4,7 +4,6 @@
 ### distro: [all]
 ### -- End
 
-source $DIS_BINDING
 
 # set up aws cli auto complete
 bashrc_init_add "aws_completer" \

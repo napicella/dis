@@ -4,8 +4,6 @@
 ### distro: [ubuntu]
 ### -- End
 
-source $DIS_BINDING
-
 echo "Installing Python build dependencies"
 # Required by mise to compile Python from source.
 # Without these, mise fails with "Python installation is missing a lib directory".

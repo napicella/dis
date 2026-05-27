@@ -15,12 +15,16 @@ var installCmd = &cobra.Command{
 installer manifests, resolves dependencies, and runs each installer in
 topological order.
 
-Before sourcing each installer script the following env vars are set:
+Before running each installer script the following env vars are set:
   DIS_PKG_ROOT      - root of the source folder that owns this installer
   DIS_DISTRO        - os name from the distro YAML (e.g. "ubuntu")
-  DIS_BINDING       - path to dis/binding.sh
   DIS_EXPORTS_FILE  - path to a per-installer temp file; write KEY=value lines
                       here to export values to downstream installers
+
+Each installer is run inside a wrapper that sources ~/rc/configs-generated/bash_paths
+and ~/rc/configs-generated/bash_aliases so that PATH additions from earlier
+installers are available. Installer scripts can call 'dis tools ...' directly
+because the dis binary directory is prepended to PATH.
 
 Installers run on the host machine.`,
 	RunE: installCmdFn,

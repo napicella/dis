@@ -5,7 +5,6 @@
 ### -- End
 # Install thefuck: https://github.com/nvbn/thefuck
 
-source $DIS_BINDING
 
 sudo apt -y install thefuck
 

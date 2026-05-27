@@ -3,7 +3,6 @@
 ### depends_on: []
 ### distro: [ubuntu]
 ### -- End
-source $DIS_BINDING
 
 export DEBIAN_FRONTEND=noninteractive
 

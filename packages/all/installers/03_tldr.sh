@@ -4,7 +4,6 @@
 ### distro: [all]
 ### -- End
 
-source $DIS_BINDING
 
 # Install tldr: https://github.com/tldr-pages/tldr
 npm install -g tldr

@@ -4,8 +4,6 @@
 ### distro: [all]
 ### -- End
 
-source $DIS_BINDING
-
 # Install sdkman: https://sdkman.io/install
 
 if command -v sdk &> /dev/null
@@ -16,6 +14,7 @@ fi
 
 curl -s "https://get.sdkman.io" | bash
 
-bashrc_init_add "Sdkman" 'export SDKMAN_DIR="$HOME/.sdkman"
-[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
-'
+dis tools add-rc-init \
+  --name 'Sdkman' \
+  --content 'export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"'

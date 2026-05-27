@@ -6,7 +6,6 @@
 ### distro: [ubuntu]
 ### -- End
 
-source $DIS_BINDING
 
 # Add the official Docker repo
 sudo install -m 0755 -d /etc/apt/keyrings

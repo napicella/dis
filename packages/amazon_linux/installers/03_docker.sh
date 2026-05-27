@@ -3,7 +3,6 @@
 ### depends_on: []
 ### distro: [amazon_linux]
 ### -- End
-source $DIS_BINDING
 
 # Docker is automatically configured for Cloud Desktops. You do not need to manually install Docker.
 # If you experience issues with Docker on Cloud Desktop, refer to Troubleshooting your Docker installation.

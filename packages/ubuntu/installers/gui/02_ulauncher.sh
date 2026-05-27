@@ -13,7 +13,6 @@
 # - https://ext.ulauncher.io/-/github-claudiosanches-ulauncher-window-switcher
 # - https://ext.ulauncher.io/-/github-rlvendramini-ulauncher-gitmoji-ext
 
-source $DIS_BINDING
 
 if [[ "$XDG_SESSION_TYPE" == "tty" ]]; then
     echo "GUI install not available on tty session type"

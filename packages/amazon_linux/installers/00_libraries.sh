@@ -3,7 +3,6 @@
 ### depends_on: []
 ### distro: [amazon_linux]
 ### -- End
-source $DIS_BINDING
 
 # Bootstrap: install sudo if running as root (e.g. in a fresh container).
 if [[ $(whoami) == 'root' ]]; then

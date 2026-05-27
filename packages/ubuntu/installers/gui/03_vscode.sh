@@ -3,7 +3,6 @@
 ### depends_on: [common/os-libs]
 ### distro: [ubuntu]
 ### -- End
-source $DIS_BINDING
 
 # update config even if vs code is already installed
 mkdir -p ~/.config/Code/User

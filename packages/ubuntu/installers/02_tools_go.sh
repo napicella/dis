@@ -4,13 +4,12 @@
 ### distro: [ubuntu]
 ### -- End
 
-source $DIS_BINDING
-
 echo "Installing Go via mise"
 mise use --global golang@latest
 
-bashrc_path_add "GOBIN" 'export GOBIN=$(go env GOBIN)
+dis tools add-rc-path \
+  --name 'GOBIN' \
+  --content 'export GOBIN=$(go env GOBIN)
 export GOPATH=$(go env GOPATH)
 export GOPROXY=direct
-export PATH=$GOBIN:$PATH
-'
+export PATH=$GOBIN:$PATH'
