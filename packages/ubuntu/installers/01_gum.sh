@@ -8,7 +8,7 @@ source $DIS_BINDING
 if command -v gum &> /dev/null
 then
     echo "gum is installed"
-    return
+    exit 0
 fi
 
 sudo mkdir -p /etc/apt/keyrings
