@@ -13,7 +13,7 @@ var planCmd = &cobra.Command{
 	Long: `Resolves the full transitive dependency graph for the packages declared
 in the distro YAML and prints the installers in the order they would run.
 
-No generators, preconditions, or installers are executed. This is useful
+No preconditions, or installers are executed. This is useful
 for auditing what will be installed and debugging unexpected transitive
 dependencies.
 

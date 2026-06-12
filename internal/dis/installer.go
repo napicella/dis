@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"lesiw.io/command"
 )
@@ -58,33 +57,6 @@ func (r *Installer) pathEnv() string {
 		return r.disBinDir
 	}
 	return r.disBinDir + ":" + current
-}
-
-// RunGenerators executes all config_generator scripts declared in ic.Cfg,
-// parses their stdout as KEY=VALUE lines, and merges the results into
-// ic.parameters.
-func (r *Installer) RunGenerators(ctx context.Context, ic *InstallContext) error {
-	for _, gen := range ic.Cfg.ConfigGenerators {
-		fmt.Printf("==> Running config generator: %s\n", gen.Script)
-
-		out, err := command.Read(ctx, r.machine, "/bin/bash", gen.Script)
-		if err != nil {
-			return fmt.Errorf("config generator %q failed: %w", gen.Script, err)
-		}
-
-		for _, line := range strings.Split(out, "\n") {
-			line = strings.TrimSpace(line)
-			if line == "" || strings.HasPrefix(line, "#") {
-				continue
-			}
-			idx := strings.IndexByte(line, '=')
-			if idx < 1 {
-				return fmt.Errorf("config generator %q: invalid output line %q (expected KEY=VALUE)", gen.Script, line)
-			}
-			ic.parameters[strings.TrimSpace(line[:idx])] = line[idx+1:]
-		}
-	}
-	return nil
 }
 
 // RunPreconditions executes each precondition script declared in ic.Cfg,

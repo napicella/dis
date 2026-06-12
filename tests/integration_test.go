@@ -77,11 +77,6 @@ func TestInstallIntegration(t *testing.T) {
 			cmd:  []string{"test", "-f", "/tmp/consumer-ran"},
 		},
 		{
-			desc:     "config generator injected GREETING",
-			cmd:      []string{"cat", "/tmp/greeting"},
-			contains: "hello",
-		},
-		{
 			desc:     "cross-package TOKEN export",
 			cmd:      []string{"cat", "/tmp/token"},
 			contains: "abc123",

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -45,11 +46,19 @@ func init() {
 	toolsCmd.AddCommand(createGnomeShortCmd)
 
 	// RC helpers
+	rcFlags(addRCInitCmd)
+	rcFlags(addRCPathCmd)
+	rcFlags(addRCAliasesCmd)
+	rcFlags(addHomeRCCmd)
 	toolsCmd.AddCommand(addRCInitCmd)
 	toolsCmd.AddCommand(addRCPathCmd)
 	toolsCmd.AddCommand(addRCAliasesCmd)
 	toolsCmd.AddCommand(addHomeRCCmd)
 
+	exportEnvCmd.Flags().StringVar(&exportKey, "key", "", "key to export")
+	exportEnvCmd.Flags().StringVar(&exportValue, "value", "", "value to export")
+	toolsCmd.AddCommand(exportEnvCmd)
+	
 	rootCmd.AddCommand(toolsCmd)
 }
 
@@ -190,9 +199,25 @@ Example:
 	},
 }
 
-func init() {
-	rcFlags(addRCInitCmd)
-	rcFlags(addRCPathCmd)
-	rcFlags(addRCAliasesCmd)
-	rcFlags(addHomeRCCmd)
+var (
+	exportKey  string
+	exportValue string
+)
+
+var exportEnvCmd = &cobra.Command{
+	Use: "export-env",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		exportFile, exists := os.LookupEnv("DIS_EXPORTS_FILE")
+		if !exists || exportFile == "" {
+			return errors.New("failed to export env variable: DIS_EXPORTS_FILE env variable is empty")
+		}
+		f, err := os.OpenFile(exportFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		_, err = fmt.Fprintf(f, "%s=%s\n", exportKey, exportValue)
+		return err
+	},
 }

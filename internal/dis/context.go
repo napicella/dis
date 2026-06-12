@@ -15,9 +15,8 @@ type InstallContext struct {
 	DistroDir string
 
 	// parameters is a flat map of all global configuration values available to
-	// installers: static values from the distro file, values produced by config
-	// generators, and runtime exports from prior installers (stored as qualified
-	// "pkg:VAR" keys).
+	// installers: static values from the distro file and runtime exports from 
+	// prior installers (stored as qualified "pkg:VAR" keys).
 	parameters map[string]string
 	// scopedParameters maps each package name to the extra parameters declared
 	// on its packages entry. Scoped values override globals with the same key.
@@ -31,7 +30,7 @@ type InstallContext struct {
 // NewInstallContext loads the distro configuration from distroFile, resolves
 // installer manifests, builds the package dependency graph, writes the
 // binding helper script, and initialises parameters from the static distro
-// parameters. Config generators and preconditions are not run here.
+// parameters. Preconditions are not run here.
 //
 // If commonSources is non-empty it is used as the resolution target for any
 // "${common_sources}" token in the distro YAML, overriding the default XDG
@@ -93,11 +92,6 @@ func NewInstallContext(distroFile string, commonSources string) (*InstallContext
 	for i, pc := range cfg.Preconditions {
 		if !filepath.IsAbs(pc.Script) {
 			cfg.Preconditions[i].Script = filepath.Clean(filepath.Join(distroDir, pc.Script))
-		}
-	}
-	for i, gen := range cfg.ConfigGenerators {
-		if !filepath.IsAbs(gen.Script) {
-			cfg.ConfigGenerators[i].Script = filepath.Clean(filepath.Join(distroDir, gen.Script))
 		}
 	}
 

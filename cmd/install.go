@@ -57,9 +57,6 @@ func installCmdFn(cmd *cobra.Command, _ []string) error {
 	defer runner.Close()
 	runner.Reinstall = installReinstall
 
-	if err := runner.RunGenerators(ctx, ic); err != nil {
-		return err
-	}
 	if err := runner.RunPreconditions(ctx, ic); err != nil {
 		return err
 	}

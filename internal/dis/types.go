@@ -56,15 +56,6 @@ type Precondition struct {
 	Uses []string `yaml:"uses"`
 }
 
-// ConfigGenerator is a shell script that runs before any installer and
-// produces dynamic KEY=VALUE pairs (one per line on stdout). Its output is
-// merged into the distro Parameters map so that installers can declare the
-// generated keys in requires_env and have them validated and injected like
-// static parameters.
-type ConfigGenerator struct {
-	Script string `yaml:"script"`
-}
-
 // DistroConfig is the structure of a distro YAML file.
 // Sources is a plain list of folder paths; the namespace for each installer
 // comes from its own provides: field.
@@ -78,11 +69,6 @@ type DistroConfig struct {
 	// package that declares it in requires_env) or an object with a value and
 	// an optional packages list (scoped, injected only into the listed packages).
 	Parameters map[string]ParameterValue `yaml:"parameters"`
-
-	// ConfigGenerators is a list of shell scripts that run before any
-	// installer. Each script prints KEY=VALUE lines to stdout; dis merges
-	// the output into Parameters.
-	ConfigGenerators []ConfigGenerator `yaml:"config_generators"`
 
 	// Preconditions is a list of checks that run before any installer.
 	Preconditions []Precondition `yaml:"preconditions"`

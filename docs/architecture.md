@@ -30,7 +30,7 @@ A package is the combination of a manifest and the installer script it came from
 
 ### Install context
 
-The install context is the runtime state for a single `dis install` or `dis run` invocation. It holds the resolved package graph, the parameters map (static params + generator output + exported values from prior installers), and the distro configuration. It is the central object passed between the loader, the dependency resolver, and the installer runner.
+The install context is the runtime state for a single `dis install` or `dis run` invocation. It holds the resolved package graph, the parameters map (static params + exported values from prior installers), and the distro configuration. It is the central object passed between the loader, the dependency resolver, and the installer runner.
 
 ### Exports cache
 
@@ -43,10 +43,9 @@ When an installer exports values, those values are written both into the current
 ### `dis install`
 
 1. **Load** — the distro YAML is parsed, sources are walked, manifests are collected, and the package dependency graph is built. Parameters from the distro YAML are loaded into the context (including `${home}` expansion). The exports cache is loaded into the parameters map.
-2. **Generators** — config generator scripts are run in order; their `KEY=VALUE` stdout output is merged into the parameters map.
-3. **Preconditions** — precondition scripts are run with their declared parameters; any failure aborts the installation.
-4. **Resolve** — the full ordered list of manifests to install is computed by topological sort of the dependency graph for the declared packages.
-5. **Run** — each installer is executed in order via the wrapper script. If a package is already recorded as installed, it is skipped (but the cache may have already populated its exports). After each successful install, any exported values are merged into the parameters map and the cache, and the package is recorded as installed.
+2. **Preconditions** — precondition scripts are run with their declared parameters; any failure aborts the installation.
+3. **Resolve** — the full ordered list of manifests to install is computed by topological sort of the dependency graph for the declared packages.
+4. **Run** — each installer is executed in order via the wrapper script. If a package is already recorded as installed, it is skipped (but the cache may have already populated its exports). After each successful install, any exported values are merged into the parameters map and the cache, and the package is recorded as installed.
 
 ### `dis run`
 
@@ -68,7 +67,7 @@ internal/dis/
   parser.go           Parse manifest header blocks from .sh files
   pkgmng.go           Package dependency graph and topological sort
   context.go          InstallContext construction and parameter resolution
-  installer.go        Run generators, preconditions, and installer scripts
+  installer.go        Run preconditions, and installer scripts
   state.go            Installed-packages state file and exports cache (XDG)
   wrapper.sh          Shell wrapper sourced before every installer run
   binding.go          Embeds wrapper.sh and writes it to a temp file
