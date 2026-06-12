@@ -5,4 +5,4 @@
 ### exports_env: [TOKEN]
 ### -- End
 touch /tmp/producer-ran
-echo "TOKEN=abc123" >> "$DIS_EXPORTS_FILE"
+dis tools export-env --key TOKEN --value abc123

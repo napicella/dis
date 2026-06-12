@@ -28,21 +28,4 @@ source "$RC_CFG_GEN_FOLDER/bash_paths"
 # shellcheck source=/dev/null
 source "$RC_CFG_GEN_FOLDER/bash_aliases"
 
-
-# Exports a KEY=VALUE pair to DIS_EXPORTS_FILE so that downstream installers
-# that declare "provides:KEY" in requires_env can import it.
-#
-# Usage: dis_export KEY value
-# Example: dis_export GID_DOCKER "$(getent group docker | cut -d: -f3)"
-function dis_export() {
-  local key="$1"
-  local value="$2"
-  if [ -z "${DIS_EXPORTS_FILE:-}" ]; then
-    echo "dis_export: DIS_EXPORTS_FILE is not set" >&2
-    return 1
-  fi
-  echo "${key}=${value}" >> "$DIS_EXPORTS_FILE"
-}
-
-export -f dis_export
 exec /bin/bash -e "$@"
