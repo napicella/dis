@@ -1,0 +1,43 @@
+format = """
+$time\
+$directory\
+$aws$git_branch
+$username$character
+"""
+
+palette = "custom"
+
+# Define custom palettes
+[palettes.default]
+main_color = '#875fff'
+secondary_color = '#d446d2'
+
+[palettes.custom]
+main_color = "#A08AE2"
+secondary_color = "#A9E9B7"
+
+[time]
+disabled = false
+format = "\\[[$time]($style)\\]"
+time_format = "%F %T"
+style = "bold secondary_color"
+
+[directory]
+style = "secondary_color"
+format = "\\[[$path]($style)\\]"
+
+[git_branch]
+symbol = ""
+style = "main_color"
+format = " (\\([$branch]($style)\\))"
+
+[aws]
+format = " \\[[$region]($style)\\]"
+style = "yellow"
+force_display = true
+
+[username]
+style_user = "main_color bold"
+style_root = "red bold"
+format = "[$user]($style) "
+show_always = true
