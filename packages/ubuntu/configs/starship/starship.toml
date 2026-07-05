@@ -20,7 +20,7 @@ secondary_color = "#A9E9B7"
 disabled = false
 format = "\\[[$time]($style)\\]"
 time_format = "%F %T"
-style = "bold secondary_color"
+style = "secondary_color"
 
 [directory]
 style = "secondary_color"
