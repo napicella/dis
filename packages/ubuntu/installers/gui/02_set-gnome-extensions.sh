@@ -84,7 +84,7 @@ gsettings set org.gnome.shell.extensions.switcher icon-size 32
 # Configure ddterm
 gsettings set org.gnome.shell.extensions.ddterm allow-hyperlink true
 gsettings set org.gnome.shell.extensions.ddterm audible-bell true
-gsettings set org.gnome.shell.extensions.ddterm background-color '#ffffff'
+gsettings set org.gnome.shell.extensions.ddterm background-color '#181818'
 gsettings set org.gnome.shell.extensions.ddterm background-opacity 0.90000000000000000
 gsettings set org.gnome.shell.extensions.ddterm backspace-binding 'ascii-delete'
 gsettings set org.gnome.shell.extensions.ddterm bold-color '#000000'
@@ -129,27 +129,17 @@ gsettings set org.gnome.shell.extensions.ddterm scroll-on-keystroke true
 gsettings set org.gnome.shell.extensions.ddterm scroll-on-output false
 gsettings set org.gnome.shell.extensions.ddterm scrollback-lines 10000
 gsettings set org.gnome.shell.extensions.ddterm scrollback-unlimited false
-#gsettings set org.gnome.shell.extensions.ddterm shortcut-background-opacity-dec @as "[]"
-#gsettings set org.gnome.shell.extensions.ddterm shortcut-background-opacity-inc @as "[]"
 gsettings set org.gnome.shell.extensions.ddterm shortcut-find "['<Ctrl><Shift>F']"
 gsettings set org.gnome.shell.extensions.ddterm shortcut-find-next "['<Ctrl><Shift>G']"
 gsettings set org.gnome.shell.extensions.ddterm shortcut-find-prev "['<Ctrl><Shift>H']"
-# gsettings set org.gnome.shell.extensions.ddterm shortcut-focus-other-pane @as []
 gsettings set org.gnome.shell.extensions.ddterm shortcut-font-scale-decrease "['<Ctrl>minus']"
 gsettings set org.gnome.shell.extensions.ddterm shortcut-font-scale-increase "['<Ctrl>plus']"
 gsettings set org.gnome.shell.extensions.ddterm shortcut-font-scale-reset "['<Ctrl>0']"
 gsettings set org.gnome.shell.extensions.ddterm shortcut-move-tab-next "['<Ctrl><Shift>Page_Down']"
 gsettings set org.gnome.shell.extensions.ddterm shortcut-move-tab-prev "['<Ctrl><Shift>Page_Up']"
-#gsettings set org.gnome.shell.extensions.ddterm shortcut-move-tab-to-other-pane @as []
 gsettings set org.gnome.shell.extensions.ddterm shortcut-next-tab "['<Ctrl>Page_Down']"
 gsettings set org.gnome.shell.extensions.ddterm shortcut-page-close "['<Ctrl><Shift>q']"
 gsettings set org.gnome.shell.extensions.ddterm shortcut-prev-tab "['<Ctrl>Page_Up']"
-# gsettings set org.gnome.shell.extensions.ddterm shortcut-reset-tab-title @as []
-# gsettings set org.gnome.shell.extensions.ddterm shortcut-set-custom-tab-title @as []
-# gsettings set org.gnome.shell.extensions.ddterm shortcut-split-horizontal @as []
-# gsettings set org.gnome.shell.extensions.ddterm shortcut-split-position-dec @as []
-# gsettings set org.gnome.shell.extensions.ddterm shortcut-split-position-inc @as []
-# gsettings set org.gnome.shell.extensions.ddterm shortcut-split-vertical @as []
 gsettings set org.gnome.shell.extensions.ddterm shortcut-switch-to-tab-1 "['<Alt>1']"
 gsettings set org.gnome.shell.extensions.ddterm shortcut-switch-to-tab-10 "['<Alt>0']"
 gsettings set org.gnome.shell.extensions.ddterm shortcut-switch-to-tab-2 "['<Alt>2']"
@@ -161,18 +151,9 @@ gsettings set org.gnome.shell.extensions.ddterm shortcut-switch-to-tab-7 "['<Alt
 gsettings set org.gnome.shell.extensions.ddterm shortcut-switch-to-tab-8 "['<Alt>8']"
 gsettings set org.gnome.shell.extensions.ddterm shortcut-switch-to-tab-9 "['<Alt>9']"
 gsettings set org.gnome.shell.extensions.ddterm shortcut-terminal-copy "['<Ctrl><Shift>c']"
-# gsettings set org.gnome.shell.extensions.ddterm shortcut-terminal-copy-html @as []
 gsettings set org.gnome.shell.extensions.ddterm shortcut-terminal-paste "['<Ctrl><Shift>v']"
-# gsettings set org.gnome.shell.extensions.ddterm shortcut-terminal-reset @as []
-# gsettings set org.gnome.shell.extensions.ddterm shortcut-terminal-reset-and-clear @as []
-# gsettings set org.gnome.shell.extensions.ddterm shortcut-terminal-select-all @as []
 gsettings set org.gnome.shell.extensions.ddterm shortcut-toggle-maximize "['F11']"
-# gsettings set org.gnome.shell.extensions.ddterm shortcut-toggle-transparent-background @as []
 gsettings set org.gnome.shell.extensions.ddterm shortcut-win-new-tab "['<Ctrl><Shift>n']"
-# gsettings set org.gnome.shell.extensions.ddterm shortcut-win-new-tab-after-current @as []
-# gsettings set org.gnome.shell.extensions.ddterm shortcut-win-new-tab-before-current @as []
-# gsettings set org.gnome.shell.extensions.ddterm shortcut-win-new-tab-front @as []
-# gsettings set org.gnome.shell.extensions.ddterm shortcut-window-hide @as []
 gsettings set org.gnome.shell.extensions.ddterm shortcut-window-size-dec "['<Ctrl>Up']"
 gsettings set org.gnome.shell.extensions.ddterm shortcut-window-size-inc "['<Ctrl>Down']"
 gsettings set org.gnome.shell.extensions.ddterm shortcuts-enabled true
