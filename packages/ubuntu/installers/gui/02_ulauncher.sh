@@ -43,5 +43,6 @@ git clone https://github.com/LucianoBigliazzi/ulauncher-nord.git ~/.config/ulaun
 git clone https://github.com/sociale11/ul-cosmo ~/.config/ulauncher/user-themes/ul-cosmo
 git clone https://github.com/hmwassim/WhiteSur-Nord-ulauncher.git ~/.config/ulauncher/user-themes/WhiteSur-Nord-ulauncher
 git clone https://github.com/SirHades696/TokyoNight-Ulauncher-Theme /tmp/TokyoNight-Ulauncher-Theme && cp -r /tmp/TokyoNight-Ulauncher-Theme/TokyoNight ~/.config/ulauncher/user-themes/
-mkdir -p ~/.config/ulauncher/user-themes/Viridian git clone https://github.com/arthurrio/ulauncher-viridian-theme ~/.config/ulauncher/user-themes/Viridian
+git clone https://github.com/arthurrio/ulauncher-viridian-theme ~/.config/ulauncher/user-themes/Viridian
 git clone https://github.com/napicella/Matcha-Dark-Aliz-ulauncher.git ~/.config/ulauncher/user-themes/Matcha-Dark-Aliz-ulauncher
+git clone https://github.com/rose-pine/ulauncher.git /tmp/rose-pine && cp -r /tmp/rose-pine/dist/rose-pine ~/.config/ulauncher/user-themes/
