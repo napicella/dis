@@ -55,31 +55,30 @@ then
 fi
 
 gext install switcher@landau.fi                                      # Switch windows or launch applications quickly by typing, similar to Alfred/Albert.
-gext install tactile@lundal.io                                       # Tile windows on a custom grid using your keyboard.
+# gext install tactile@lundal.io                                     # Tile windows on a custom grid using your keyboard.
+gext install tilingshell@ferrarodomenico.com                         # Extend Gnome Shell with advanced tiling window management (https://extensions.gnome.org/extension/7065/tiling-shell/).
 gext install clipboard-indicator@tudmotu.com                         # Clipboard manager.
 gext install ddterm@amezin.github.com                                # Drop down terminal extension for GNOME Shell. With tabs. Works on Wayland natively.
-gext install tilingshell@ferrarodomenico.com                         # Extend Gnome Shell with advanced tiling window management (https://extensions.gnome.org/extension/7065/tiling-shell/).
 
 # Compile gsettings schemas in order to be able to set extension configs
 sudo cp ~/.local/share/gnome-shell/extensions/tactile@lundal.io/schemas/org.gnome.shell.extensions.tactile.gschema.xml /usr/share/glib-2.0/schemas/
 sudo cp ~/.local/share/gnome-shell/extensions/switcher@landau.fi/schemas/org.gnome.shell.extensions.switcher.gschema.xml /usr/share/glib-2.0/schemas/
 sudo cp ~/.local/share/gnome-shell/extensions/ddterm@amezin.github.com/schemas/org.gnome.shell.extensions.ddterm.gschema.xml /usr/share/glib-2.0/schemas
+sudo cp ~/.local/share/gnome-shell/extensions/tilingshell\@ferrarodomenico.com/schemas/org.gnome.shell.extensions.tilingshell.gschema.xml /usr/share/glib-2.0/schemas
 sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
-
-# Configure Tactile
-gsettings set org.gnome.shell.extensions.tactile col-0 1
-gsettings set org.gnome.shell.extensions.tactile col-1 2
-gsettings set org.gnome.shell.extensions.tactile col-2 1
-gsettings set org.gnome.shell.extensions.tactile col-3 0
-gsettings set org.gnome.shell.extensions.tactile row-0 1
-gsettings set org.gnome.shell.extensions.tactile row-1 1
-gsettings set org.gnome.shell.extensions.tactile gap-size 32
 
 # Configure Switcher
 gsettings set org.gnome.shell.extensions.switcher show-switcher "['<Super>home']"
 gsettings set org.gnome.shell.extensions.switcher max-width-percentage 60
 gsettings set org.gnome.shell.extensions.switcher font-size 20
 gsettings set org.gnome.shell.extensions.switcher icon-size 32
+
+# Configure tilingshell
+gsettings set org.gnome.shell.extensions.tilingshell move-window-down "['<Super>Down']"
+gsettings set org.gnome.shell.extensions.tilingshell move-window-left "['<Super>Left']"
+gsettings set org.gnome.shell.extensions.tilingshell move-window-right "['<Super>Right']"
+gsettings set org.gnome.shell.extensions.tilingshell move-window-up "['<Super>Up']"
+gsettings set org.gnome.shell.extensions.tilingshell span-window-all-tiles "['<Super>slash']"
 
 # Configure ddterm
 gsettings set org.gnome.shell.extensions.ddterm allow-hyperlink true
