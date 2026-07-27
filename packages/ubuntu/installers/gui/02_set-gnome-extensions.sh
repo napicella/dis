@@ -79,6 +79,9 @@ gsettings set org.gnome.shell.extensions.tilingshell move-window-left "['<Super>
 gsettings set org.gnome.shell.extensions.tilingshell move-window-right "['<Super>Right']"
 gsettings set org.gnome.shell.extensions.tilingshell move-window-up "['<Super>Up']"
 gsettings set org.gnome.shell.extensions.tilingshell span-window-all-tiles "['<Super>slash']"
+# Disable automaximize which maximizes the window when the window initial size covers
+# almost all the screen (interferes with a 1 tile layout).
+gsettings set org.gnome.mutter auto-maximize false
 
 # Configure ddterm
 gsettings set org.gnome.shell.extensions.ddterm allow-hyperlink true
