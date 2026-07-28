@@ -61,7 +61,7 @@ gext install clipboard-indicator@tudmotu.com                         # Clipboard
 gext install ddterm@amezin.github.com                                # Drop down terminal extension for GNOME Shell. With tabs. Works on Wayland natively.
 
 # Compile gsettings schemas in order to be able to set extension configs
-sudo cp ~/.local/share/gnome-shell/extensions/tactile@lundal.io/schemas/org.gnome.shell.extensions.tactile.gschema.xml /usr/share/glib-2.0/schemas/
+# sudo cp ~/.local/share/gnome-shell/extensions/tactile@lundal.io/schemas/org.gnome.shell.extensions.tactile.gschema.xml /usr/share/glib-2.0/schemas/
 sudo cp ~/.local/share/gnome-shell/extensions/switcher@landau.fi/schemas/org.gnome.shell.extensions.switcher.gschema.xml /usr/share/glib-2.0/schemas/
 sudo cp ~/.local/share/gnome-shell/extensions/ddterm@amezin.github.com/schemas/org.gnome.shell.extensions.ddterm.gschema.xml /usr/share/glib-2.0/schemas
 sudo cp ~/.local/share/gnome-shell/extensions/tilingshell\@ferrarodomenico.com/schemas/org.gnome.shell.extensions.tilingshell.gschema.xml /usr/share/glib-2.0/schemas
@@ -79,109 +79,126 @@ gsettings set org.gnome.shell.extensions.tilingshell move-window-left "['<Super>
 gsettings set org.gnome.shell.extensions.tilingshell move-window-right "['<Super>Right']"
 gsettings set org.gnome.shell.extensions.tilingshell move-window-up "['<Super>Up']"
 gsettings set org.gnome.shell.extensions.tilingshell span-window-all-tiles "['<Super>slash']"
+gsettings set org.gnome.shell.extensions.tilingshell enable-autotiling true
+gsettings set org.gnome.shell.extensions.tilingshell inner-gaps 10
+gsettings set org.gnome.shell.extensions.tilingshell outer-gaps 14
 # Disable automaximize which maximizes the window when the window initial size covers
 # almost all the screen (interferes with a 1 tile layout).
 gsettings set org.gnome.mutter auto-maximize false
 
 # Configure ddterm
-gsettings set org.gnome.shell.extensions.ddterm allow-hyperlink true
-gsettings set org.gnome.shell.extensions.ddterm audible-bell true
-gsettings set org.gnome.shell.extensions.ddterm background-color '#181818'
-gsettings set org.gnome.shell.extensions.ddterm background-opacity 0.90000000000000000
-gsettings set org.gnome.shell.extensions.ddterm backspace-binding 'ascii-delete'
-gsettings set org.gnome.shell.extensions.ddterm bold-color '#000000'
-gsettings set org.gnome.shell.extensions.ddterm bold-color-same-as-fg true
-gsettings set org.gnome.shell.extensions.ddterm bold-is-bright false
-gsettings set org.gnome.shell.extensions.ddterm cjk-utf8-ambiguous-width 'narrow'
-gsettings set org.gnome.shell.extensions.ddterm command 'user-shell'
-gsettings set org.gnome.shell.extensions.ddterm cursor-background-color '#000000'
-gsettings set org.gnome.shell.extensions.ddterm cursor-blink-mode 'system'
-gsettings set org.gnome.shell.extensions.ddterm cursor-colors-set false
-gsettings set org.gnome.shell.extensions.ddterm cursor-foreground-color '#ffffff'
-gsettings set org.gnome.shell.extensions.ddterm cursor-shape 'block'
-gsettings set org.gnome.shell.extensions.ddterm custom-command ''
-gsettings set org.gnome.shell.extensions.ddterm custom-font 'Monospace Regular 10'
-gsettings set org.gnome.shell.extensions.ddterm ddterm-toggle-hotkey "['F12']"
-gsettings set org.gnome.shell.extensions.ddterm delete-binding 'delete-sequence'
-gsettings set org.gnome.shell.extensions.ddterm detect-urls true
-gsettings set org.gnome.shell.extensions.ddterm detect-urls-as-is true
-gsettings set org.gnome.shell.extensions.ddterm detect-urls-email true
-gsettings set org.gnome.shell.extensions.ddterm detect-urls-file true
-gsettings set org.gnome.shell.extensions.ddterm detect-urls-http true
-gsettings set org.gnome.shell.extensions.ddterm detect-urls-news-man true
-gsettings set org.gnome.shell.extensions.ddterm detect-urls-voip true
-gsettings set org.gnome.shell.extensions.ddterm force-x11-gdk-backend false
-gsettings set org.gnome.shell.extensions.ddterm foreground-color '#171421'
-gsettings set org.gnome.shell.extensions.ddterm hide-animation 'ease-in-quad'
-gsettings set org.gnome.shell.extensions.ddterm hide-animation-duration 0.15000000000000000
-gsettings set org.gnome.shell.extensions.ddterm hide-when-focus-lost true
-gsettings set org.gnome.shell.extensions.ddterm hide-window-on-esc false
-gsettings set org.gnome.shell.extensions.ddterm highlight-background-color '#000000'
-gsettings set org.gnome.shell.extensions.ddterm highlight-colors-set false
-gsettings set org.gnome.shell.extensions.ddterm highlight-foreground-color '#ffffff'
-gsettings set org.gnome.shell.extensions.ddterm new-tab-button true
-gsettings set org.gnome.shell.extensions.ddterm new-tab-front-button false
-gsettings set org.gnome.shell.extensions.ddterm notebook-border true
-gsettings set org.gnome.shell.extensions.ddterm override-window-animation true
-gsettings set org.gnome.shell.extensions.ddterm palette "['#171421', '#c01c28', '#26a269', '#a2734c', '#12488b', '#a347ba', '#2aa1b3', '#d0cfcc', '#5e5c64', '#f66151', '#33da7a', '#e9ad0c', '#2a7bde', '#c061cb', '#33c7de', '#ffffff']"
-gsettings set org.gnome.shell.extensions.ddterm panel-icon-type 'toggle-and-menu-button'
-gsettings set org.gnome.shell.extensions.ddterm pointer-autohide false
-gsettings set org.gnome.shell.extensions.ddterm preserve-working-directory true
-gsettings set org.gnome.shell.extensions.ddterm scroll-on-keystroke true
-gsettings set org.gnome.shell.extensions.ddterm scroll-on-output false
-gsettings set org.gnome.shell.extensions.ddterm scrollback-lines 10000
-gsettings set org.gnome.shell.extensions.ddterm scrollback-unlimited false
-gsettings set org.gnome.shell.extensions.ddterm shortcut-find "['<Ctrl><Shift>F']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-find-next "['<Ctrl><Shift>G']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-find-prev "['<Ctrl><Shift>H']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-font-scale-decrease "['<Ctrl>minus']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-font-scale-increase "['<Ctrl>plus']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-font-scale-reset "['<Ctrl>0']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-move-tab-next "['<Ctrl><Shift>Page_Down']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-move-tab-prev "['<Ctrl><Shift>Page_Up']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-next-tab "['<Ctrl>Page_Down']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-page-close "['<Ctrl><Shift>q']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-prev-tab "['<Ctrl>Page_Up']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-switch-to-tab-1 "['<Alt>1']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-switch-to-tab-10 "['<Alt>0']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-switch-to-tab-2 "['<Alt>2']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-switch-to-tab-3 "['<Alt>3']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-switch-to-tab-4 "['<Alt>4']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-switch-to-tab-5 "['<Alt>5']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-switch-to-tab-6 "['<Alt>6']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-switch-to-tab-7 "['<Alt>7']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-switch-to-tab-8 "['<Alt>8']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-switch-to-tab-9 "['<Alt>9']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-terminal-copy "['<Ctrl><Shift>c']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-terminal-paste "['<Ctrl><Shift>v']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-toggle-maximize "['F11']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-win-new-tab "['<Ctrl><Shift>n']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-window-size-dec "['<Ctrl>Up']"
-gsettings set org.gnome.shell.extensions.ddterm shortcut-window-size-inc "['<Ctrl>Down']"
-gsettings set org.gnome.shell.extensions.ddterm shortcuts-enabled true
-gsettings set org.gnome.shell.extensions.ddterm show-animation 'linear'
-gsettings set org.gnome.shell.extensions.ddterm show-animation-duration 0.14999999999999999
-gsettings set org.gnome.shell.extensions.ddterm show-scrollbar true
-gsettings set org.gnome.shell.extensions.ddterm tab-close-buttons true
-gsettings set org.gnome.shell.extensions.ddterm tab-expand true
-gsettings set org.gnome.shell.extensions.ddterm tab-label-ellipsize-mode 'none'
-gsettings set org.gnome.shell.extensions.ddterm tab-label-width 0.10000000000000001
-gsettings set org.gnome.shell.extensions.ddterm tab-policy 'never'
-gsettings set org.gnome.shell.extensions.ddterm tab-position 'bottom'
-gsettings set org.gnome.shell.extensions.ddterm tab-show-shortcuts true
-gsettings set org.gnome.shell.extensions.ddterm tab-switcher-popup true
-gsettings set org.gnome.shell.extensions.ddterm text-blink-mode 'always'
-gsettings set org.gnome.shell.extensions.ddterm theme-variant 'system'
-gsettings set org.gnome.shell.extensions.ddterm transparent-background true
-gsettings set org.gnome.shell.extensions.ddterm use-system-font true
-gsettings set org.gnome.shell.extensions.ddterm use-theme-colors true
-gsettings set org.gnome.shell.extensions.ddterm window-above true
-gsettings set org.gnome.shell.extensions.ddterm window-maximize true
-gsettings set org.gnome.shell.extensions.ddterm window-monitor 'current'
-gsettings set org.gnome.shell.extensions.ddterm window-monitor-connector ''
-gsettings set org.gnome.shell.extensions.ddterm window-position 'top'
-gsettings set org.gnome.shell.extensions.ddterm window-resizable false
-gsettings set org.gnome.shell.extensions.ddterm window-size 1.0
-gsettings set org.gnome.shell.extensions.ddterm window-skip-taskbar true
-gsettings set org.gnome.shell.extensions.ddterm window-stick true
+#
+# Get the ddterm GSettings schema.
+# New versions use "org.gnome.shell.extensions.ddterm".
+# Old versions use "com.github.amezin.ddterm".
+ddterm_schema() {
+    if gsettings list-schemas | grep -qx 'org.gnome.shell.extensions.ddterm'; then
+        printf '%s\n' 'org.gnome.shell.extensions.ddterm'
+    else
+        printf '%s\n' 'com.github.amezin.ddterm'
+    fi
+}
+
+SCHEMA=$(ddterm_schema)
+
+gsettings set $SCHEMA allow-hyperlink true
+gsettings set $SCHEMA audible-bell true
+gsettings set $SCHEMA background-color '#181818'
+gsettings set $SCHEMA background-opacity 0.90000000000000000
+gsettings set $SCHEMA backspace-binding 'ascii-delete'
+gsettings set $SCHEMA bold-color '#000000'
+gsettings set $SCHEMA bold-color-same-as-fg true
+gsettings set $SCHEMA bold-is-bright false
+gsettings set $SCHEMA cjk-utf8-ambiguous-width 'narrow'
+gsettings set $SCHEMA command 'user-shell'
+gsettings set $SCHEMA cursor-background-color '#000000'
+gsettings set $SCHEMA cursor-blink-mode 'system'
+gsettings set $SCHEMA cursor-colors-set false
+gsettings set $SCHEMA cursor-foreground-color '#ffffff'
+gsettings set $SCHEMA cursor-shape 'block'
+gsettings set $SCHEMA custom-command ''
+gsettings set $SCHEMA custom-font 'Monospace Regular 10'
+gsettings set $SCHEMA ddterm-toggle-hotkey "['F12']"
+gsettings set $SCHEMA delete-binding 'delete-sequence'
+gsettings set $SCHEMA detect-urls true
+gsettings set $SCHEMA detect-urls-as-is true
+gsettings set $SCHEMA detect-urls-email true
+gsettings set $SCHEMA detect-urls-file true
+gsettings set $SCHEMA detect-urls-http true
+gsettings set $SCHEMA detect-urls-news-man true
+gsettings set $SCHEMA detect-urls-voip true
+gsettings set $SCHEMA force-x11-gdk-backend false
+gsettings set $SCHEMA foreground-color '#171421'
+gsettings set $SCHEMA hide-animation 'ease-in-quad'
+gsettings set $SCHEMA hide-animation-duration 0.15000000000000000
+gsettings set $SCHEMA hide-when-focus-lost true
+gsettings set $SCHEMA hide-window-on-esc false
+gsettings set $SCHEMA highlight-background-color '#000000'
+gsettings set $SCHEMA highlight-colors-set false
+gsettings set $SCHEMA highlight-foreground-color '#ffffff'
+gsettings set $SCHEMA new-tab-button true
+gsettings set $SCHEMA new-tab-front-button false
+gsettings set $SCHEMA notebook-border true
+gsettings set $SCHEMA override-window-animation true
+gsettings set $SCHEMA palette "['#171421', '#c01c28', '#26a269', '#a2734c', '#12488b', '#a347ba', '#2aa1b3', '#d0cfcc', '#5e5c64', '#f66151', '#33da7a', '#e9ad0c', '#2a7bde', '#c061cb', '#33c7de', '#ffffff']"
+gsettings set $SCHEMA panel-icon-type 'toggle-and-menu-button'
+gsettings set $SCHEMA pointer-autohide false
+gsettings set $SCHEMA preserve-working-directory true
+gsettings set $SCHEMA scroll-on-keystroke true
+gsettings set $SCHEMA scroll-on-output false
+gsettings set $SCHEMA scrollback-lines 10000
+gsettings set $SCHEMA scrollback-unlimited false
+gsettings set $SCHEMA shortcut-find "['<Ctrl><Shift>F']"
+gsettings set $SCHEMA shortcut-find-next "['<Ctrl><Shift>G']"
+gsettings set $SCHEMA shortcut-find-prev "['<Ctrl><Shift>H']"
+gsettings set $SCHEMA shortcut-font-scale-decrease "['<Ctrl>minus']"
+gsettings set $SCHEMA shortcut-font-scale-increase "['<Ctrl>plus']"
+gsettings set $SCHEMA shortcut-font-scale-reset "['<Ctrl>0']"
+gsettings set $SCHEMA shortcut-move-tab-next "['<Ctrl><Shift>Page_Down']"
+gsettings set $SCHEMA shortcut-move-tab-prev "['<Ctrl><Shift>Page_Up']"
+gsettings set $SCHEMA shortcut-next-tab "['<Ctrl>Page_Down']"
+gsettings set $SCHEMA shortcut-page-close "['<Ctrl><Shift>q']"
+gsettings set $SCHEMA shortcut-prev-tab "['<Ctrl>Page_Up']"
+gsettings set $SCHEMA shortcut-switch-to-tab-1 "['<Alt>1']"
+gsettings set $SCHEMA shortcut-switch-to-tab-10 "['<Alt>0']"
+gsettings set $SCHEMA shortcut-switch-to-tab-2 "['<Alt>2']"
+gsettings set $SCHEMA shortcut-switch-to-tab-3 "['<Alt>3']"
+gsettings set $SCHEMA shortcut-switch-to-tab-4 "['<Alt>4']"
+gsettings set $SCHEMA shortcut-switch-to-tab-5 "['<Alt>5']"
+gsettings set $SCHEMA shortcut-switch-to-tab-6 "['<Alt>6']"
+gsettings set $SCHEMA shortcut-switch-to-tab-7 "['<Alt>7']"
+gsettings set $SCHEMA shortcut-switch-to-tab-8 "['<Alt>8']"
+gsettings set $SCHEMA shortcut-switch-to-tab-9 "['<Alt>9']"
+gsettings set $SCHEMA shortcut-terminal-copy "['<Ctrl><Shift>c']"
+gsettings set $SCHEMA shortcut-terminal-paste "['<Ctrl><Shift>v']"
+gsettings set $SCHEMA shortcut-toggle-maximize "['F11']"
+gsettings set $SCHEMA shortcut-win-new-tab "['<Ctrl><Shift>n']"
+gsettings set $SCHEMA shortcut-window-size-dec "['<Ctrl>Up']"
+gsettings set $SCHEMA shortcut-window-size-inc "['<Ctrl>Down']"
+gsettings set $SCHEMA shortcuts-enabled true
+gsettings set $SCHEMA show-animation 'linear'
+gsettings set $SCHEMA show-animation-duration 0.14999999999999999
+gsettings set $SCHEMA show-scrollbar true
+gsettings set $SCHEMA tab-close-buttons true
+gsettings set $SCHEMA tab-expand true
+gsettings set $SCHEMA tab-label-ellipsize-mode 'none'
+gsettings set $SCHEMA tab-label-width 0.10000000000000001
+gsettings set $SCHEMA tab-policy 'never'
+gsettings set $SCHEMA tab-position 'bottom'
+gsettings set $SCHEMA tab-show-shortcuts true
+gsettings set $SCHEMA tab-switcher-popup true
+gsettings set $SCHEMA text-blink-mode 'always'
+gsettings set $SCHEMA theme-variant 'system'
+gsettings set $SCHEMA transparent-background true
+gsettings set $SCHEMA use-system-font true
+gsettings set $SCHEMA use-theme-colors true
+gsettings set $SCHEMA window-above true
+gsettings set $SCHEMA window-maximize true
+gsettings set $SCHEMA window-monitor 'current'
+gsettings set $SCHEMA window-monitor-connector ''
+gsettings set $SCHEMA window-position 'top'
+gsettings set $SCHEMA window-resizable false
+gsettings set $SCHEMA window-size 1.0
+gsettings set $SCHEMA window-skip-taskbar true
+gsettings set $SCHEMA window-stick true
 

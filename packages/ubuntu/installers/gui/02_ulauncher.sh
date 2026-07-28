@@ -30,13 +30,9 @@ sudo add-apt-repository ppa:agornostal/ulauncher -y
 sudo apt update -y
 sudo apt install -y ulauncher
 
-# Start ulauncher to have it populate config before we overwrite
-mkdir -p ~/.config/autostart/
-cp $DIS_CONFIG_FOLDER/ulauncher.desktop ~/.config/autostart/ulauncher.desktop
-gtk-launch ulauncher.desktop >/dev/null 2>&1
-sleep 2 # ensure enough time for ulauncher to set defaults
+# Copy config
+mkdir -p ~/.config/ulauncher
 cp $DIS_CONFIG_FOLDER/ulauncher.json ~/.config/ulauncher/settings.json
-
 # Install community themes: https://docs.ulauncher.io/en/latest/themes/themes.html
 mkdir -p ~/.config/ulauncher/user-themes
 git clone https://github.com/LucianoBigliazzi/ulauncher-nord.git ~/.config/ulauncher/user-themes/ulauncher-nord
@@ -46,3 +42,5 @@ git clone https://github.com/SirHades696/TokyoNight-Ulauncher-Theme /tmp/TokyoNi
 git clone https://github.com/arthurrio/ulauncher-viridian-theme ~/.config/ulauncher/user-themes/Viridian
 git clone https://github.com/napicella/Matcha-Dark-Aliz-ulauncher.git ~/.config/ulauncher/user-themes/Matcha-Dark-Aliz-ulauncher
 git clone https://github.com/rose-pine/ulauncher.git /tmp/rose-pine && cp -r /tmp/rose-pine/dist/rose-pine ~/.config/ulauncher/user-themes/
+
+systemctl --user enable ulauncher.service
