@@ -1,9 +1,13 @@
 ### -- Manifest
 ### provides: common/starship
 ### depends_on: []
-### distro: [ubuntu]
+### distro: [all]
 ### -- End
 
+mkdir -p ~/.config/
+if [ ! -f ~/.config/starship.toml ]; then
+  cp $DIS_CONFIG_FOLDER/starship/starship.toml ~/.config/
+fi
 
 # Use this method only if the Ubuntu version is earlier than 25.04.
 # Ubuntu 25.04 and later provide the package in the Ubuntu repository.
@@ -12,11 +16,8 @@ VER=$(. /etc/os-release && echo $VERSION_ID | sed 's/\.//')
 if (( $VER >= 2504 )); then
   sudo apt -y install starship
 else
+  # not ubuntu or ubuntu earlier than 25.04
   curl -sS https://starship.rs/install.sh | sh
-fi
-mkdir -p ~/.config/
-if [ ! ~/.config/starship.toml ]; then
-  cp $DIS_CONFIG/starship/starship.toml ~/.config/
 fi
 
 dis tools add-rc-init \
