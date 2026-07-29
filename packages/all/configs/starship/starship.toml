@@ -2,7 +2,7 @@ format = """
 $time\
 $directory\
 $aws$git_branch
-$username$character
+$hostname$username$character
 """
 
 palette = "custom"
@@ -41,3 +41,9 @@ style_user = "main_color bold"
 style_root = "red bold"
 format = "[$user]($style) "
 show_always = true
+
+[hostname]
+ssh_only = true
+format = '[$ssh_symbol](main_color) '
+trim_at = 'dev-dsk'
+ssh_symbol = '☁ '

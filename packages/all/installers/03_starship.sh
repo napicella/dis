@@ -5,9 +5,9 @@
 ### -- End
 
 mkdir -p ~/.config/
-if [ ! -f ~/.config/starship.toml ]; then
-  cp $DIS_CONFIG_FOLDER/starship/starship.toml ~/.config/
-fi
+cp $DIS_CONFIG_FOLDER/starship/starship.toml ~/.config/
+
+exit 0
 
 # Use this method only if the Ubuntu version is earlier than 25.04.
 # Ubuntu 25.04 and later provide the package in the Ubuntu repository.
