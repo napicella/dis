@@ -32,9 +32,9 @@ style = "main_color"
 format = " (\\([$branch]($style)\\))"
 
 [aws]
-format = " \\[[$region]($style)\\]"
+format = "\\[[($profile.)$region]($style)\\]"
 style = "yellow"
-force_display = true
+force_display = false
 
 [username]
 style_user = "main_color bold"
@@ -47,3 +47,39 @@ ssh_only = true
 format = '[$ssh_symbol](main_color) '
 trim_at = 'dev-dsk'
 ssh_symbol = '☁ '
+
+[aws.region_aliases]
+# US East (N. Virginia) - United States - Washington Dulles International Airport (IAD)
+us-east-1 = 'iad'
+# US East (Ohio) - United States - John Glenn Columbus International Airport (CMH)
+us-east-2 = 'cmh'
+# US West (N. California) - United States - San Francisco International Airport (SFO)
+us-west-1 = 'sfo'
+# US West (Oregon) - United States - Portland International Airport (PDX)
+us-west-2 = 'pdx'
+# Europe (Ireland) - Ireland - Dublin Airport (DUB)
+eu-west-1 = 'dub'
+# Europe (London) - United Kingdom - London Heathrow Airport (LHR)
+eu-west-2 = 'lhr'
+# Europe (Paris) - France - Charles de Gaulle Airport (CDG)
+eu-west-3 = 'cdg'
+# Europe (Frankfurt) - Germany - Frankfurt Airport (FRA)
+eu-central-1 = 'fra'
+# Europe (Stockholm) - Sweden - Stockholm Arlanda Airport (ARN)
+eu-north-1 = 'arn'
+# Asia Pacific (Singapore) - Singapore - Singapore Changi Airport (SIN)
+ap-southeast-1 = 'sin'
+# Asia Pacific (Sydney) - Australia - Sydney Kingsford Smith Airport (SYD)
+ap-southeast-2 = 'syd'
+# Asia Pacific (Tokyo) - Japan - Narita International Airport (NRT)
+ap-northeast-1 = 'nrt'
+# Asia Pacific (Seoul) - South Korea - Incheon International Airport (ICN)
+ap-northeast-2 = 'icn'
+# Asia Pacific (Mumbai) - India - Chhatrapati Shivaji Maharaj International Airport (BOM)
+ap-south-1 = 'bom'
+# Canada (Central) - Canada - Montréal–Trudeau International Airport (YUL)
+ca-central-1 = 'yul'
+# South America (São Paulo) - Brazil - São Paulo/Guarulhos International Airport (GRU)
+sa-east-1 = 'gru'
+# Africa (Cape Town) - South Africa - Cape Town International Airport (CPT)
+af-south-1 = 'cpt'
