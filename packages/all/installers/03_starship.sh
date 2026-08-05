@@ -7,8 +7,6 @@
 mkdir -p ~/.config/
 cp $DIS_CONFIG_FOLDER/starship/starship.toml ~/.config/
 
-exit 0
-
 # Use this method only if the Ubuntu version is earlier than 25.04.
 # Ubuntu 25.04 and later provide the package in the Ubuntu repository.
 # https://starship.rs/guide/
@@ -17,7 +15,7 @@ if (( $VER >= 2504 )); then
   sudo apt -y install starship
 else
   # not ubuntu or ubuntu earlier than 25.04
-  curl -sS https://starship.rs/install.sh | sh
+  curl -sS https://starship.rs/install.sh | sh -y
 fi
 
 dis tools add-rc-init \
