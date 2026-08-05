@@ -15,7 +15,7 @@ if (( $VER >= 2504 )); then
   sudo apt -y install starship
 else
   # not ubuntu or ubuntu earlier than 25.04
-  curl -sS https://starship.rs/install.sh | sh -y
+  curl -sS https://starship.rs/install.sh | sh
 fi
 
 dis tools add-rc-init \
