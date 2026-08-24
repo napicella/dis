@@ -44,8 +44,8 @@ show_always = true
 
 [hostname]
 ssh_only = true
-format = '[$ssh_symbol](main_color) '
-trim_at = 'dev-dsk'
+format = '[$ssh_symbol $hostname](main_color bold) '
+# trim_at = 'dev-dsk'
 ssh_symbol = '☁ '
 
 [aws.region_aliases]
