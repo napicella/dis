@@ -11,5 +11,6 @@ then
 fi
 
 # Install mise for managing multiple versions of languages. See https://mise.jdx.dev/
-curl https://mise.run | sh
-dis tools add-rc-path --name 'Mise path' --content 'export PATH="$HOME/.local/bin:$PATH"'
+# Install it under /usr/bin like package managers do
+curl https://mise.run -o /tmp/install-mise.sh && chmod +x /tmp/install-mise.sh
+sudo MISE_INSTALL_PATH=/usr/bin/mise /tmp/install-mise.sh
