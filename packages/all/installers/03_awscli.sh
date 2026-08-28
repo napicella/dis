@@ -6,10 +6,10 @@
 
 
 # set up aws cli auto complete
-bashrc_init_add "aws_completer" \
-"if [ -e /usr/bin/aws_completer ]; then
-  complete -C '/usr/bin/aws_completer' aws
-fi"
+dis tools add-rc-init --name 'aws_completer' --content \
+  'if [ -e /usr/bin/aws_completer ]; then
+  complete -C '"'"'/usr/bin/aws_completer'"'"' aws
+fi'
 
 if command -v aws &> /dev/null
 then
