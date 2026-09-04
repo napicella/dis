@@ -1,5 +1,4 @@
 format = """
-$time\
 $directory\
 $aws$git_branch
 $hostname$username$character
@@ -26,6 +25,10 @@ style = "secondary_color"
 style = "secondary_color"
 format = "\\[[$path]($style)\\]"
 
+[character]
+success_symbol = "[❯](main_color bold)"
+error_symbol = "[❯](red bold)"
+
 [git_branch]
 symbol = ""
 style = "main_color"
@@ -33,7 +36,7 @@ format = " (\\([$branch]($style)\\))"
 
 [aws]
 format = "\\[[($profile.)$region]($style)\\]"
-style = "yellow"
+style = "secondary_color"
 force_display = false
 
 [username]
