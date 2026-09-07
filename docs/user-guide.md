@@ -164,6 +164,7 @@ The following variables are set by dis in the installer's environment:
 | `DIS_INSTALLER` | Absolute path to the installer script |
 | `DIS_DISTRO` | OS name from the distro YAML |
 | `DIS_EXPORTS_FILE` | Temp file to write `KEY=value` exports for downstream installers |
+| `DIS_INSTALL` | Set to `"1"` by `dis install`; absent when `dis config` runs. Use this to guard install-only steps (see [config command](#the-config-command)) |
 
 ### Concrete examples
 
@@ -272,20 +273,98 @@ dis tools add-home-rc --name "bashrc" \
 
 ## Commands
 
+The `--distro` flag is optional on all commands if a [config file](#config-file) is present.
+
 | Command | Description |
 |---|---|
 | `dis init` | Scaffold a workspace in the current directory |
-| `dis install --distro FILE` | Install all packages in the distro |
-| `dis install --distro FILE --reinstall` | Re-run all installers, ignoring install state |
-| `dis run --distro FILE PKG` | Run a single installer (skips dependency resolution) |
-| `dis run --distro FILE PKG --reinstall` | Re-run even if already installed |
-| `dis plan --distro FILE` | Show the ordered install plan without executing |
+| `dis install [--distro FILE]` | Install all packages in the distro |
+| `dis install [--distro FILE] PKG` | Install a single package (skips dependency resolution) |
+| `dis install [--distro FILE] --reinstall` | Re-run all installers, ignoring install state |
+| `dis config [--distro FILE]` | Re-apply configs for all packages (skips install steps) |
+| `dis config [--distro FILE] PKG` | Re-apply config for a single package |
+| `dis plan [--distro FILE]` | Show the ordered install plan without executing |
+| `dis search [--distro FILE] --regex PATTERN` | Search available packages by name |
 | `dis list` | List all packages recorded as installed |
 | `dis sync` | Update built-in packages from the latest release |
 | `dis tools add-rc-init` | Upsert a section in `~/rc/configs-generated/bash_init` |
 | `dis tools add-rc-path` | Upsert a section in `~/rc/configs-generated/bash_paths` |
 | `dis tools add-rc-aliases` | Upsert a section in `~/rc/configs-generated/bash_aliases` |
 | `dis tools add-home-rc` | Upsert a section in `~/.bashrc` |
+
+---
+
+## Config file
+
+dis reads an optional config file from `~/.config/dis/config.yaml`. Values defined there are used as defaults for all commands — CLI flags always take precedence.
+
+```yaml
+# ~/.config/dis/config.yaml
+distro: ~/dotfiles/dis/distros/home-server.yml
+sources: ~/dotfiles/dis/packages
+```
+
+Supported keys:
+
+| Key | Description |
+|---|---|
+| `distro` | Default path to the distro YAML file. Paths starting with `~/` are expanded to the home directory. |
+| `sources` | Default value for `--sources` (overrides auto-detection of `${common_sources}`). |
+
+With a config file in place you can omit `--distro` on every command:
+
+```bash
+dis install        # uses distro from config file
+dis config         # same
+dis plan           # same
+```
+
+---
+
+## The `config` command
+
+`dis config` re-runs every installer script with `DIS_INSTALL` **unset**, instructing scripts to perform only their configuration steps (copying config files, writing RC sections, applying `gsettings`, etc.) without re-running the full installation (downloading binaries, `apt install`, etc.).
+
+This is useful when a config file has changed and you want to re-deploy it without reinstalling anything:
+
+```bash
+# Re-apply configs for all packages in the distro
+dis config
+
+# Re-apply config for a single package
+dis config common/starship
+```
+
+`dis config` always runs regardless of install state and does **not** write install state afterwards.
+
+### Writing installers that support `dis config`
+
+Guard install-only steps behind `if [[ -n "${DIS_INSTALL:-}" ]]; then`. Configuration steps (file copies, `dis tools add-rc-*`, `gsettings`, etc.) are left outside the guard so they run under both commands.
+
+```bash
+### -- Manifest
+### provides: common/starship
+### distro: [all]
+### -- End
+
+if [[ -n "${DIS_INSTALL:-}" ]]; then
+  # Install-only: download and install the binary
+  curl -sS https://starship.rs/install.sh | sh
+
+  # Wire into the shell (one-time setup)
+  dis tools add-rc-init --name 'Starship' \
+    --content $'eval "$(starship init bash)"'
+fi
+
+# Config: always re-deploy the config file
+mkdir -p ~/.config/
+cp "$DIS_CONFIG_FOLDER/starship/starship.toml" ~/.config/
+```
+
+| Mode | `DIS_INSTALL` | Install steps run? | Config steps run? |
+|------|--------------|-------------------|-------------------|
+| `dis install` | `"1"` | ✅ | ✅ |
+| `dis config` | absent | ❌ | ✅ |
 
 ---
 

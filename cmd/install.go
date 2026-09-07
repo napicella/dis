@@ -5,11 +5,12 @@ import (
 
 	"github.com/napicella/dis/internal/dis"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"lesiw.io/command/sys"
 )
 
 var installCmd = &cobra.Command{
-	Use:   "install --distro <path-to-distro.yml> [package-name]",
+	Use:   "install [package-name]",
 	Short: "Install packages defined in a distro YAML file",
 	Long: `Reads a distro YAML file and installs packages.
 
@@ -26,6 +27,7 @@ Before running each installer script the following env vars are set:
   DIS_DISTRO        - os name from the distro YAML (e.g. "ubuntu")
   DIS_EXPORTS_FILE  - path to a per-installer temp file; write KEY=value lines
                       here to export values to downstream installers
+  DIS_INSTALL       - set to "1"; use this to guard install-only steps in scripts
 
 Each installer is run inside a wrapper that sources ~/rc/configs-generated/bash_paths
 and ~/rc/configs-generated/bash_aliases so that PATH additions from earlier
@@ -41,20 +43,25 @@ Examples:
 	RunE: installCmdFn,
 }
 
-var distroFile string
-var installCommonSources string
 var installReinstall bool
 
 func init() {
-	installCmd.Flags().StringVarP(&distroFile, "distro", "d", "", "Path to the distro YAML file (required)")
-	installCmd.Flags().StringVarP(&installCommonSources, "sources", "s", "", "Path to use for ${common_sources} (overrides auto-detection)")
+	installCmd.Flags().String("distro", "", "Path to the distro YAML file")
+	installCmd.Flags().String("sources", "", "Path to use for ${common_sources} (overrides auto-detection)")
 	installCmd.Flags().BoolVar(&installReinstall, "reinstall", false, "Re-run installers even if already recorded as installed")
-	_ = installCmd.MarkFlagRequired("distro")
+	_ = viper.BindPFlag("distro", installCmd.Flags().Lookup("distro"))
+	_ = viper.BindPFlag("sources", installCmd.Flags().Lookup("sources"))
 	rootCmd.AddCommand(installCmd)
 }
 
 func installCmdFn(cmd *cobra.Command, args []string) error {
-	ic, err := dis.NewInstallContextWithCache(distroFile, installCommonSources)
+	distroFile := viper.GetString("distro")
+	if distroFile == "" {
+		return fmt.Errorf("required flag \"distro\" not set and not found in config file")
+	}
+	commonSources := viper.GetString("sources")
+
+	ic, err := dis.NewInstallContextWithCache(distroFile, commonSources)
 	if err != nil {
 		return err
 	}

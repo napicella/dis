@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/mitchellh/go-homedir"
 )
 
 // InstallContext holds the resolved domain state needed to execute one or more installers.
@@ -37,6 +39,10 @@ type InstallContext struct {
 // probe performed by commonSourceDir.
 func NewInstallContext(distroFile string, commonSources string) (*InstallContext, error) {
 	var err error
+	distroFile, err = homedir.Expand(distroFile)
+	if err != nil {
+		return nil, fmt.Errorf("expanding distro file path: %w", err)
+	}
 	distroFile, err = filepath.Abs(distroFile)
 	if err != nil {
 		return nil, fmt.Errorf("resolving distro file path: %w", err)

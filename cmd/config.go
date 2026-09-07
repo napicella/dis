@@ -5,11 +5,12 @@ import (
 
 	"github.com/napicella/dis/internal/dis"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"lesiw.io/command/sys"
 )
 
 var configCmd = &cobra.Command{
-	Use:   "config --distro <path-to-distro.yml> [package-name]",
+	Use:   "config [package-name]",
 	Short: "Re-apply the configuration part of installed packages",
 	Long: `Reads a distro YAML file and runs each installer without DIS_INSTALL set,
 instructing the script to perform only its configuration steps.
@@ -41,18 +42,22 @@ Examples:
 	RunE: configCmdFn,
 }
 
-var configDistroFile string
-var configCommonSources string
-
 func init() {
-	configCmd.Flags().StringVarP(&configDistroFile, "distro", "d", "", "Path to the distro YAML file (required)")
-	configCmd.Flags().StringVarP(&configCommonSources, "sources", "s", "", "Path to use for ${common_sources} (overrides auto-detection)")
-	_ = configCmd.MarkFlagRequired("distro")
+	configCmd.Flags().String("distro", "", "Path to the distro YAML file")
+	configCmd.Flags().String("sources", "", "Path to use for ${common_sources} (overrides auto-detection)")
+	_ = viper.BindPFlag("distro", configCmd.Flags().Lookup("distro"))
+	_ = viper.BindPFlag("sources", configCmd.Flags().Lookup("sources"))
 	rootCmd.AddCommand(configCmd)
 }
 
 func configCmdFn(cmd *cobra.Command, args []string) error {
-	ic, err := dis.NewInstallContextWithCache(configDistroFile, configCommonSources)
+	distroFile := viper.GetString("distro")
+	if distroFile == "" {
+		return fmt.Errorf("required flag \"distro\" not set and not found in config file")
+	}
+	commonSources := viper.GetString("sources")
+
+	ic, err := dis.NewInstallContextWithCache(distroFile, commonSources)
 	if err != nil {
 		return err
 	}
