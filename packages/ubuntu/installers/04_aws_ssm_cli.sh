@@ -4,13 +4,13 @@
 ### distro: [ubuntu]
 ### -- End
 
+if [[ -n "${DIS_INSTALL:-}" ]]; then
+  if command -v session-manager-plugin &> /dev/null; then
+      echo "aws ssm plugin is installed"
+      exit 0
+  fi
 
-if command -v session-manager-plugin &> /dev/null
-then
-    echo "aws ssm plugin is installed"
-    exit 0
+  curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "/tmp/session-manager-plugin.deb"
+  sudo dpkg -i /tmp/session-manager-plugin.deb
+  rm /tmp/session-manager-plugin.deb
 fi
-
-curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "/tmp/session-manager-plugin.deb"
-sudo dpkg -i /tmp/session-manager-plugin.deb
-rm /tmp/session-manager-plugin.deb

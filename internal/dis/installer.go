@@ -102,13 +102,38 @@ func (r *Installer) RunInstaller(ctx context.Context, ic *InstallContext, pkgNam
 		}
 	}
 
+	if err := r.runScript(ctx, ic, pkgName, map[string]string{"DIS_INSTALL": "1"}); err != nil {
+		return err
+	}
+
+	if err := RecordInstalled(pkgName); err != nil {
+		return fmt.Errorf("recording install state for %q: %w", pkgName, err)
+	}
+
+	return nil
+}
+
+// RunConfig looks up pkgName in ic.packages, then executes its installer
+// script via the wrapper without DIS_INSTALL set, instructing the script to
+// perform only its configuration steps. The already-installed state is ignored
+// and no install state is recorded after the run.
+func (r *Installer) RunConfig(ctx context.Context, ic *InstallContext, pkgName string) error {
+	fmt.Printf("==> Configuring %s\n", pkgName)
+	return r.runScript(ctx, ic, pkgName, nil)
+}
+
+// runScript is the shared implementation that looks up pkgName, builds the
+// environment, and executes the installer script via the wrapper. extraEnv
+// entries are merged into the environment last, overriding any previously set
+// key. After execution, any exports written by the script are read back into
+// ic.parameters. runScript does not touch install-state records.
+func (r *Installer) runScript(ctx context.Context, ic *InstallContext, pkgName string, extraEnv map[string]string) error {
 	manifest, ok := ic.pkgm.get(pkgName)
 	if !ok {
 		return fmt.Errorf("package %q not found in any of the configured sources", pkgName)
 	}
 
 	installerPath := manifest.InstallerPath
-	fmt.Printf("==> Installing %s (%s)\n", manifest.Provides, installerPath)
 
 	exportsFile, err := os.CreateTemp("", "dis-exports-*")
 	if err != nil {
@@ -134,6 +159,9 @@ func (r *Installer) RunInstaller(ctx context.Context, ic *InstallContext, pkgNam
 	for k, v := range pkgEnv {
 		envVars[k] = v
 	}
+	for k, v := range extraEnv {
+		envVars[k] = v
+	}
 
 	installerCtx := command.WithEnv(ctx, envVars)
 	if err := command.Exec(installerCtx, r.machine, r.wrapperPath, installerPath); err != nil {
@@ -144,10 +172,6 @@ func (r *Installer) RunInstaller(ctx context.Context, ic *InstallContext, pkgNam
 		if err := ic.addExports(exportsFile.Name(), manifest.Provides); err != nil {
 			return fmt.Errorf("reading exports from %q: %w", manifest.Provides, err)
 		}
-	}
-
-	if err := RecordInstalled(manifest.Provides); err != nil {
-		return fmt.Errorf("recording install state for %q: %w", manifest.Provides, err)
 	}
 
 	return nil

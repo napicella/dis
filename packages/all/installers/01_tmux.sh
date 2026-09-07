@@ -4,7 +4,9 @@
 ### distro: [ubuntu]
 ### -- End
 
-sudo apt install -y tmux
+if [[ -n "${DIS_INSTALL:-}" ]]; then
+  sudo apt install -y tmux
+fi
 
-# copy tmux config in the HOME dir
+# Config: always re-deploy the tmux config file.
 cp $DIS_CONFIG_FOLDER/.tmux.conf ~/

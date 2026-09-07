@@ -4,5 +4,7 @@
 ### distro: [ubuntu]
 ### -- End
 
-echo "Installing Node.js via mise"
-mise use --global node@lts
+if [[ -n "${DIS_INSTALL:-}" ]]; then
+  echo "Installing Node.js via mise"
+  mise use --global node@lts
+fi

@@ -4,5 +4,6 @@
 ### distro: [ubuntu]
 ### -- End
 
-
-sudo apt install -y gnome-tweak-tool | sudo apt install -y gnome-tweaks
+if [[ -n "${DIS_INSTALL:-}" ]]; then
+  sudo apt install -y gnome-tweak-tool | sudo apt install -y gnome-tweaks
+fi

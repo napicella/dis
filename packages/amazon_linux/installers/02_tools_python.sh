@@ -4,5 +4,7 @@
 ### distro: [amazon_linux]
 ### -- End
 
-echo "Installing Python via brew"
-brew install python
+if [[ -n "${DIS_INSTALL:-}" ]]; then
+  echo "Installing Python via brew"
+  brew install python
+fi

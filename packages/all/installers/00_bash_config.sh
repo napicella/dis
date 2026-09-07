@@ -8,7 +8,9 @@
 mkdir -p ~/rc
 cp "$DIS_CONFIG_FOLDER/bash_config.sh" ~/rc/bash_config.sh
 
-# Wire ~/.bashrc to source the bash config.
-dis tools add-home-rc \
-  --name 'bash config' \
-  --content '[ -f ~/rc/bash_config.sh ] && source ~/rc/bash_config.sh;'
+if [[ -n "${DIS_INSTALL:-}" ]]; then
+  # Wire ~/.bashrc to source the bash config.
+  dis tools add-home-rc \
+    --name 'bash config' \
+    --content '[ -f ~/rc/bash_config.sh ] && source ~/rc/bash_config.sh;'
+fi

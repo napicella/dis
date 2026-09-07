@@ -4,5 +4,7 @@
 ### distro: [amazon_linux]
 ### -- End
 
-echo "Installing Node.js via brew"
-brew install node
+if [[ -n "${DIS_INSTALL:-}" ]]; then
+  echo "Installing Node.js via brew"
+  brew install node
+fi

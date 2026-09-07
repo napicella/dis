@@ -70,21 +70,22 @@
 # --------------------------------------------------------------------
 set -euo pipefail
 
-SERVICE_DIR="$HOME/.config/systemd/user"
-SERVICE_FILE="$SERVICE_DIR/ssh-agent.service"
-ENV_DIR="$HOME/.config/environment.d"
-ENV_FILE="$ENV_DIR/ssh_auth_socket.conf"
+if [[ -n "${DIS_INSTALL:-}" ]]; then
+  SERVICE_DIR="$HOME/.config/systemd/user"
+  SERVICE_FILE="$SERVICE_DIR/ssh-agent.service"
+  ENV_DIR="$HOME/.config/environment.d"
+  ENV_FILE="$ENV_DIR/ssh_auth_socket.conf"
 
-if [ -f $ENV_FILE ]; then
-    echo "ssh agent already set up"
-    exit 0
-fi
+  if [ -f $ENV_FILE ]; then
+      echo "ssh agent already set up"
+      exit 0
+  fi
 
-echo "📂 Creating systemd user service directory..."
-mkdir -p "$SERVICE_DIR"
+  echo "📂 Creating systemd user service directory..."
+  mkdir -p "$SERVICE_DIR"
 
-echo "📝 Writing ssh-agent.service..."
-cat > "$SERVICE_FILE" <<'EOF'
+  echo "📝 Writing ssh-agent.service..."
+  cat > "$SERVICE_FILE" <<'EOF'
 [Unit]
 Description=SSH key agent
 
@@ -97,30 +98,32 @@ ExecStart=/usr/bin/ssh-agent -D -a $SSH_AUTH_SOCK
 WantedBy=default.target
 EOF
 
-echo "🔄 Reloading systemd user units..."
-systemctl --user daemon-reload
+  echo "🔄 Reloading systemd user units..."
+  systemctl --user daemon-reload
 
-echo "✅ Enabling and starting ssh-agent service..."
-systemctl --user enable ssh-agent
-systemctl --user start ssh-agent
+  echo "✅ Enabling and starting ssh-agent service..."
+  systemctl --user enable ssh-agent
+  systemctl --user start ssh-agent
 
-echo "📂 Creating environment.d directory..."
-mkdir -p "$ENV_DIR"
+  echo "📂 Creating environment.d directory..."
+  mkdir -p "$ENV_DIR"
 
-echo "📝 Writing SSH_AUTH_SOCK to $ENV_FILE"
-cat > "$ENV_FILE" <<'EOF'
+  echo "📝 Writing SSH_AUTH_SOCK to $ENV_FILE"
+  cat > "$ENV_FILE" <<'EOF'
 SSH_AUTH_SOCK=${XDG_RUNTIME_DIR}/ssh-agent.socket
 EOF
 
-echo "🔄 Reloading systemd user environment..."
-systemctl --user import-environment SSH_AUTH_SOCK || true
-dis tools add-rc-init \
-  --name 'SSH agent socket' \
-  --content 'export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket"'
+  echo "🔄 Reloading systemd user environment..."
+  systemctl --user import-environment SSH_AUTH_SOCK || true
 
-echo "🎉 Done!"
-echo "➡️  Log out and back in, or run:"
-echo "   export SSH_AUTH_SOCK=\$XDG_RUNTIME_DIR/ssh-agent.socket"
-echo "to make sure new shells see the agent."
-echo "Then you are ready to add you ssh key:"
-echo "   ssh-add ~/.ssh/<your_key>"
+  dis tools add-rc-init \
+    --name 'SSH agent socket' \
+    --content 'export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket"'
+
+  echo "🎉 Done!"
+  echo "➡️  Log out and back in, or run:"
+  echo "   export SSH_AUTH_SOCK=\$XDG_RUNTIME_DIR/ssh-agent.socket"
+  echo "to make sure new shells see the agent."
+  echo "Then you are ready to add you ssh key:"
+  echo "   ssh-add ~/.ssh/<your_key>"
+fi

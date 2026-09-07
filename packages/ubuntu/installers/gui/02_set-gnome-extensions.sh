@@ -11,61 +11,63 @@
 # Schema extensions allow to configure the extension config programmatically.
 # To list schema extensions:
 # gsettings list-schemas | grep extens
-# 
+#
 # Then you can find which config keys it supports with:
 # gsettings list-keys org.gnome.shell.extensions.switcher
 #
 # or
 # gsettings list-recursively org.gnome.shell.extensions.switcher
 
-
 if [[ "$XDG_SESSION_TYPE" == "tty" ]]; then
     echo "GUI install not available on tty session type"
     exit 0
 fi
 
-sudo apt install -y gnome-shell-extension-manager pipx
+if [[ -n "${DIS_INSTALL:-}" ]]; then
+  sudo apt install -y gnome-shell-extension-manager pipx
 
-# Turn off default Ubuntu extensions
-# need to disable otherwise the shortcuts conflicts with apps
-gnome-extensions disable ubuntu-dock@ubuntu.com
+  # Turn off default Ubuntu extensions
+  # need to disable otherwise the shortcuts conflicts with apps
+  gnome-extensions disable ubuntu-dock@ubuntu.com
 
-# Install the gnome-extension-cli (gext) [1]
-#
-# [1] https://github.com/essembeh/gnome-extensions-cli
-pipx install gnome-extensions-cli --system-site-packages
-# Note that to start using gnome-extensions-cli (gext), $HOME/.local/bin needs to be in PATH.
-bashrc_path_add '$HOME/.local/bin path' 'export PATH="$HOME/.local/bin:$PATH"'
-# To start using getx from the remaining of the commands, we are going to explicitly add it to the path.
-export PATH=$HOME/.local/bin:$PATH
+  # Install the gnome-extension-cli (gext) [1]
+  #
+  # [1] https://github.com/essembeh/gnome-extensions-cli
+  pipx install gnome-extensions-cli --system-site-packages
+  # Note that to start using gnome-extensions-cli (gext), $HOME/.local/bin needs to be in PATH.
+  bashrc_path_add '$HOME/.local/bin path' 'export PATH="$HOME/.local/bin:$PATH"'
+  # To start using getx from the remaining of the commands, we are going to explicitly add it to the path.
+  export PATH=$HOME/.local/bin:$PATH
 
+  # Pause to assure user is ready to accept confirmations
+  #
+  # In theory it should be possible to use gext --filesystem option which allows installing extensions without any Gnome
+  # session running (over ssh for example or headless). Unfortunately that uses the non native way to install
+  # Gnome extensions and does not always work. So for this works only if:
+  # - this is running from a gnome session
+  # - you are ready to ack the prompt that the Gnome shows when installing extensions.
+  read -p "To install Gnome extensions, you need to accept some confirmations. Are you ready? " -n 1 -r
+  if [[ ! $REPLY =~ ^[Yy]$ ]]
+  then
+      # handle exits from shell or function but don't exit interactive shell
+      [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1
+  fi
 
-# Pause to assure user is ready to accept confirmations
-#
-# In theory it should be possible to use gext --filesystem option which  allows installing extensions without any Gnome 
-# session running (over ssh for example or headless). Unfortunately that uses the non native way to install 
-# Gnome extensions and does not always work. So for this works only if:
-# - this is running from a gnome session
-# - you are ready to ack the prompt that the Gnome shows when installing extensions.
-read -p "To install Gnome extensions, you need to accept some confirmations. Are you ready? " -n 1 -r
-if [[ ! $REPLY =~ ^[Yy]$ ]]
-then
-    # handle exits from shell or function but don't exit interactive shell
-    [[ "$0" = "$BASH_SOURCE" ]] && exit 1 || return 1 
+  gext install switcher@landau.fi                                      # Switch windows or launch applications quickly by typing, similar to Alfred/Albert.
+  # gext install tactile@lundal.io                                     # Tile windows on a custom grid using your keyboard.
+  gext install tilingshell@ferrarodomenico.com                         # Extend Gnome Shell with advanced tiling window management (https://extensions.gnome.org/extension/7065/tiling-shell/).
+  gext install clipboard-indicator@tudmotu.com                         # Clipboard manager.
+  gext install ddterm@amezin.github.com                                # Drop down terminal extension for GNOME Shell. With tabs. Works on Wayland natively.
+
+  # Compile gsettings schemas in order to be able to set extension configs
+  # sudo cp ~/.local/share/gnome-shell/extensions/tactile@lundal.io/schemas/org.gnome.shell.extensions.tactile.gschema.xml /usr/share/glib-2.0/schemas/
+  sudo cp ~/.local/share/gnome-shell/extensions/switcher@landau.fi/schemas/org.gnome.shell.extensions.switcher.gschema.xml /usr/share/glib-2.0/schemas/
+  sudo cp ~/.local/share/gnome-shell/extensions/ddterm@amezin.github.com/schemas/org.gnome.shell.extensions.ddterm.gschema.xml /usr/share/glib-2.0/schemas
+  sudo cp ~/.local/share/gnome-shell/extensions/tilingshell\@ferrarodomenico.com/schemas/org.gnome.shell.extensions.tilingshell.gschema.xml /usr/share/glib-2.0/schemas
+  sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
 fi
 
-gext install switcher@landau.fi                                      # Switch windows or launch applications quickly by typing, similar to Alfred/Albert.
-# gext install tactile@lundal.io                                     # Tile windows on a custom grid using your keyboard.
-gext install tilingshell@ferrarodomenico.com                         # Extend Gnome Shell with advanced tiling window management (https://extensions.gnome.org/extension/7065/tiling-shell/).
-gext install clipboard-indicator@tudmotu.com                         # Clipboard manager.
-gext install ddterm@amezin.github.com                                # Drop down terminal extension for GNOME Shell. With tabs. Works on Wayland natively.
-
-# Compile gsettings schemas in order to be able to set extension configs
-# sudo cp ~/.local/share/gnome-shell/extensions/tactile@lundal.io/schemas/org.gnome.shell.extensions.tactile.gschema.xml /usr/share/glib-2.0/schemas/
-sudo cp ~/.local/share/gnome-shell/extensions/switcher@landau.fi/schemas/org.gnome.shell.extensions.switcher.gschema.xml /usr/share/glib-2.0/schemas/
-sudo cp ~/.local/share/gnome-shell/extensions/ddterm@amezin.github.com/schemas/org.gnome.shell.extensions.ddterm.gschema.xml /usr/share/glib-2.0/schemas
-sudo cp ~/.local/share/gnome-shell/extensions/tilingshell\@ferrarodomenico.com/schemas/org.gnome.shell.extensions.tilingshell.gschema.xml /usr/share/glib-2.0/schemas
-sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
+# Config: always re-apply extension settings.
 
 # Configure Switcher
 gsettings set org.gnome.shell.extensions.switcher show-switcher "['<Super>home']"
@@ -201,4 +203,3 @@ gsettings set $SCHEMA window-resizable false
 gsettings set $SCHEMA window-size 1.0
 gsettings set $SCHEMA window-skip-taskbar true
 gsettings set $SCHEMA window-stick true
-
