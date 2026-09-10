@@ -13,4 +13,9 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
   dis tools add-home-rc \
     --name 'bash config' \
     --content '[ -f ~/rc/bash_config.sh ] && source ~/rc/bash_config.sh;'
+
+  # Add ./local/bin to the path
+  dis tools add-rc-path \
+    --name './local/bin' \
+    --content 'export PATH="$HOME/.local/bin/:$PATH"'
 fi
