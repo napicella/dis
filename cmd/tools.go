@@ -49,6 +49,7 @@ func init() {
 	rcFlags(addRCInitCmd)
 	rcFlags(addRCPathCmd)
 	rcFlags(addRCAliasesCmd)
+	addRCAliasesCmd.Flags().StringVar(&rcOwner, "owner", "", "lock the section to this owner (package name); only the same owner can overwrite it")
 	rcFlags(addHomeRCCmd)
 	toolsCmd.AddCommand(addRCInitCmd)
 	toolsCmd.AddCommand(addRCPathCmd)
@@ -58,7 +59,7 @@ func init() {
 	exportEnvCmd.Flags().StringVar(&exportKey, "key", "", "key to export")
 	exportEnvCmd.Flags().StringVar(&exportValue, "value", "", "value to export")
 	toolsCmd.AddCommand(exportEnvCmd)
-	
+
 	rootCmd.AddCommand(toolsCmd)
 }
 
@@ -81,6 +82,7 @@ func createGnomeShortcutCmdFn(cmd *cobra.Command, _ []string) error {
 var (
 	rcName    string
 	rcContent string
+	rcOwner   string
 )
 
 // rcFlags registers --name and --content on a command and marks them required.
@@ -126,7 +128,7 @@ Example:
 		if err != nil {
 			return err
 		}
-		return tools.AddRCSection(path, rcName, rcContent)
+		return tools.AddRCSection(path, rcName, rcContent, "")
 	},
 }
 
@@ -148,7 +150,7 @@ Example:
 		if err != nil {
 			return err
 		}
-		return tools.AddRCSection(path, rcName, rcContent)
+		return tools.AddRCSection(path, rcName, rcContent, "")
 	},
 }
 
@@ -159,21 +161,20 @@ var addRCAliasesCmd = &cobra.Command{
 
 bash_aliases is sourced by the dis wrapper before each installer runs.
 
-Examples:
-  dis tools add-home-rc \
-    --name 'alias change dir to the dis config folder' \
-    --content "alias c='cd ${DIS_CONFIG_FOLDER}'"
+Use --owner to lock the section: only the same owner package can overwrite it.
 
-  dis tools add-home-rc \
-    --name 'alias change dir to the home folder' \
-    --content "alias h='cd \${HOME}'"
+Examples:
+  dis tools add-rc-aliases \
+    --name 'ls aliases' \
+    --owner 'tools/eza' \
+    --content "alias ls='eza --icons=auto'"
 `,
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		path, err := rcFilePath("rc/configs-generated/bash_aliases")
 		if err != nil {
 			return err
 		}
-		return tools.AddRCSection(path, rcName, rcContent)
+		return tools.AddRCSection(path, rcName, rcContent, rcOwner)
 	},
 }
 
@@ -195,12 +196,12 @@ Example:
 		if err != nil {
 			return err
 		}
-		return tools.AddRCSection(path, rcName, rcContent)
+		return tools.AddRCSection(path, rcName, rcContent, "")
 	},
 }
 
 var (
-	exportKey  string
+	exportKey   string
 	exportValue string
 )
 
