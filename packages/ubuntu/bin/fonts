@@ -15,15 +15,9 @@ set_font() {
     cd -
   fi
 
-  gsettings set org.gnome.desktop.interface monospace-font-name "$font_name 14"
-
-  # set font for the gnome terminal.
-  #
-  # 'b1dcc9dd-5262-4d8d-a863-c897e6d979b9' is the ID of the default profile. You can double check by calling 
-  # gsettings get org.gnome.Terminal.ProfilesList list
-  # 
-  # Ref: https://askubuntu.com/questions/1110903/change-terminal-font-size-programatically
-  gsettings set org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9/ font "'${font_name} 16'"
+  gsettings set org.gnome.desktop.interface font-name "$font_name 13"
+  gsettings set org.gnome.desktop.interface document-font-name "$font_name 13"
+  gsettings set org.gnome.desktop.interface monospace-font-name "$font_name 13"
   
   # set font for vscode.
   sed -i "s/\"editor.fontFamily\": \".*\"/\"editor.fontFamily\": \"$font_name\"/g" ~/.config/Code/User/settings.json
