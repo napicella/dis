@@ -34,11 +34,6 @@ symbol = ""
 style = "main_color"
 format = " (\\([$branch]($style)\\))"
 
-[aws]
-format = "\\[[($profile.)$region]($style)\\]"
-style = "secondary_color"
-force_display = false
-
 [username]
 style_user = "main_color bold"
 style_root = "red bold"
@@ -48,8 +43,13 @@ show_always = true
 [hostname]
 ssh_only = true
 format = '[$ssh_symbol $hostname](main_color bold) '
-# trim_at = 'dev-dsk'
+trim_at = '-napicell'
 ssh_symbol = '☁ '
+
+[aws]
+format = "\\[[($profile.)$region]($style)\\]"
+style = "secondary_color"
+force_display = false
 
 [aws.region_aliases]
 # US East (N. Virginia) - United States - Washington Dulles International Airport (IAD)
