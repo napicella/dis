@@ -6,6 +6,19 @@ $hostname$username$character
 
 palette = "custom"
 
+# Define custom palettes
+[palettes.default]
+main_color = '#875fff'
+secondary_color = '#d446d2'
+
+[palettes.custom]
+main_color = "#A08AE2"
+secondary_color = "#A9E9B7"
+
+[directory]
+style = "secondary_color"
+format = "\\[[$path]($style)\\]"
+
 [aws]
 format = "\\[[($profile.)$region]($style)\\]"
 style = "secondary_color"
@@ -47,33 +60,16 @@ sa-east-1 = 'gru'
 # Africa (Cape Town) - South Africa - Cape Town International Airport (CPT)
 af-south-1 = 'cpt'
 
-# Define custom palettes
-[palettes.default]
-main_color = '#875fff'
-secondary_color = '#d446d2'
-
-[palettes.custom]
-main_color = "#A08AE2"
-secondary_color = "#A9E9B7"
-
-[time]
-disabled = false
-format = "\\[[$time]($style)\\]"
-time_format = "%F %T"
-style = "secondary_color"
-
-[directory]
-style = "secondary_color"
-format = "\\[[$path]($style)\\]"
-
-[character]
-success_symbol = "[❯](main_color bold)"
-error_symbol = "[❯](red bold)"
-
 [git_branch]
 symbol = ""
 style = "main_color"
 format = " (\\([$branch]($style)\\))"
+
+[hostname]
+ssh_only = true
+format = '[$ssh_symbol $hostname](main_color bold) '
+trim_at = '-napicell'
+ssh_symbol = '☁ '
 
 [username]
 style_user = "main_color bold"
@@ -81,8 +77,12 @@ style_root = "red bold"
 format = "[$user]($style) "
 show_always = true
 
-[hostname]
-ssh_only = true
-format = '[$ssh_symbol $hostname](main_color bold) '
-trim_at = '-napicell'
-ssh_symbol = '☁ '
+[character]
+success_symbol = "[❯](main_color bold)"
+error_symbol = "[❯](red bold)"
+
+[time]
+disabled = false
+format = "\\[[$time]($style)\\]"
+time_format = "%F %T"
+style = "secondary_color"
