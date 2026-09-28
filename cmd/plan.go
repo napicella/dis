@@ -20,14 +20,13 @@ dependencies.
 
 Example:
   dis plan --distro ~/dotfiles/dis/distros/home-server.yml`,
-	RunE: planCmdFn,
+	PreRunE: bindSharedConfigFlags,
+	RunE:    planCmdFn,
 }
 
 func init() {
 	planCmd.Flags().String("distro", "", "Path to the distro YAML file")
 	planCmd.Flags().String("sources", "", "Path to use for ${common_sources} (overrides auto-detection)")
-	_ = viper.BindPFlag("distro", planCmd.Flags().Lookup("distro"))
-	_ = viper.BindPFlag("sources", planCmd.Flags().Lookup("sources"))
 	rootCmd.AddCommand(planCmd)
 }
 

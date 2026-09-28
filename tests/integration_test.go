@@ -169,7 +169,7 @@ func TestInstallIntegrationExportsCache(t *testing.T) {
 	// Step 2: re-run consumer only; producer is already installed (skipped)
 	// but TOKEN must come from the exports cache.
 	mustDockerExec(t, containerID,
-		"/usr/local/bin/dis", "run",
+		"/usr/local/bin/dis", "install",
 		"--distro", "/testdata/distro.yml",
 		"--reinstall",
 		"test/consumer",
@@ -524,7 +524,7 @@ func TestInstallIntegrationRCTools(t *testing.T) {
 
 	// --- Idempotency: reinstall rc-tools and verify sections appear only once ---
 	mustDockerExec(t, containerID,
-		"/usr/local/bin/dis", "run",
+		"/usr/local/bin/dis", "install",
 		"--distro", "/testdata/distro.yml",
 		"--reinstall",
 		"test/rc-tools",

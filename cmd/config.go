@@ -38,15 +38,14 @@ Before running each script the following env vars are set (same as install):
 Examples:
   dis config --distro ~/dotfiles/dis/distros/home-server.yml
   dis config --distro ~/dotfiles/dis/distros/home-server.yml common/starship`,
-	Args: cobra.MaximumNArgs(1),
-	RunE: configCmdFn,
+	Args:    cobra.MaximumNArgs(1),
+	PreRunE: bindSharedConfigFlags,
+	RunE:    configCmdFn,
 }
 
 func init() {
 	configCmd.Flags().String("distro", "", "Path to the distro YAML file")
 	configCmd.Flags().String("sources", "", "Path to use for ${common_sources} (overrides auto-detection)")
-	_ = viper.BindPFlag("distro", configCmd.Flags().Lookup("distro"))
-	_ = viper.BindPFlag("sources", configCmd.Flags().Lookup("sources"))
 	rootCmd.AddCommand(configCmd)
 }
 

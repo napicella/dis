@@ -39,8 +39,9 @@ Installers run on the host machine.
 Examples:
   dis install --distro ~/dotfiles/dis/distros/home-server.yml
   dis install --distro ~/dotfiles/dis/distros/home-server.yml home-server/containers`,
-	Args: cobra.MaximumNArgs(1),
-	RunE: installCmdFn,
+	Args:    cobra.MaximumNArgs(1),
+	PreRunE: bindSharedConfigFlags,
+	RunE:    installCmdFn,
 }
 
 var installReinstall bool
@@ -49,8 +50,6 @@ func init() {
 	installCmd.Flags().String("distro", "", "Path to the distro YAML file")
 	installCmd.Flags().String("sources", "", "Path to use for ${common_sources} (overrides auto-detection)")
 	installCmd.Flags().BoolVar(&installReinstall, "reinstall", false, "Re-run installers even if already recorded as installed")
-	_ = viper.BindPFlag("distro", installCmd.Flags().Lookup("distro"))
-	_ = viper.BindPFlag("sources", installCmd.Flags().Lookup("sources"))
 	rootCmd.AddCommand(installCmd)
 }
 

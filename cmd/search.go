@@ -11,9 +11,10 @@ import (
 )
 
 var searchCmd = &cobra.Command{
-	Use:   "search",
-	Short: "Search packages available from the sources defined in the distro file",
-	RunE:  searchCmdFn,
+	Use:     "search",
+	Short:   "Search packages available from the sources defined in the distro file",
+	PreRunE: bindSharedConfigFlags,
+	RunE:    searchCmdFn,
 }
 
 var searchReg string
@@ -23,8 +24,6 @@ func init() {
 	searchCmd.Flags().StringVarP(&searchReg, "regex", "r", "",
 		"A golang regular expression (https://pkg.go.dev/regexp) used to match the installer name")
 	searchCmd.Flags().String("sources", "", "Path to use for ${common_sources} (overrides auto-detection)")
-	_ = viper.BindPFlag("distro", searchCmd.Flags().Lookup("distro"))
-	_ = viper.BindPFlag("sources", searchCmd.Flags().Lookup("sources"))
 	_ = searchCmd.MarkFlagRequired("regex")
 	rootCmd.AddCommand(searchCmd)
 }
