@@ -15,4 +15,12 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
   export PATH="$DIS_PKG_ROOT/bin:$PATH"
 
   fonts "Cascadia Mono"
+
+  # Nerd Fonts only patch in icon sets, not general Unicode symbols such as
+  # U+23F5 (used by the Claude Code status line). Noto Sans Symbols 2 covers
+  # these and fontconfig picks it up as a fallback automatically.
+  if ! fc-list ':charset=23f5' family | grep -q .; then
+    sudo apt-get install -y fonts-noto-core
+    fc-cache -f
+  fi
 fi
