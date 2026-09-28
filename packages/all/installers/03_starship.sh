@@ -13,7 +13,7 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
     sudo apt -y install starship
   else
     # not ubuntu or ubuntu earlier than 25.04
-    curl -sS https://starship.rs/install.sh | sh
+    curl -sS https://starship.rs/install.sh | sh -s -- --yes
   fi
 
   # Wire starship into the shell RC (one-time setup).

@@ -13,10 +13,10 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
 
   # Install the required packages
   sudo yum groupinstall -y "Development Tools"
-  sudo yum install -y jq
   sudo yum install -y \
+      wget curl zip unzip tar gzip jq xz which gnupg2 gettext hostname \
       autoconf bison clang \
-      openssl-devel readline-devel zlib-devel libyaml-devel readline-devel ncurses-devel libffi-devel gdbm-devel jemalloc-devel \
+      openssl-devel zlib-devel libyaml-devel readline-devel ncurses-devel libffi-devel gdbm-devel jemalloc-devel \
       socat sqlite sqlite-devel strace \
       tree
 fi

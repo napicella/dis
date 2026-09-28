@@ -28,7 +28,10 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
   # Limit log size to avoid running out of disk
   echo '{"log-driver":"json-file","log-opts":{"max-size":"10m","max-file":"5"}}' | sudo tee /etc/docker/daemon.json
 
-  sudo systemctl stop docker
-  sudo systemctl daemon-reload
-  sudo systemctl start docker
+  # Restart only when systemd is running (not the case in containers or WSL).
+  if [[ -d /run/systemd/system ]]; then
+    sudo systemctl stop docker
+    sudo systemctl daemon-reload
+    sudo systemctl start docker
+  fi
 fi
