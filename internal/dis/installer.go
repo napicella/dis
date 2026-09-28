@@ -9,6 +9,18 @@ import (
 	"lesiw.io/command"
 )
 
+// PackageNotFoundError is returned by RunInstaller and RunConfig when the
+// requested package is not provided by any of the configured sources.
+// Suggestions holds the available package names closest to Name, best first.
+type PackageNotFoundError struct {
+	Name        string
+	Suggestions []string
+}
+
+func (e *PackageNotFoundError) Error() string {
+	return fmt.Sprintf("package %q not found in any of the configured sources", e.Name)
+}
+
 // Installer executes installers, config generators, and precondition scripts
 // against a specific machine. It owns the wrapper.sh helper file for the
 // lifetime of the session; call Close when done.
@@ -130,7 +142,11 @@ func (r *Installer) RunConfig(ctx context.Context, ic *InstallContext, pkgName s
 func (r *Installer) runScript(ctx context.Context, ic *InstallContext, pkgName string, extraEnv map[string]string) error {
 	manifest, ok := ic.pkgm.get(pkgName)
 	if !ok {
-		return fmt.Errorf("package %q not found in any of the configured sources", pkgName)
+		var names []string
+		for _, p := range ic.ListAvailablePackages() {
+			names = append(names, p.Provides)
+		}
+		return &PackageNotFoundError{Name: pkgName, Suggestions: suggestPackages(pkgName, names)}
 	}
 
 	installerPath := manifest.InstallerPath

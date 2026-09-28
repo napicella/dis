@@ -81,7 +81,7 @@ func installCmdFn(cmd *cobra.Command, args []string) error {
 	if len(args) == 1 {
 		pkgName := args[0]
 		if err := runner.RunInstaller(ctx, ic, pkgName); err != nil {
-			return err
+			return renderPackageNotFound(cmd, err)
 		}
 		fmt.Printf("✅ %s installed successfully.\n", pkgName)
 		return nil

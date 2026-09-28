@@ -76,7 +76,7 @@ func configCmdFn(cmd *cobra.Command, args []string) error {
 	if len(args) == 1 {
 		pkgName := args[0]
 		if err := runner.RunConfig(ctx, ic, pkgName); err != nil {
-			return err
+			return renderPackageNotFound(cmd, err)
 		}
 		fmt.Printf("✅ %s configured successfully.\n", pkgName)
 		return nil
