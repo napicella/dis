@@ -26,7 +26,6 @@ Example:
 
 func init() {
 	planCmd.Flags().String("distro", "", "Path to the distro YAML file")
-	planCmd.Flags().String("sources", "", "Path to use for ${common_sources} (overrides auto-detection)")
 	rootCmd.AddCommand(planCmd)
 }
 
@@ -35,9 +34,8 @@ func planCmdFn(_ *cobra.Command, _ []string) error {
 	if distroFile == "" {
 		return fmt.Errorf("required flag \"distro\" not set and not found in config file")
 	}
-	commonSources := viper.GetString("sources")
 
-	ic, err := dis.NewInstallContext(distroFile, commonSources)
+	ic, err := dis.NewInstallContext(distroFile)
 	if err != nil {
 		return err
 	}

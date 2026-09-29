@@ -18,12 +18,13 @@ To install to a custom location:
 INSTALL_DIR=/usr/local/bin bash <(curl -fsSL https://raw.githubusercontent.com/napicella/dis/main/install.sh)
 ```
 
-This installs the `dis` binary to `~/.local/bin` (or `INSTALL_DIR`) and downloads the built-in common packages to `~/.local/share/dis/packages`.
+This installs the `dis` binary to `~/.local/bin` (or `INSTALL_DIR`). Installers, including the built-in common packages, live in git repos that `dis pull` fetches (see [Repos and dis pull](#repos-and-dis-pull)).
 
-To keep the built-in packages up to date:
+To set up a machine from a distro that lives in a git repo:
 
 ```bash
-dis sync
+dis pull git@github.com:me/dotfiles.git --distro distros/laptop/laptop.yml
+dis install
 ```
 
 ---
@@ -55,15 +56,20 @@ os: ubuntu
 parameters:
   MY_PARAM: my-value
 
+repos:
+  dis:
+    url: https://github.com/napicella/dis.git
+
 sources:
-  - .                  # this directory (dis reads dis.ws.yml here)
-  - ${common_sources}  # built-in dis packages
+  - .                      # this directory (dis reads dis.ws.yml here)
+  - ${repos.dis}/packages  # built-in dis packages
 
 packages:
   - hello/greet
 ```
 
 - **`os`** — the target operating system (`ubuntu`, `amazon_linux`, or `all`).
+- **`repos`** — git repos the sources live in, referenced as `${repos.<name>}`. See [Repos and dis pull](#repos-and-dis-pull).
 - **`parameters`** — static key/value pairs injected into installers that declare them in `requires_env`. These are *global* parameters available to every package. Supports `${home}` which expands to the user's home directory.
 - **`sources`** — directories dis walks to discover installer scripts. If a `dis.ws.yml` is present in a source, dis uses it to scope which subdirectories to walk.
 - **`packages`** — the list of package names to install, in the order you declare them. Transitive dependencies are resolved automatically.
@@ -185,9 +191,9 @@ DIS_INSTALLER  = /home/nicola/dotfiles/tools/env-manager/env_manager_installer.s
 DIS_CONFIG_FOLDER = (empty — not declared)
 ```
 
-**Example 2 — source with a dis.ws.yml** (e.g. the built-in packages)
+**Example 2 — source with a dis.ws.yml** (e.g. the built-in packages, with the dis repo cloned at `~/dis`)
 
-Given this `dis.ws.yml` in `~/.local/share/dis/packages`:
+Given this `dis.ws.yml` in `~/dis/packages`:
 ```yaml
 packages:
   - root: ./all
@@ -195,13 +201,13 @@ packages:
 ```
 and an installer at:
 ```
-~/.local/share/dis/packages/all/installers/00_bash_config.sh
+~/dis/packages/all/installers/00_bash_config.sh
 ```
 dis sets:
 ```
-DIS_PKG_ROOT      = /home/nicola/.local/share/dis/packages/all
-DIS_INSTALLER     = /home/nicola/.local/share/dis/packages/all/installers/00_bash_config.sh
-DIS_CONFIG_FOLDER = /home/nicola/.local/share/dis/packages/all/configs
+DIS_PKG_ROOT      = /home/nicola/dis/packages/all
+DIS_INSTALLER     = /home/nicola/dis/packages/all/installers/00_bash_config.sh
+DIS_CONFIG_FOLDER = /home/nicola/dis/packages/all/configs
 ```
 
 **Example 3 — exporting and importing values between packages**
@@ -286,7 +292,8 @@ The `--distro` flag is optional on all commands if a [config file](#config-file)
 | `dis plan [--distro FILE]` | Show the ordered install plan without executing |
 | `dis search [--distro FILE] --regex PATTERN` | Search available packages by name |
 | `dis list` | List all packages recorded as installed |
-| `dis sync` | Update built-in packages from the latest release |
+| `dis pull GIT-URL [--distro FILE] [--path DIR]` | Clone a distro repo and every repo it declares, and set it as the default distro |
+| `dis pull` | Clone or fast-forward the repos of the configured distro |
 | `dis tools add-rc-init` | Upsert a section in `~/rc/configs-generated/bash_init` |
 | `dis tools add-rc-path` | Upsert a section in `~/rc/configs-generated/bash_paths` |
 | `dis tools add-rc-aliases` | Upsert a section in `~/rc/configs-generated/bash_aliases` |
@@ -300,16 +307,14 @@ dis reads an optional config file from `~/.config/dis/config.yaml`. Values defin
 
 ```yaml
 # ~/.config/dis/config.yaml
-distro: ~/dotfiles/dis/distros/home-server.yml
-sources: ~/dotfiles/dis/packages
+distro: ~/dotfiles/distros/home-server/home-server.yml
 ```
 
 Supported keys:
 
 | Key | Description |
 |---|---|
-| `distro` | Default path to the distro YAML file. Paths starting with `~/` are expanded to the home directory. |
-| `sources` | Default value for `--sources` (overrides auto-detection of `${common_sources}`). |
+| `distro` | Default path to the distro YAML file. Paths starting with `~/` are expanded to the home directory. `dis pull` sets it. |
 
 With a config file in place you can omit `--distro` on every command:
 
@@ -425,8 +430,41 @@ So a scoped value always overrides a global with the same name.
 
 ---
 
+## Repos and dis pull
+
+A distro declares the git repos its sources live in:
+
+```yaml
+repos:
+  dotfiles: { url: git@github.com:me/dotfiles.git }                  # cloned to ~/dotfiles
+  dis:      { url: https://github.com/napicella/dis.git, path: ~/github/dis, ref: main }
+sources:
+  - ${repos.self}/tools        # the repo that contains this distro file
+  - ${repos.dotfiles}/bashrc
+  - ${repos.dis}/packages
+```
+
+- **`url`** (required) is passed to `git clone` as is.
+- **`path`** defaults to `~/<name>`. `~` and `${home}` are expanded, and relative paths are relative to the home directory.
+- **`ref`** is an optional branch or tag to clone; the default is the remote's default branch.
+- **`${repos.self}`** is implicit: the root of the git repo that contains the distro file, or the distro file's folder if it isn't in a git repo. `self` can't be declared.
+- `${repos.<name>}` works in `sources`, precondition scripts and `parameters`. Referencing an undeclared repo, or one that isn't cloned yet, is an error.
+
+`dis pull` fetches them:
+
+```bash
+dis pull GIT-URL [--distro FILE] [--path DIR]   # first time on a machine
+dis pull                                        # later: update the configured distro's repos
+```
+
+With a URL, dis clones that repo (default `~/<repo-name>`) and finds the distro file in it: `--distro` is relative to the repo, and can be omitted when the repo contains exactly one distro. It then clones or updates every declared repo and writes `distro:` to `~/.config/dis/config.yaml`.
+
+Repos that already exist are fetched and fast-forwarded only when the work tree is clean, on a branch that tracks an upstream, and not diverged. Otherwise they are skipped with the reason, so local work is never touched. `install`, `config` and `plan` never touch the network and read the local clones, so local edits take effect right away.
+
+dis runs the `git` CLI, so your SSH config, keys and credential helpers apply.
+
 ## Built-in common packages
 
-The `${common_sources}` token in `sources` expands to `~/.local/share/dis/packages`, which contains packages shipped with dis. Commonly used built-in packages include `common/bash-config`, `common/mise`, `common/go`, `common/python`, `common/node`, `common/docker`, and others.
+The dis repo's `packages/` folder contains packages shipped with dis. Declare the dis repo and add `${repos.dis}/packages` to `sources` to use them. Commonly used built-in packages include `common/bash-config`, `common/mise`, `common/go`, `common/python`, `common/node`, `common/docker`, and others.
 
 Run `dis plan` to see the full list available for your distro.

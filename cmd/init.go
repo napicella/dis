@@ -101,11 +101,17 @@ parameters:
     value: scoped-value
     packages: [hello/greet]   # only injected into hello/greet
 
+# Git repos the sources live in. 'dis pull' clones them (default path ~/<name>)
+# and they are referenced as ${repos.<name>}. ${repos.self} is implicit: the
+# repo that contains this file.
+repos:
+  dis:
+    url: https://github.com/napicella/dis.git   # the dis built-in packages
+
 # Source directories dis will search for installer manifests.
-# ${common_sources} resolves to the dis built-in packages (~/.local/share/dis/packages).
 sources:
   - .
-  - ${common_sources}
+  - ${repos.dis}/packages
 
 # Ordered list of packages to install.
 packages:

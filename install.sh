@@ -79,8 +79,6 @@ if [[ ":${PATH}:" != *":${INSTALL_DIR}:"* ]]; then
   export PATH="${INSTALL_DIR}:${PATH}"
 fi
 
-# --- Sync common packages using the binary ---
-echo "==> Syncing common packages..."
-"${INSTALL_DIR}/${BINARY_NAME}" sync
-
-echo "==> Done. Run 'dis --help' to get started."
+echo "==> Done. Next, fetch the repos of your distro and install it:"
+echo "      dis pull <git-url of the repo with your distro> --distro <path/to/distro.yml>"
+echo "      dis install"

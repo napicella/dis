@@ -7,7 +7,7 @@ import (
 
 // sharedConfigFlags are flags declared by several commands that can also be
 // set in the config file (~/.config/dis/config.yaml).
-var sharedConfigFlags = []string{"distro", "sources"}
+var sharedConfigFlags = []string{"distro"}
 
 // bindSharedConfigFlags binds the running command's shared flags to viper.
 //

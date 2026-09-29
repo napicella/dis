@@ -15,6 +15,9 @@ type InstallContext struct {
 	Cfg DistroConfig
 	// DistroDir is the directory that contains the distro YAML file.
 	DistroDir string
+	// Repos are the distro's repos (including the implicit self repo) with
+	// their paths resolved.
+	Repos []ResolvedRepo
 
 	// parameters is a flat map of all global configuration values available to
 	// installers: static values from the distro file and runtime exports from 
@@ -34,10 +37,9 @@ type InstallContext struct {
 // binding helper script, and initialises parameters from the static distro
 // parameters. Preconditions are not run here.
 //
-// If commonSources is non-empty it is used as the resolution target for any
-// "${common_sources}" token in the distro YAML, overriding the default XDG
-// probe performed by commonSourceDir.
-func NewInstallContext(distroFile string, commonSources string) (*InstallContext, error) {
+// ${home} and ${repos.<name>} are expanded in sources, precondition scripts and
+// parameter values.
+func NewInstallContext(distroFile string) (*InstallContext, error) {
 	var err error
 	distroFile, err = homedir.Expand(distroFile)
 	if err != nil {
@@ -59,24 +61,17 @@ func NewInstallContext(distroFile string, commonSources string) (*InstallContext
 		return nil, fmt.Errorf("resolving home directory: %w", err)
 	}
 
-	expandHome := func(s string) string {
-		return strings.ReplaceAll(s, "${home}", home)
+	repos, err := ResolveRepos(cfg, distroDir)
+	if err != nil {
+		return nil, fmt.Errorf("distro %q: %w", distroFile, err)
 	}
+	vars := newVarExpander(home, repos)
 
 	var resolvedSources []string
 	for _, src := range cfg.Sources {
-		src = expandHome(src)
-		if src == commonSourceToken {
-			var dir string
-			if commonSources != "" {
-				dir = commonSources
-			} else {
-				dir = commonSourceDir()
-			}
-			if dir != "" {
-				resolvedSources = append(resolvedSources, dir)
-			}
-			continue
+		src, err = vars.expand(src)
+		if err != nil {
+			return nil, fmt.Errorf("distro %q: sources: %w", distroFile, err)
 		}
 		if !filepath.IsAbs(src) {
 			resolvedSources = append(resolvedSources, filepath.Clean(filepath.Join(distroDir, src)))
@@ -96,16 +91,24 @@ func NewInstallContext(distroFile string, commonSources string) (*InstallContext
 	// Resolve all script paths in preconditions and config generators to
 	// absolute paths so callers never need to handle relative paths.
 	for i, pc := range cfg.Preconditions {
-		if !filepath.IsAbs(pc.Script) {
-			cfg.Preconditions[i].Script = filepath.Clean(filepath.Join(distroDir, pc.Script))
+		script, err := vars.expand(pc.Script)
+		if err != nil {
+			return nil, fmt.Errorf("distro %q: preconditions: %w", distroFile, err)
 		}
+		if !filepath.IsAbs(script) {
+			script = filepath.Clean(filepath.Join(distroDir, script))
+		}
+		cfg.Preconditions[i].Script = script
 	}
 
 	// Split parameters into globals and per-package scoped maps.
 	params := make(map[string]string, len(cfg.Parameters))
 	scopedParameters := make(map[string]map[string]string)
 	for k, pv := range cfg.Parameters {
-		expanded := expandHome(pv.Value)
+		expanded, err := vars.expand(pv.Value)
+		if err != nil {
+			return nil, fmt.Errorf("distro %q: parameters.%s: %w", distroFile, k, err)
+		}
 		if len(pv.Packages) == 0 {
 			// Global parameter — available to every package.
 			params[k] = expanded
@@ -123,6 +126,7 @@ func NewInstallContext(distroFile string, commonSources string) (*InstallContext
 	return &InstallContext{
 		Cfg:              cfg,
 		DistroDir:        distroDir,
+		Repos:            repos,
 		manifests:        manifests,
 		pkgm:             pkgm,
 		parameters:       params,
@@ -134,8 +138,8 @@ func NewInstallContext(distroFile string, commonSources string) (*InstallContext
 // persistent exports cache into ic.parameters. Use this in the install/run
 // command so that packages skipped as already-installed still contribute
 // their exported values to downstream installers.
-func NewInstallContextWithCache(distroFile string, commonSources string) (*InstallContext, error) {
-	ic, err := NewInstallContext(distroFile, commonSources)
+func NewInstallContextWithCache(distroFile string) (*InstallContext, error) {
+	ic, err := NewInstallContext(distroFile)
 	if err != nil {
 		return nil, err
 	}

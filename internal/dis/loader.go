@@ -10,30 +10,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// commonSourceToken is the placeholder that expands to the first conventional
-// dis packages directory found on disk.
-const commonSourceToken = "${common_sources}"
-
 // workspaceFile is the name of the optional workspace marker file.
 const workspaceFile = "dis.ws.yml"
 
-// commonSourceDir returns the first existing conventional dis packages directory,
-// probing in XDG-style priority order. Returns "" if none exist.
-func commonSourceDir() string {
-	home, _ := os.UserHomeDir()
-	for _, c := range []string{
-		filepath.Join(home, ".local/share/dis/packages"),
-		"/usr/local/share/dis/packages",
-		"/usr/share/dis/packages",
-	} {
-		if _, err := os.Stat(c); err == nil {
-			return c
-		}
-	}
-	return ""
+// loadDistro reads and parses a distro YAML file.
+// LoadDistro reads and parses a distro YAML file without resolving its sources.
+func LoadDistro(path string) (DistroConfig, error) {
+	return loadDistro(path)
 }
 
-// loadDistro reads and parses a distro YAML file.
 func loadDistro(path string) (DistroConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {

@@ -23,58 +23,51 @@ func newSharedFlagsCmd(use string, got map[string]string) *cobra.Command {
 		},
 	}
 	c.Flags().String("distro", "", "Path to the distro YAML file")
-	c.Flags().String("sources", "", "Path to use for ${common_sources} (overrides auto-detection)")
 	return c
 }
 
 func TestSharedConfigFlagsPrecedence(t *testing.T) {
-	const configYAML = "distro: /from/config/distro.yml\nsources: /from/config/sources\n"
+	const configYAML = "distro: /from/config/distro.yml\n"
 
 	tests := []struct {
-		name        string
-		config      string
-		subcmd      string
-		args        []string
-		wantDistro  string
-		wantSources string
+		name       string
+		config     string
+		subcmd     string
+		args       []string
+		wantDistro string
 	}{
 		{
-			name:        "flags override config",
-			config:      configYAML,
-			subcmd:      "first",
-			args:        []string{"--distro", "/from/flag/distro.yml", "--sources", "/from/flag/sources"},
-			wantDistro:  "/from/flag/distro.yml",
-			wantSources: "/from/flag/sources",
+			name:       "flags override config",
+			config:     configYAML,
+			subcmd:     "first",
+			args:       []string{"--distro", "/from/flag/distro.yml"},
+			wantDistro: "/from/flag/distro.yml",
 		},
 		{
 			// Regression: the last registered command's flag used to win.
-			name:        "flag honored on command that is not last registered",
-			config:      configYAML,
-			subcmd:      "first",
-			args:        []string{"--distro", "/from/flag/distro.yml"},
-			wantDistro:  "/from/flag/distro.yml",
-			wantSources: "/from/config/sources",
+			name:       "flag honored on command that is not last registered",
+			config:     configYAML,
+			subcmd:     "first",
+			args:       []string{"--distro", "/from/flag/distro.yml"},
+			wantDistro: "/from/flag/distro.yml",
 		},
 		{
-			name:        "flag honored on last registered command",
-			config:      configYAML,
-			subcmd:      "last",
-			args:        []string{"--distro", "/from/flag/distro.yml"},
-			wantDistro:  "/from/flag/distro.yml",
-			wantSources: "/from/config/sources",
+			name:       "flag honored on last registered command",
+			config:     configYAML,
+			subcmd:     "last",
+			args:       []string{"--distro", "/from/flag/distro.yml"},
+			wantDistro: "/from/flag/distro.yml",
 		},
 		{
-			name:        "config used when flags not set",
-			config:      configYAML,
-			subcmd:      "first",
-			wantDistro:  "/from/config/distro.yml",
-			wantSources: "/from/config/sources",
+			name:       "config used when flags not set",
+			config:     configYAML,
+			subcmd:     "first",
+			wantDistro: "/from/config/distro.yml",
 		},
 		{
-			name:        "empty when neither flag nor config set",
-			subcmd:      "first",
-			wantDistro:  "",
-			wantSources: "",
+			name:       "empty when neither flag nor config set",
+			subcmd:     "first",
+			wantDistro: "",
 		},
 	}
 
@@ -108,9 +101,6 @@ func TestSharedConfigFlagsPrecedence(t *testing.T) {
 
 			if got["distro"] != tt.wantDistro {
 				t.Errorf("distro = %q, want %q", got["distro"], tt.wantDistro)
-			}
-			if got["sources"] != tt.wantSources {
-				t.Errorf("sources = %q, want %q", got["sources"], tt.wantSources)
 			}
 		})
 	}

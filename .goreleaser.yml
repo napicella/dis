@@ -20,14 +20,6 @@ archives:
     format: tar.gz
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
 
-  - id: packages
-    format: tar.gz
-    name_template: "{{ .ProjectName }}_packages"
-    files:
-      - packages/*
-      - packages/**/*
-    meta: true
-
 checksum:
   name_template: checksums.txt
 

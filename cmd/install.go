@@ -48,7 +48,6 @@ var installReinstall bool
 
 func init() {
 	installCmd.Flags().String("distro", "", "Path to the distro YAML file")
-	installCmd.Flags().String("sources", "", "Path to use for ${common_sources} (overrides auto-detection)")
 	installCmd.Flags().BoolVar(&installReinstall, "reinstall", false, "Re-run installers even if already recorded as installed")
 	rootCmd.AddCommand(installCmd)
 }
@@ -58,9 +57,8 @@ func installCmdFn(cmd *cobra.Command, args []string) error {
 	if distroFile == "" {
 		return fmt.Errorf("required flag \"distro\" not set and not found in config file")
 	}
-	commonSources := viper.GetString("sources")
 
-	ic, err := dis.NewInstallContextWithCache(distroFile, commonSources)
+	ic, err := dis.NewInstallContextWithCache(distroFile)
 	if err != nil {
 		return err
 	}

@@ -42,7 +42,7 @@ When an installer exports values, those values are written both into the current
 
 ### `dis install`
 
-1. **Load** — the distro YAML is parsed, sources are walked, manifests are collected, and the package dependency graph is built. Parameters from the distro YAML are loaded into the context (including `${home}` expansion). The exports cache is loaded into the parameters map.
+1. **Load** — the distro YAML is parsed, `repos` are resolved to local paths (the implicit `self` repo is the git root of the distro file), `${home}` and `${repos.<name>}` are expanded, sources are walked, manifests are collected, and the package dependency graph is built. Parameters from the distro YAML are loaded into the context. The exports cache is loaded into the parameters map.
 2. **Preconditions** — precondition scripts are run with their declared parameters; any failure aborts the installation.
 3. **Resolve** — the full ordered list of manifests to install is computed by topological sort of the dependency graph for the declared packages.
 4. **Run** — each installer is executed in order via the wrapper script. If a package is already recorded as installed, it is skipped (but the cache may have already populated its exports). After each successful install, any exported values are merged into the parameters map and the cache, and the package is recorded as installed.
@@ -67,6 +67,8 @@ internal/dis/
   parser.go           Parse manifest header blocks from .sh files
   pkgmng.go           Package dependency graph and topological sort
   context.go          InstallContext construction and parameter resolution
+  repos.go            Resolve distro repos (incl. implicit self), expand ${home}/${repos.*}
+  git.go              Clone or fast-forward repos via the git CLI (dis pull)
   installer.go        Run preconditions, and installer scripts
   state.go            Installed-packages state file and exports cache (XDG)
   wrapper.sh          Shell wrapper sourced before every installer run

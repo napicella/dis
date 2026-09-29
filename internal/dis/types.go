@@ -56,13 +56,29 @@ type Precondition struct {
 	Uses []string `yaml:"uses"`
 }
 
+// Repo is a git repository declared in a distro's repos: map.
+type Repo struct {
+	// URL is the clone URL, passed to git as is.
+	URL string `yaml:"url"`
+	// Path is where the repo is cloned. Defaults to ~/<name>; ~ and ${home}
+	// are expanded and relative paths are resolved against the home directory.
+	Path string `yaml:"path"`
+	// Ref is an optional branch or tag to clone. Defaults to the remote's
+	// default branch.
+	Ref string `yaml:"ref"`
+}
+
 // DistroConfig is the structure of a distro YAML file.
 // Sources is a plain list of folder paths; the namespace for each installer
 // comes from its own provides: field.
 type DistroConfig struct {
-	OS       string   `yaml:"os"`
-	Sources  []string `yaml:"sources"`
-	Packages []string `yaml:"packages"`
+	OS string `yaml:"os"`
+	// Repos lists the git repositories the distro's sources live in, keyed by
+	// name. Sources, preconditions and parameters reference them as
+	// ${repos.<name>}; "self" is implicit and is the repo holding the distro file.
+	Repos    map[string]Repo `yaml:"repos"`
+	Sources  []string        `yaml:"sources"`
+	Packages []string        `yaml:"packages"`
 
 	// Parameters is the single source of truth for all config values in this
 	// distro. Each value can be a plain string (global, available to every

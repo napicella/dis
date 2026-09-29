@@ -23,7 +23,6 @@ func init() {
 	searchCmd.Flags().String("distro", "", "Path to the distro YAML file")
 	searchCmd.Flags().StringVarP(&searchReg, "regex", "r", "",
 		"A golang regular expression (https://pkg.go.dev/regexp) used to match the installer name")
-	searchCmd.Flags().String("sources", "", "Path to use for ${common_sources} (overrides auto-detection)")
 	_ = searchCmd.MarkFlagRequired("regex")
 	rootCmd.AddCommand(searchCmd)
 }
@@ -33,9 +32,8 @@ func searchCmdFn(_ *cobra.Command, _ []string) error {
 	if distroFile == "" {
 		return fmt.Errorf("required flag \"distro\" not set and not found in config file")
 	}
-	commonSources := viper.GetString("sources")
 
-	ic, err := dis.NewInstallContextWithCache(distroFile, commonSources)
+	ic, err := dis.NewInstallContextWithCache(distroFile)
 	if err != nil {
 		return err
 	}
