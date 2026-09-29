@@ -1,7 +1,7 @@
 format = """
 $directory\
 $aws$git_branch
-$hostname$username$character
+${env_var.MACHINE_NAME}$username$character
 """
 
 palette = "custom"
@@ -65,12 +65,6 @@ symbol = ""
 style = "main_color"
 format = " (\\([$branch]($style)\\))"
 
-[hostname]
-ssh_only = true
-format = '[$ssh_symbol $hostname](main_color bold) '
-trim_at = '-napicell'
-ssh_symbol = '☁ '
-
 [username]
 style_user = "main_color bold"
 style_root = "red bold"
@@ -86,3 +80,7 @@ disabled = false
 format = "\\[[$time]($style)\\]"
 time_format = "%F %T"
 style = "secondary_color"
+
+# Machine name exported by the bashrc from ~/.config/machine-name (short hostname over SSH as a fallback).
+[env_var.MACHINE_NAME]
+format = '[☁  $env_value](main_color bold) '
