@@ -11,7 +11,12 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
     exit 0
   fi
 
-  curl -s "https://get.sdkman.io" | bash
+  # Download the script first: piped into bash, a failed download would run an
+  # empty (or error page) script and still count as a success.
+  script=$(mktemp)
+  curl -fsSL "https://get.sdkman.io" -o "$script"
+  bash "$script"
+  rm -f "$script"
 
   dis tools add-rc-init \
     --name 'Sdkman' \

@@ -13,7 +13,12 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
     sudo apt -y install starship
   else
     # not ubuntu or ubuntu earlier than 25.04
-    curl -sS https://starship.rs/install.sh | sh -s -- --yes
+    # Download the script first: piped into sh, a failed download would run an
+    # empty (or error page) script and still count as a success.
+    script=$(mktemp)
+    curl -fsSL https://starship.rs/install.sh -o "$script"
+    sh "$script" --yes
+    rm -f "$script"
   fi
 
   # Wire starship into the shell RC (one-time setup).

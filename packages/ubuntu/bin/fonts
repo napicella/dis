@@ -19,11 +19,14 @@ set_font() {
   gsettings set org.gnome.desktop.interface document-font-name "$font_name 13"
   gsettings set org.gnome.desktop.interface monospace-font-name "$font_name 13"
   
-  # set font for vscode.
-  sed -i "s/\"editor.fontFamily\": \".*\"/\"editor.fontFamily\": \"$font_name\"/g" ~/.config/Code/User/settings.json
+  # set font for vscode, if it has a settings file.
+  local vscode_settings=~/.config/Code/User/settings.json
+  if [ -f "$vscode_settings" ]; then
+    sed -i "s/\"editor.fontFamily\": \".*\"/\"editor.fontFamily\": \"$font_name\"/g" "$vscode_settings"
+  fi
 }
 
-if [ "$#" -gt 1 ]; then
+if [ "$#" -ge 1 ]; then
   choice=${!#}
 else
   choice=$(gum choose "Mononoki" "Cascadia Mono" "Fira Mono" "JetBrains Mono" "<< Back" --height 7 --header "Choose your programming font")
