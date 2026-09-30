@@ -8,14 +8,19 @@
 mkdir -p ~/rc
 cp "$DIS_CONFIG_FOLDER/bash_config.sh" ~/rc/bash_config.sh
 
-if [[ -n "${DIS_INSTALL:-}" ]]; then
-  # Wire ~/.bashrc to source the bash config.
-  dis tools add-home-rc \
-    --name 'bash config' \
-    --content '[ -f ~/rc/bash_config.sh ] && source ~/rc/bash_config.sh;'
+# Wire ~/.bashrc to source the bash config.
+dis tools add-home-rc \
+  --name 'bash config' \
+  --content '[ -f ~/rc/bash_config.sh ] && source ~/rc/bash_config.sh;'
 
-  # Add ./local/bin to the path
-  dis tools add-rc-path \
-    --name './local/bin' \
-    --content 'export PATH="$HOME/.local/bin/:$PATH"'
-fi
+# Add ./local/bin to the path
+dis tools add-rc-path \
+  --name './local/bin' \
+  --content 'export PATH="$HOME/.local/bin/:$PATH"'
+
+# Default terminal editor. The guards keep a value set earlier, so a package
+# can override it.
+dis tools add-rc-path \
+  --name 'Editor default' \
+  --content 'export EDITOR="${EDITOR:-vim}"
+export VISUAL="${VISUAL:-$EDITOR}"'

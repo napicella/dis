@@ -142,11 +142,7 @@ func (r *Installer) RunConfig(ctx context.Context, ic *InstallContext, pkgName s
 func (r *Installer) runScript(ctx context.Context, ic *InstallContext, pkgName string, extraEnv map[string]string) error {
 	manifest, ok := ic.pkgm.get(pkgName)
 	if !ok {
-		var names []string
-		for _, p := range ic.ListAvailablePackages() {
-			names = append(names, p.Provides)
-		}
-		return &PackageNotFoundError{Name: pkgName, Suggestions: suggestPackages(pkgName, names)}
+		return ic.packageNotFound(pkgName)
 	}
 
 	installerPath := manifest.InstallerPath

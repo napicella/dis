@@ -1,7 +1,9 @@
 package tools
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -138,19 +140,66 @@ func AddRCSection(path, name, content, owner string) error {
 	}
 
 	// Different content or owner changed — remove the old section and re-append.
+	return appendSection(path, cutSection(existing, beginIdx, endIdx), begin, content, end)
+}
+
+// RemoveRCSection deletes a named section from the file at path, together with
+// the blank line that separated it from the rest of the file.
+//
+// A section locked by an owner can only be removed by the same owner; any
+// other caller has the removal skipped with a warning printed to stderr, as
+// with AddRCSection. A missing file or section is not an error, so removal is
+// idempotent.
+func RemoveRCSection(path, name, owner string) error {
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("reading %q: %w", path, err)
+	}
+
+	existing := string(raw)
+	beginIdx := strings.Index(existing, sectionBegin(name, ""))
+	if beginIdx == -1 {
+		return nil
+	}
+	end := sectionEnd(name)
+	endIdx := strings.Index(existing[beginIdx:], end)
+	if endIdx == -1 {
+		return fmt.Errorf("section %q in %q has a BEGIN marker but no END marker", name, path)
+	}
+	endIdx += beginIdx + len(end)
+
+	beginLine, _, _ := strings.Cut(existing[beginIdx:], "\n")
+	if existingOwner, isLocked := lockedOwner(beginLine); isLocked && existingOwner != owner {
+		fmt.Fprintf(os.Stderr, "skipping section %q: locked by %q\n", name, existingOwner)
+		return nil
+	}
+
+	rebuilt := cutSection(existing, beginIdx, endIdx)
+	if rebuilt != "" && !strings.HasSuffix(rebuilt, "\n") {
+		rebuilt += "\n"
+	}
+	return os.WriteFile(path, []byte(rebuilt), 0o644)
+}
+
+// cutSection returns existing with the section spanning [beginIdx, endIdx)
+// removed, collapsing the blank lines around it into a single separator.
+func cutSection(existing string, beginIdx, endIdx int) string {
 	before := existing[:beginIdx]
 	after := existing[endIdx:]
 	after = strings.TrimLeft(after, "\n")
 
 	rebuilt := strings.TrimRight(before, "\n")
-	if rebuilt != "" {
-		rebuilt += "\n"
+	if rebuilt == "" {
+		return after
 	}
+	rebuilt += "\n"
 	if after != "" {
 		rebuilt += "\n" + after
 	}
-
-	return appendSection(path, rebuilt, begin, content, end)
+	return rebuilt
 }
 
 // appendSection writes the file content and appends the new section to it.

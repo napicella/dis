@@ -51,9 +51,13 @@ func init() {
 	rcFlags(addRCAliasesCmd)
 	addRCAliasesCmd.Flags().StringVar(&rcOwner, "owner", "", "lock the section to this owner (package name); only the same owner can overwrite it")
 	rcFlags(addHomeRCCmd)
+	rmRCAliasesCmd.Flags().StringVar(&rcName, "name", "", "section identifier (unique per file)")
+	rmRCAliasesCmd.Flags().StringVar(&rcOwner, "owner", "", "owner the section is locked to, if any; a locked section can only be removed by its owner")
+	rmRCAliasesCmd.MarkFlagRequired("name") //nolint:errcheck
 	toolsCmd.AddCommand(addRCInitCmd)
 	toolsCmd.AddCommand(addRCPathCmd)
 	toolsCmd.AddCommand(addRCAliasesCmd)
+	toolsCmd.AddCommand(rmRCAliasesCmd)
 	toolsCmd.AddCommand(addHomeRCCmd)
 
 	exportEnvCmd.Flags().StringVar(&exportKey, "key", "", "key to export")
@@ -175,6 +179,27 @@ Examples:
 			return err
 		}
 		return tools.AddRCSection(path, rcName, rcContent, rcOwner)
+	},
+}
+
+var rmRCAliasesCmd = &cobra.Command{
+	Use:   "rm-rc-aliases",
+	Short: "Remove a named section from ~/rc/configs-generated/bash_aliases",
+	Long: `Remove a named section from ~/rc/configs-generated/bash_aliases.
+
+Use this when a package stops providing a section it used to add, so the stale
+section does not linger in the file. Removing a section that is not present is
+a no-op. A section locked with --owner can only be removed by the same owner.
+
+Example:
+  dis tools rm-rc-aliases --name 'Coder'
+`,
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		path, err := rcFilePath("rc/configs-generated/bash_aliases")
+		if err != nil {
+			return err
+		}
+		return tools.RemoveRCSection(path, rcName, rcOwner)
 	},
 }
 

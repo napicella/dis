@@ -175,6 +175,26 @@ func (ic *InstallContext) ListAvailablePackages() []PackageInfo {
 	return pkgInfos
 }
 
+// FindPackage returns the loaded package named name. When there is none it
+// returns a *PackageNotFoundError carrying "Did you mean this?" suggestions.
+func (ic *InstallContext) FindPackage(name string) (PackageInfo, error) {
+	m, ok := ic.pkgm.get(name)
+	if !ok {
+		return PackageInfo{}, ic.packageNotFound(name)
+	}
+	return PackageInfo{Provides: m.Provides, InstallerPath: m.InstallerPath, ConfigsDir: m.ConfigsDir}, nil
+}
+
+// packageNotFound builds the error for a lookup of name that matched nothing,
+// suggesting the closest loaded package names.
+func (ic *InstallContext) packageNotFound(name string) *PackageNotFoundError {
+	var names []string
+	for _, p := range ic.ListAvailablePackages() {
+		names = append(names, p.Provides)
+	}
+	return &PackageNotFoundError{Name: name, Suggestions: suggestPackages(name, names)}
+}
+
 // envForInstaller returns the env var map for the given installer, resolved
 // from rc.parameters and rc.scopedParameters. RequiresEnv entries come in
 // four forms:

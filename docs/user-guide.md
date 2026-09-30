@@ -280,6 +280,9 @@ dis tools add-rc-path --name "Mise path" \
 dis tools add-rc-aliases --name "Notifier" \
   --content '[[ -s "${HOME}/.local/share/notifier/notifier_aliases" ]] && source "${HOME}/.local/share/notifier/notifier_aliases"'
 
+# Remove an alias block a package no longer provides (no-op if absent)
+dis tools rm-rc-aliases --name "Notifier"
+
 # Wire ~/.bashrc to source a dotfiles .bashrc
 dis tools add-home-rc --name "bashrc" \
   --content 'if [ -f /path/to/dotfiles/.bashrc ]; then . /path/to/dotfiles/.bashrc; fi'
@@ -306,12 +309,15 @@ The `--distro` flag is optional on all commands if a [config file](#config-file)
 | `dis search [--distro FILE] [--package REGEX] --content REGEX` | Search installer lines, e.g. to find which package defines an alias |
 | `dis search [--distro FILE] [--package REGEX] --configs` | Print the config files referenced by the matched packages |
 | `dis search ... --json` | Print any search as a JSON array of `{package, path, line, text}` |
+| `dis edit [--distro FILE] PKG` | Open the package's config files in `$DIS_EDITOR`, `$VISUAL`, `$EDITOR` or `vi` (first set) |
+| `dis edit [--distro FILE] PKG --apply` | Same, then re-apply the package's config once the editor exits successfully |
 | `dis list` | List all packages recorded as installed |
 | `dis pull GIT-URL [--distro FILE] [--path DIR]` | Clone a distro repo and every repo it declares, and set it as the default distro |
 | `dis pull` | Clone or fast-forward the repos of the configured distro |
 | `dis tools add-rc-init` | Upsert a section in `~/rc/configs-generated/bash_init` |
 | `dis tools add-rc-path` | Upsert a section in `~/rc/configs-generated/bash_paths` |
 | `dis tools add-rc-aliases` | Upsert a section in `~/rc/configs-generated/bash_aliases` |
+| `dis tools rm-rc-aliases` | Remove a section from `~/rc/configs-generated/bash_aliases` |
 | `dis tools add-home-rc` | Upsert a section in `~/.bashrc` |
 
 ---
