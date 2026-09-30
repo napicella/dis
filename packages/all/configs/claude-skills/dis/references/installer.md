@@ -1,0 +1,81 @@
+# Writing a dis installer
+
+Authoritative details: `docs/user-guide.md` in the dis repo (Manifest format,
+Environment variables, RC helper tools) and `dis tools <command> --help`.
+
+## Template
+
+```bash
+### -- Manifest
+### provides: tools/foo
+### depends_on: [common/os-libs]
+### distro: [all]
+### -- End
+
+# Install-only steps: packages, downloads, builds. 'dis config' skips them.
+if [[ -n "${DIS_INSTALL:-}" ]]; then
+  case "$DIS_DISTRO" in
+    amazon_linux) sudo yum install -y foo ;;
+    ubuntu)       sudo DEBIAN_FRONTEND=noninteractive apt install -y foo ;;
+    *)            echo "tools/foo: unsupported distro '$DIS_DISTRO'" >&2; exit 1 ;;
+  esac
+fi
+
+# Config steps: run by both 'dis install' and 'dis config', so keep them idempotent.
+mkdir -p ~/.config/foo
+cp "$DIS_CONFIG_FOLDER/foo/config.toml" ~/.config/foo/config.toml
+
+dis tools add-rc-aliases \
+  --name 'foo aliases' \
+  --content "alias f='foo --fast'"
+```
+
+## Manifest
+
+| Field | Notes |
+|---|---|
+| `provides` | Unique `group/name`. Reuse the name only for OS variants of the same package. |
+| `distro` | `[all]`, `[ubuntu]`, `[amazon_linux]`. One file per OS when the steps differ a lot, else one `[all]` file with a `case "$DIS_DISTRO"`. |
+| `depends_on` | Packages that must run first, e.g. `common/go` before `go install`. |
+| `requires_env` | Distro `parameters` (`FOO`, `FOO_*`) or another package's exports (`pkg:VAR`). |
+| `exports_env` | Names written as `KEY=value` lines to `$DIS_EXPORTS_FILE`. |
+
+## Install-only vs config
+
+- **Inside `if [[ -n "${DIS_INSTALL:-}" ]]`:** only what is slow or needs the
+  network or root: apt/yum, `go install` / `cargo install` of third-party
+  tools, downloads.
+- **Outside:** everything else — copying configs, `dis tools add-rc-*`,
+  building tools from local source (so `dis config` picks up local changes).
+- Every step outside the guard must be safe to run again: `dis config` re-runs
+  it on every call. `dis tools` rc helpers already are (they upsert).
+- The script runs under `bash -e`: a failing command aborts the install.
+
+## Environment
+
+| Variable | Value |
+|---|---|
+| `DIS_PKG_ROOT` | Package root from `dis.ws.yml`, or the source directory |
+| `DIS_CONFIG_FOLDER` | Configs directory from `dis.ws.yml`; empty when none is declared |
+| `DIS_INSTALLER` | Absolute path of this script (`$(dirname "$DIS_INSTALLER")` for files next to it) |
+| `DIS_DISTRO` | The distro file's `os` |
+| `DIS_INSTALL` | `1` under `dis install`, unset under `dis config` |
+| `DIS_EXPORTS_FILE` | Where to write exports |
+
+Reference config files as `$DIS_CONFIG_FOLDER/...`: that is how
+`dis search --configs` finds them.
+
+## RC helpers
+
+Each upserts a named section in a file under `~/rc/configs-generated/`, which
+`~/.bashrc` sources in this order:
+
+| Command | File | Use for |
+|---|---|---|
+| `dis tools add-rc-path` | `bash_paths` | `PATH` and other `export`s. Also sourced before each installer, so later installers see them. |
+| `dis tools add-rc-aliases` | `bash_aliases` | Aliases and functions. `--owner` locks the section to a package. |
+| `dis tools add-rc-init` | `bash_init` | Code for interactive shells only (prompt hooks, completions). |
+| `dis tools rm-rc-aliases` | `bash_aliases` | Remove a section a package no longer provides. |
+| `dis tools add-home-rc` | `~/.bashrc` | Wiring a top-level rc file; rarely needed. |
+
+Section names must be unique per file; reuse the same name to update a section.

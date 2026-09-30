@@ -313,6 +313,7 @@ The `--distro` flag is optional on all commands if a [config file](#config-file)
 | `dis edit [--distro FILE] PKG --installer` / `--configs` | Open only the installer, or only the config files |
 | `dis edit [--distro FILE] PKG --apply` | Open, then re-apply the package's config once the editor exits successfully |
 | `dis list` | List all packages recorded as installed |
+| `dis list --sources [--distro FILE] [--json]` | List the distro's resolved source directories, with their repo and package count |
 | `dis pull GIT-URL [--distro FILE] [--path DIR]` | Clone a distro repo and every repo it declares, and set it as the default distro |
 | `dis pull` | Clone or fast-forward the repos of the configured distro |
 | `dis tools add-rc-init` | Upsert a section in `~/rc/configs-generated/bash_init` |

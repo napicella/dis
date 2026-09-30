@@ -7,8 +7,8 @@
 if [[ -n "${DIS_INSTALL:-}" ]]; then
   echo "Installing Rust/Cargo via mise"
   mise use --global rust@latest
-
-  dis tools add-rc-path \
-    --name 'Cargo' \
-    --content 'export PATH="$HOME/.cargo/bin:$PATH"'
 fi
+
+dis tools add-rc-path \
+  --name 'Cargo' \
+  --content 'export PATH="$HOME/.cargo/bin:$PATH"'

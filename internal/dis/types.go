@@ -129,6 +129,15 @@ type Manifest struct {
 	ConfigsDir string
 }
 
+// ResolvedSource is one entry of a distro's sources list.
+type ResolvedSource struct {
+	// Declared is the entry as written in the distro file, e.g.
+	// "${repos.dotfiles}/tools".
+	Declared string
+	// Path is the absolute directory Declared resolves to.
+	Path string
+}
+
 // PackageInfo contains read only info about a package.
 // It's a subset of a manifest.
 type PackageInfo struct {

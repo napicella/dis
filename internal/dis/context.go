@@ -19,6 +19,9 @@ type InstallContext struct {
 	// Repos are the distro's repos (including the implicit self repo) with
 	// their paths resolved.
 	Repos []ResolvedRepo
+	// Sources are the distro's sources in declaration order, with ${...}
+	// variables expanded and relative paths made absolute.
+	Sources []ResolvedSource
 
 	// parameters is a flat map of all global configuration values available to
 	// installers: static values from the distro file and runtime exports from 
@@ -68,17 +71,20 @@ func NewInstallContext(distroFile string) (*InstallContext, error) {
 	}
 	vars := newVarExpander(home, repos)
 
-	var resolvedSources []string
-	for _, src := range cfg.Sources {
-		src, err = vars.expand(src)
+	var (
+		sources         []ResolvedSource
+		resolvedSources []string
+	)
+	for _, declared := range cfg.Sources {
+		src, err := vars.expand(declared)
 		if err != nil {
 			return nil, fmt.Errorf("distro %q: sources: %w", distroFile, err)
 		}
 		if !filepath.IsAbs(src) {
-			resolvedSources = append(resolvedSources, filepath.Clean(filepath.Join(distroDir, src)))
-		} else {
-			resolvedSources = append(resolvedSources, src)
+			src = filepath.Clean(filepath.Join(distroDir, src))
 		}
+		sources = append(sources, ResolvedSource{Declared: declared, Path: src})
+		resolvedSources = append(resolvedSources, src)
 	}
 	manifests, err := loadInstallers(resolvedSources, cfg.OS)
 	if err != nil {
@@ -128,6 +134,7 @@ func NewInstallContext(distroFile string) (*InstallContext, error) {
 		Cfg:              cfg,
 		DistroDir:        distroDir,
 		Repos:            repos,
+		Sources:          sources,
 		manifests:        manifests,
 		pkgm:             pkgm,
 		parameters:       params,

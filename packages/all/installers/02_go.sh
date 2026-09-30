@@ -1,0 +1,36 @@
+### -- Manifest
+### provides: common/go
+### depends_on: [common/mise]
+### distro: [all]
+### -- End
+
+if [[ -n "${DIS_INSTALL:-}" ]]; then
+  echo "Installing Go via mise"
+  mise use --global golang@latest
+fi
+
+# By default mise sets GOBIN to ~/.local/share/mise/installs/go/<version>/bin, so
+# `go install`ed tools are tied to one Go version. After a Go upgrade, their shims
+# fail with "No version is set for shim". Turning this off keeps Go's default
+# $GOPATH/bin, including for callers that only go through shims (cron, systemd, IDEs).
+mise settings set go.set_gobin false
+
+# PATH priority, read only by mise: activated shells and shim-launched processes.
+# mise activate moves the shims right behind the active versions' dirs, ahead of
+# anything in bash_paths. Adding GOBIN through mise puts it first instead, so
+# go-installed tools don't pass through a stale shim.
+mise config set --global --append --type list env._.path '~/go/bin'
+
+# Saved in Go's own env file, which every go call reads (shells, IDEs, cron, shims),
+# unlike an rc export.
+go env -w GOPROXY=direct
+
+# GOPATH is left unset: Go's default is ~/go. GOBIN is exported to override a stale
+# value inherited from the login session (e.g. a versioned dir from the old setup),
+# and it's set statically: `$(go env GOBIN)` ran go through the shim at every shell
+# start. The PATH line is for dis installers: the wrapper sources bash_paths without
+# mise activate, so `_.path` above doesn't reach them.
+dis tools add-rc-path \
+  --name 'GOBIN' \
+  --content 'export GOBIN="$HOME/go/bin"
+export PATH="$GOBIN:$PATH"'
