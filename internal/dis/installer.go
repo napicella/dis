@@ -21,6 +21,17 @@ func (e *PackageNotFoundError) Error() string {
 	return fmt.Sprintf("package %q not found in any of the configured sources", e.Name)
 }
 
+// AmbiguousPackageError is returned by FindPackage when a short package name
+// is shared by several packages. Matches holds their full names, sorted.
+type AmbiguousPackageError struct {
+	Name    string
+	Matches []string
+}
+
+func (e *AmbiguousPackageError) Error() string {
+	return fmt.Sprintf("package name %q is ambiguous: %d packages have it", e.Name, len(e.Matches))
+}
+
 // Installer executes installers, config generators, and precondition scripts
 // against a specific machine. It owns the wrapper.sh helper file for the
 // lifetime of the session; call Close when done.

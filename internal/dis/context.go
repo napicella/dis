@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/mitchellh/go-homedir"
@@ -175,14 +176,37 @@ func (ic *InstallContext) ListAvailablePackages() []PackageInfo {
 	return pkgInfos
 }
 
-// FindPackage returns the loaded package named name. When there is none it
-// returns a *PackageNotFoundError carrying "Did you mean this?" suggestions.
+// FindPackage returns the loaded package named name. A name without a "/" may
+// also be a short name, the part after the last "/" (e.g. "herdr" for
+// "tools/herdr"), as long as a single package has it. A short name shared by
+// several packages returns an *AmbiguousPackageError listing them; a name that
+// matches nothing returns a *PackageNotFoundError with "Did you mean this?"
+// suggestions.
 func (ic *InstallContext) FindPackage(name string) (PackageInfo, error) {
-	m, ok := ic.pkgm.get(name)
-	if !ok {
-		return PackageInfo{}, ic.packageNotFound(name)
+	if m, ok := ic.pkgm.get(name); ok {
+		return PackageInfo{Provides: m.Provides, InstallerPath: m.InstallerPath, ConfigsDir: m.ConfigsDir}, nil
 	}
-	return PackageInfo{Provides: m.Provides, InstallerPath: m.InstallerPath, ConfigsDir: m.ConfigsDir}, nil
+	if !strings.Contains(name, "/") {
+		var matches []PackageInfo
+		for _, p := range ic.ListAvailablePackages() {
+			if p.Provides[strings.LastIndex(p.Provides, "/")+1:] == name {
+				matches = append(matches, p)
+			}
+		}
+		switch len(matches) {
+		case 0:
+		case 1:
+			return matches[0], nil
+		default:
+			names := make([]string, 0, len(matches))
+			for _, p := range matches {
+				names = append(names, p.Provides)
+			}
+			slices.Sort(names)
+			return PackageInfo{}, &AmbiguousPackageError{Name: name, Matches: names}
+		}
+	}
+	return PackageInfo{}, ic.packageNotFound(name)
 }
 
 // packageNotFound builds the error for a lookup of name that matched nothing,

@@ -24,6 +24,9 @@ script first, then the config files it references through $DIS_CONFIG_FOLDER
 (the ones 'dis search --configs' lists). Referenced directories are expanded to
 the text files they contain, so binary configs such as wallpapers are skipped.
 
+The package may be given by its short name, the part after the last "/"
+(e.g. "herdr" for "tools/herdr"), when no other package shares it.
+
   --installer  open the installer only
   --configs    open the config files only
 
@@ -46,7 +49,7 @@ Examples:
   dis edit common/starship
   dis edit common/starship --apply
   dis edit common/git --installer
-  DIS_EDITOR="code --wait" dis edit tools/herdr`,
+  DIS_EDITOR="code --wait" dis edit herdr`,
 	Args:    cobra.ExactArgs(1),
 	PreRunE: bindSharedConfigFlags,
 	RunE:    editCmdFn,
@@ -80,10 +83,13 @@ func editCmdFn(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	pkgName := args[0]
-	pkg, err := ic.FindPackage(pkgName)
+	pkg, err := ic.FindPackage(args[0])
 	if err != nil {
 		return renderPackageNotFound(cmd, err)
+	}
+	pkgName := pkg.Provides
+	if pkgName != args[0] {
+		fmt.Fprintf(cmd.ErrOrStderr(), "==> Editing %s\n", pkgName)
 	}
 
 	// From here on, failures are not usage mistakes.
