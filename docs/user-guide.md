@@ -309,8 +309,9 @@ The `--distro` flag is optional on all commands if a [config file](#config-file)
 | `dis search [--distro FILE] [--package REGEX] --content REGEX` | Search installer lines, e.g. to find which package defines an alias |
 | `dis search [--distro FILE] [--package REGEX] --configs` | Print the config files referenced by the matched packages |
 | `dis search ... --json` | Print any search as a JSON array of `{package, path, line, text}` |
-| `dis edit [--distro FILE] PKG` | Open the package's config files in `$DIS_EDITOR`, `$VISUAL`, `$EDITOR` or `vi` (first set) |
-| `dis edit [--distro FILE] PKG --apply` | Same, then re-apply the package's config once the editor exits successfully |
+| `dis edit [--distro FILE] PKG` | Open the package's installer and config files in `$DIS_EDITOR`, `$VISUAL`, `$EDITOR` or `vi` (first set) |
+| `dis edit [--distro FILE] PKG --installer` / `--configs` | Open only the installer, or only the config files |
+| `dis edit [--distro FILE] PKG --apply` | Open, then re-apply the package's config once the editor exits successfully |
 | `dis list` | List all packages recorded as installed |
 | `dis pull GIT-URL [--distro FILE] [--path DIR]` | Clone a distro repo and every repo it declares, and set it as the default distro |
 | `dis pull` | Clone or fast-forward the repos of the configured distro |

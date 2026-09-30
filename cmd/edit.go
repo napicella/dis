@@ -18,10 +18,14 @@ import (
 
 var editCmd = &cobra.Command{
 	Use:   "edit <package-name>",
-	Short: "Open the config files of a package in an editor",
-	Long: `Opens the config files a package references through $DIS_CONFIG_FOLDER
-(the same files 'dis search --configs' lists) in an editor, all at once.
-Referenced directories are expanded to the text files they contain.
+	Short: "Open the installer and config files of a package in an editor",
+	Long: `Opens a package in an editor, all its files at once: the installer
+script first, then the config files it references through $DIS_CONFIG_FOLDER
+(the ones 'dis search --configs' lists). Referenced directories are expanded to
+the text files they contain, so binary configs such as wallpapers are skipped.
+
+  --installer  open the installer only
+  --configs    open the config files only
 
 The editor is the first one set among:
   DIS_EDITOR  - an editor used only by dis, e.g. a GUI editor you do not want
@@ -41,18 +45,28 @@ with an error, nothing is applied.
 Examples:
   dis edit common/starship
   dis edit common/starship --apply
+  dis edit common/git --installer
   DIS_EDITOR="code --wait" dis edit tools/herdr`,
 	Args:    cobra.ExactArgs(1),
 	PreRunE: bindSharedConfigFlags,
 	RunE:    editCmdFn,
 }
 
-var editApply bool
+var (
+	editApply     bool
+	editConfigs   bool
+	editInstaller bool
+)
 
 func init() {
 	editCmd.Flags().String("distro", "", "Path to the distro YAML file")
 	editCmd.Flags().BoolVar(&editApply, "apply", false,
 		"re-run the package's configuration steps after the editor exits")
+	editCmd.Flags().BoolVar(&editConfigs, "configs", false,
+		"open the config files only, not the installer")
+	editCmd.Flags().BoolVar(&editInstaller, "installer", false,
+		"open the installer only, not the config files")
+	editCmd.MarkFlagsMutuallyExclusive("configs", "installer")
 	rootCmd.AddCommand(editCmd)
 }
 
@@ -75,16 +89,9 @@ func editCmdFn(cmd *cobra.Command, args []string) error {
 	// From here on, failures are not usage mistakes.
 	cmd.SilenceUsage = true
 
-	refs, err := dis.ReferencedConfigs(pkg)
-	if err != nil {
-		return fmt.Errorf("reading %s: %w", pkg.InstallerPath, err)
-	}
-	files, err := expandConfigFiles(refs)
+	files, err := filesToEdit(pkg, editInstaller, editConfigs)
 	if err != nil {
 		return err
-	}
-	if len(files) == 0 {
-		return fmt.Errorf("package %q references no text config files; its installer is %s", pkgName, pkg.InstallerPath)
 	}
 
 	ctx := cmd.Context()
@@ -109,6 +116,33 @@ func editCmdFn(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Printf("✅ %s configured successfully.\n", pkgName)
 	return nil
+}
+
+// filesToEdit returns the files to open for pkg: its installer, the configs it
+// references, or both (the default). The installer comes first, as the file the
+// configs are read from.
+func filesToEdit(pkg dis.PackageInfo, installerOnly, configsOnly bool) ([]string, error) {
+	var files []string
+	if !configsOnly {
+		files = append(files, pkg.InstallerPath)
+	}
+	if installerOnly {
+		return files, nil
+	}
+
+	refs, err := dis.ReferencedConfigs(pkg)
+	if err != nil {
+		return nil, fmt.Errorf("reading %s: %w", pkg.InstallerPath, err)
+	}
+	configs, err := expandConfigFiles(refs)
+	if err != nil {
+		return nil, err
+	}
+	if configsOnly && len(configs) == 0 {
+		return nil, fmt.Errorf("package %q references no text config files; its installer is %s",
+			pkg.Provides, pkg.InstallerPath)
+	}
+	return append(files, configs...), nil
 }
 
 // resolveEditor returns the editor command dis edit runs: the first non-empty
