@@ -136,4 +136,7 @@ type PackageInfo struct {
 	Provides string
 	// InstallerPath is the absolute path to the installer .sh file.
 	InstallerPath string
+	// ConfigsDir is the optional configs folder for this package; empty when
+	// not declared.
+	ConfigsDir string
 }

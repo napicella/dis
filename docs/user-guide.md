@@ -157,6 +157,18 @@ packages:
 
 Without `dis.ws.yml`, dis walks the entire source directory.
 
+The configs folder holds only files that installers deploy (copy, link or point
+a tool at). `dis search --configs` lists everything an installer references
+through `$DIS_CONFIG_FOLDER`, so helper scripts that installers `source` belong
+elsewhere, e.g. in a `lib/` folder under the package root:
+
+```bash
+source "$DIS_PKG_ROOT/lib/toolbox-lib.sh"
+```
+
+`.sh` files without a manifest block are not treated as installers, so a `lib/`
+folder under the root is safe.
+
 ---
 
 ## Environment variables available in installers
@@ -290,7 +302,9 @@ The `--distro` flag is optional on all commands if a [config file](#config-file)
 | `dis config [--distro FILE]` | Re-apply configs for all packages (skips install steps) |
 | `dis config [--distro FILE] PKG` | Re-apply config for a single package |
 | `dis plan [--distro FILE]` | Show the ordered install plan without executing |
-| `dis search [--distro FILE] --regex PATTERN` | Search available packages by name |
+| `dis search [--distro FILE] [--package REGEX]` | Search available packages by name (all packages when omitted) |
+| `dis search [--distro FILE] [--package REGEX] --content REGEX` | Search installer lines, e.g. to find which package defines an alias |
+| `dis search [--distro FILE] [--package REGEX] --configs` | Print the config files referenced by the matched packages |
 | `dis list` | List all packages recorded as installed |
 | `dis pull GIT-URL [--distro FILE] [--path DIR]` | Clone a distro repo and every repo it declares, and set it as the default distro |
 | `dis pull` | Clone or fast-forward the repos of the configured distro |
@@ -298,6 +312,37 @@ The `--distro` flag is optional on all commands if a [config file](#config-file)
 | `dis tools add-rc-path` | Upsert a section in `~/rc/configs-generated/bash_paths` |
 | `dis tools add-rc-aliases` | Upsert a section in `~/rc/configs-generated/bash_aliases` |
 | `dis tools add-home-rc` | Upsert a section in `~/.bashrc` |
+
+---
+
+## Searching packages
+
+`dis search` finds packages by name, by what their installers contain, or by
+the config files they deploy. Patterns are [Go regular expressions](https://pkg.go.dev/regexp)
+and are not anchored: `git` matches any package name containing `git`.
+
+```bash
+# Packages whose name contains "git"
+dis search --package git
+
+# Which package defines the `status` alias?
+dis search --content status
+dis search --package git --content status   # narrow to packages named *git*
+dis search --content 'status.*git'          # both terms on the same line
+
+# Edit a tool's config (the source file in the repo, not the deployed copy)
+vim $(dis search --package starship --configs)
+dis config common/starship                  # re-deploy it
+```
+
+- `--content` prints `package  installer:line  text` for every matching line;
+  the manifest header is skipped.
+- `--configs` prints one absolute path per line: the files and folders the
+  installer references as `$DIS_CONFIG_FOLDER/<path>`. The path stops at the first
+  variable (`$DIS_CONFIG_FOLDER/backgrounds/$THEME` gives the `backgrounds`
+  folder), comment lines are ignored and missing paths are skipped. It cannot be
+  combined with `--content`.
+- The command exits non-zero when nothing matches.
 
 ---
 

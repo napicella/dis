@@ -166,7 +166,11 @@ func (ic *InstallContext) ResolveInstallOrder() ([]Manifest, error) {
 func (ic *InstallContext) ListAvailablePackages() []PackageInfo {
 	var pkgInfos []PackageInfo
 	for _, v := range ic.manifests {
-		pkgInfos = append(pkgInfos, PackageInfo{v.Provides, v.InstallerPath})
+		pkgInfos = append(pkgInfos, PackageInfo{
+			Provides:      v.Provides,
+			InstallerPath: v.InstallerPath,
+			ConfigsDir:    v.ConfigsDir,
+		})
 	}
 	return pkgInfos
 }
