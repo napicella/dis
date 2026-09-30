@@ -305,6 +305,7 @@ The `--distro` flag is optional on all commands if a [config file](#config-file)
 | `dis search [--distro FILE] [--package REGEX]` | Search available packages by name (all packages when omitted) |
 | `dis search [--distro FILE] [--package REGEX] --content REGEX` | Search installer lines, e.g. to find which package defines an alias |
 | `dis search [--distro FILE] [--package REGEX] --configs` | Print the config files referenced by the matched packages |
+| `dis search ... --json` | Print any search as a JSON array of `{package, path, line, text}` |
 | `dis list` | List all packages recorded as installed |
 | `dis pull GIT-URL [--distro FILE] [--path DIR]` | Clone a distro repo and every repo it declares, and set it as the default distro |
 | `dis pull` | Clone or fast-forward the repos of the configured distro |
@@ -330,19 +331,48 @@ dis search --content status
 dis search --package git --content status   # narrow to packages named *git*
 dis search --content 'status.*git'          # both terms on the same line
 
-# Edit a tool's config (the source file in the repo, not the deployed copy)
-vim $(dis search --package starship --configs)
-dis config common/starship                  # re-deploy it
+# Config files of a tool (the source files in the repo, not the deployed copies)
+dis search --package starship --configs
 ```
 
-- `--content` prints `package  installer:line  text` for every matching line;
-  the manifest header is skipped.
-- `--configs` prints one absolute path per line: the files and folders the
-  installer references as `$DIS_CONFIG_FOLDER/<path>`. The path stops at the first
-  variable (`$DIS_CONFIG_FOLDER/backgrounds/$THEME` gives the `backgrounds`
-  folder), comment lines are ignored and missing paths are skipped. It cannot be
-  combined with `--content`.
+Every mode prints the same shape, one aligned row per result: the package, then
+a path.
+
+```
+$ dis search --package git
+common/git       …/installers/03_git.sh
+$ dis search --content status
+common/git       …/installers/03_git.sh:29  alias status='git status'
+$ dis search --package starship --configs
+common/starship  …/configs/starship/starship.toml
+```
+
+- Without `--configs` the path is the installer. `--content` appends `:line` to
+  it and adds the matching text as a third column; the manifest header is skipped.
+- With `--configs` the path is a file or folder the installer references as
+  `$DIS_CONFIG_FOLDER/<path>`. The path stops at the first variable
+  (`$DIS_CONFIG_FOLDER/backgrounds/$THEME` gives the `backgrounds` folder),
+  comment lines are ignored and missing paths are skipped. It cannot be combined
+  with `--content`.
 - The command exits non-zero when nothing matches.
+
+### JSON output
+
+`--json` prints the same results as a JSON array, for scripts. Every object has
+`package` and `path`; `line` and `text` are set only with `--content`. An empty
+search prints `[]` (and still exits non-zero).
+
+```bash
+dis search --content status --json
+# [{"package": "common/git", "path": "…/03_git.sh", "line": 29, "text": "alias status='git status'"}]
+
+# Edit a tool's config, then re-deploy it
+vim $(dis search --package starship --configs --json | jq -r '.[].path')
+dis config common/starship
+
+# Re-apply the package that defines an alias
+dis config "$(dis search --content 'alias status=' --json | jq -r '.[0].package')"
+```
 
 ---
 
