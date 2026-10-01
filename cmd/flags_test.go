@@ -110,7 +110,7 @@ func TestSharedConfigFlagsPrecedence(t *testing.T) {
 // viper bindings: every command declaring the shared flags must bind them in
 // PreRunE.
 func TestCommandsBindSharedFlagsAtRunTime(t *testing.T) {
-	for _, c := range []*cobra.Command{planCmd, installCmd, configCmd, searchCmd} {
+	for _, c := range []*cobra.Command{planCmd, installCmd, configCmd, searchPackagesCmd, searchInstallersCmd, searchConfigsCmd, sourcesCmd} {
 		if c.PreRunE == nil {
 			t.Errorf("%s: PreRunE not set; shared flags will not be bound", c.Name())
 		}

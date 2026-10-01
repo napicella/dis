@@ -11,13 +11,13 @@ truth for where packages are: never assume a repo or a directory, ask dis.
 
 For anything this skill does not cover, `dis <command> --help` is
 authoritative, then `docs/user-guide.md` in the dis repo
-(`dis list --sources` shows where the dis repo is: the source of repo `dis`).
+(`dis sources` shows where the dis repo is: the source of repo `dis`).
 
 ## Orient first
 
 ```bash
-dis list --sources            # sources of the current distro: declared, path, repo, package count
-dis search                    # every package available, with its installer path
+dis sources                   # sources of the current distro: declared, path, repo, package count
+dis search packages .         # every package available (installed or not), with its installer path
 dis list                      # packages recorded as installed on this machine
 dis plan                      # what 'dis install' would run, in order
 ```
@@ -30,9 +30,9 @@ dis plan                      # what 'dis install' would run, in order
 ## Find a package
 
 ```bash
-dis search -p mise --json        # by name (Go regexp, unanchored)
-dis search -c 'alias pull' --json  # by installer content -> package, file, line
-dis search -p starship --configs --json  # config files a package deploys
+dis search packages mise --json                     # by name (Go regexp, unanchored)
+dis search installers 'alias pull' --json           # by installer content -> package, file, line
+dis search configs . --package starship --json      # config files a package deploys
 ```
 
 Use `--json` and read `path` from it: the paths are resolved, so there is no
@@ -43,7 +43,7 @@ matches the distro file's `os`, so a search shows just this host's variant.
 Before changing a package, find every variant across all sources:
 
 ```bash
-grep -rl --include='*.sh' '^### provides: common/mise$' $(dis list --sources --json | jq -r '.[].path')
+grep -rl --include='*.sh' '^### provides: common/mise$' $(dis sources --json | jq -r '.[].path')
 ```
 
 A fix usually belongs in all variants (e.g. both the `ubuntu` and
@@ -59,7 +59,7 @@ install-only steps, which rc helpers it uses, how it copies configs.
 
 ## Create a package
 
-1. **Pick the source.** Run `dis list --sources` and choose with the user,
+1. **Pick the source.** Run `dis sources` and choose with the user,
    unless the request makes it obvious (a variant of an existing package goes
    next to it; "like the X package" goes where X is). Generic, reusable
    packages and personal ones usually live in different sources; ask rather
@@ -82,7 +82,7 @@ current distro file is in `~/.config/dis/config.yaml`; other distro files are
 YAML files with a `sources:` key, usually in the same repos:
 
 ```bash
-grep -rl --include='*.yml' '^sources:' $(dis list --sources --json | jq -r '.[].path' | xargs -n1 dirname | sort -u)
+grep -rl --include='*.yml' '^sources:' $(dis sources --json | jq -r '.[].path' | xargs -n1 dirname | sort -u)
 ```
 
 Ignore test fixtures and sandboxes in the results (`tests/`, `scratch/`).
@@ -92,7 +92,7 @@ Ignore test fixtures and sandboxes in the results (`tests/`, `scratch/`).
 In order, stopping at the first failure:
 
 1. `bash -n <installer>`
-2. `dis plan` lists the package where expected, and `dis search -p <name>`
+2. `dis plan` lists the package where expected, and `dis search packages <name>`
    finds it (a manifest error hides it).
 3. Dry run in a throwaway `$HOME`, so the real rc files are not touched. Put
    the dis binary on `PATH` and set what the installer reads:

@@ -16,54 +16,104 @@ import (
 
 var searchCmd = &cobra.Command{
 	Use:   "search",
-	Short: "Search packages available from the sources defined in the distro file",
-	Long: `Search the packages available from the sources defined in the distro file.
+	Short: "Search the packages available from the sources defined in the distro file",
+	Long: `Search the packages available from the sources defined in the distro file,
+installed or not. Say what to search with a subcommand:
+
+  packages REGEX     package names
+  installers REGEX   installer lines (the manifest header is skipped)
+  configs REGEX      paths of the config files installers reference through
+                     $DIS_CONFIG_FOLDER
 
 Patterns are golang regular expressions (https://pkg.go.dev/regexp); they are
-not anchored, so "git" matches any package name containing "git".
+not anchored, so "git" matches anything containing "git". installers and configs
+take --package REGEX to only look at the packages whose name matches.
 
-  --package  filters packages by name. Without any flag, every package matches.
-  --content  searches the installer lines of the matched packages (the manifest
-             header is skipped).
-  --configs  lists the config files the matched packages reference through
-             $DIS_CONFIG_FOLDER.
-
-Every mode prints the same shape: one "package  path" row per result, where path
-is the installer (or the config file with --configs). Content matches append
+Every subcommand prints the same shape: one "package  path" row per result, where
+path is the installer (or the config file for configs). Installer matches append
 ":line" to the path and the matching text as a third column. --json prints the
 same results as a JSON array of {package, path, line, text} objects; line and
-text are set only with --content.
+text are set only for installer matches.
 
 Exits non-zero when nothing matches.
 
 Examples:
-  dis search --package git
-  dis search --content status
-  dis search --package git --content status
-  dis search --content 'status.*git'
-  vim $(dis search --package starship --configs --json | jq -r '.[].path')`,
-	PreRunE: bindSharedConfigFlags,
-	RunE:    searchCmdFn,
+  dis search packages git
+  dis search installers status
+  dis search installers status --package git
+  dis search installers 'status.*git'
+  dis search configs . --package starship
+  vim $(dis search configs . --package starship --json | jq -r '.[].path')`,
+	Args: cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		return fmt.Errorf("say what to search: dis search packages|installers|configs REGEX")
+	},
 }
 
-var (
-	searchPackage string
-	searchContent string
-	searchConfigs bool
-	searchJSON    bool
-)
+var searchPackagesCmd = &cobra.Command{
+	Use:     "packages REGEX",
+	Short:   "Search package names",
+	Example: "  dis search packages git\n  dis search packages '^common/'",
+	Args:    cobra.ExactArgs(1),
+	PreRunE: bindSharedConfigFlags,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runSearch(cmd, args[0], "", func(pkgs []dis.PackageInfo, re *regexp.Regexp) ([]searchResult, error) {
+			var matched []dis.PackageInfo
+			for _, p := range pkgs {
+				if re.MatchString(p.Provides) {
+					matched = append(matched, p)
+				}
+			}
+			return collectPackages(matched), nil
+		})
+	},
+}
+
+var searchInstallersCmd = &cobra.Command{
+	Use:     "installers REGEX",
+	Short:   "Search installer lines",
+	Example: "  dis search installers 'alias status='\n  dis search installers status --package git",
+	Args:    cobra.ExactArgs(1),
+	PreRunE: bindSharedConfigFlags,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		pkgFilter, _ := cmd.Flags().GetString("package")
+		return runSearch(cmd, args[0], pkgFilter, collectContent)
+	},
+}
+
+var searchConfigsCmd = &cobra.Command{
+	Use:     "configs REGEX",
+	Short:   "Search the paths of the config files installers reference",
+	Example: "  dis search configs tmux\n  dis search configs . --package starship",
+	Args:    cobra.ExactArgs(1),
+	PreRunE: bindSharedConfigFlags,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		pkgFilter, _ := cmd.Flags().GetString("package")
+		return runSearch(cmd, args[0], pkgFilter, func(pkgs []dis.PackageInfo, re *regexp.Regexp) ([]searchResult, error) {
+			all, err := collectConfigs(pkgs)
+			if err != nil {
+				return nil, err
+			}
+			results := []searchResult{}
+			for _, r := range all {
+				if re.MatchString(r.Path) {
+					results = append(results, r)
+				}
+			}
+			return results, nil
+		})
+	},
+}
 
 func init() {
-	searchCmd.Flags().String("distro", "", "Path to the distro YAML file")
-	searchCmd.Flags().StringVarP(&searchPackage, "package", "p", "",
-		"regular expression matched against package names")
-	searchCmd.Flags().StringVarP(&searchContent, "content", "c", "",
-		"regular expression matched against installer lines")
-	searchCmd.Flags().BoolVar(&searchConfigs, "configs", false,
-		"print the config files referenced by the matched packages")
-	searchCmd.Flags().BoolVar(&searchJSON, "json", false,
-		"print the results as a JSON array")
-	searchCmd.MarkFlagsMutuallyExclusive("content", "configs")
+	for _, c := range []*cobra.Command{searchPackagesCmd, searchInstallersCmd, searchConfigsCmd} {
+		c.Flags().String("distro", "", "Path to the distro YAML file")
+		c.Flags().Bool("json", false, "print the results as a JSON array")
+		searchCmd.AddCommand(c)
+	}
+	for _, c := range []*cobra.Command{searchInstallersCmd, searchConfigsCmd} {
+		c.Flags().StringP("package", "p", "", "only search the packages whose name matches this regular expression")
+	}
 	rootCmd.AddCommand(searchCmd)
 }
 
@@ -71,32 +121,34 @@ func init() {
 // non-zero and scripts can tell an empty search apart from a successful one.
 var errNoMatches = errors.New("no matches")
 
-// searchResult is one row of search output. Every mode produces the same type
-// so that consumers see one shape regardless of the flags.
+// searchResult is one row of search output. Every subcommand produces the same
+// type so that consumers see one shape whatever they searched.
 type searchResult struct {
 	Package string `json:"package"`
-	// Path is the installer path, or the config path with --configs.
+	// Path is the installer path, or the config path for configs.
 	Path string `json:"path"`
-	// Line and Text are the matching installer line; set only with --content.
+	// Line and Text are the matching installer line; set only for installers.
 	Line int    `json:"line,omitempty"`
 	Text string `json:"text,omitempty"`
 }
 
-func searchCmdFn(cmd *cobra.Command, _ []string) error {
+// runSearch loads the distro's available packages, keeps those whose name
+// matches pkgFilter (all when empty), and prints what collect finds in them for
+// pattern.
+func runSearch(cmd *cobra.Command, pattern, pkgFilter string,
+	collect func([]dis.PackageInfo, *regexp.Regexp) ([]searchResult, error)) error {
 	distroFile := viper.GetString("distro")
 	if distroFile == "" {
 		return fmt.Errorf("required flag \"distro\" not set and not found in config file")
 	}
 
-	pkgRe, err := regexp.Compile(searchPackage)
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return fmt.Errorf("invalid regex: %w", err)
+	}
+	pkgRe, err := regexp.Compile(pkgFilter)
 	if err != nil {
 		return fmt.Errorf("invalid --package regex: %w", err)
-	}
-	var contentRe *regexp.Regexp
-	if searchContent != "" {
-		if contentRe, err = regexp.Compile(searchContent); err != nil {
-			return fmt.Errorf("invalid --content regex: %w", err)
-		}
 	}
 
 	ic, err := dis.NewInstallContextWithCache(distroFile)
@@ -116,21 +168,13 @@ func searchCmdFn(cmd *cobra.Command, _ []string) error {
 	// From here on, failures are search outcomes rather than usage mistakes.
 	cmd.SilenceUsage = true
 
-	var results []searchResult
-	switch {
-	case contentRe != nil:
-		results, err = collectContent(pkgs, contentRe)
-	case searchConfigs:
-		results, err = collectConfigs(pkgs)
-	default:
-		results = collectPackages(pkgs)
-	}
+	results, err := collect(pkgs, re)
 	if err != nil {
 		return err
 	}
 
 	out := cmd.OutOrStdout()
-	if searchJSON {
+	if asJSON, _ := cmd.Flags().GetBool("json"); asJSON {
 		err = renderJSON(out, results)
 	} else {
 		err = renderRows(out, results)

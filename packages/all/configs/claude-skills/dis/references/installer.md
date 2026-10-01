@@ -66,7 +66,7 @@ fi
 ```
 
 - Check for the old state first, so the block is a no-op once done.
-- `dis search -c 'MIGRATION\('` lists the blocks still waiting to be removed.
+- `dis search installers 'MIGRATION\('` lists the blocks still waiting to be removed.
 
 ## Environment
 
@@ -80,7 +80,7 @@ fi
 | `DIS_EXPORTS_FILE` | Where to write exports |
 
 Reference config files as `$DIS_CONFIG_FOLDER/...`: that is how
-`dis search --configs` finds them.
+`dis search configs .` finds them.
 
 ## RC helpers
 

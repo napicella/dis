@@ -178,7 +178,7 @@ packages:
 Without `dis.ws.yml`, dis walks the entire source directory.
 
 The configs folder holds only files that installers deploy (copy, link or point
-a tool at). `dis search --configs` lists everything an installer references
+a tool at). `dis search configs .` lists everything an installer references
 through `$DIS_CONFIG_FOLDER`, so helper scripts that installers `source` belong
 elsewhere, e.g. in a `lib/` folder under the package root:
 
@@ -327,15 +327,15 @@ The `--distro` flag is optional on all commands if a [config file](#config-file)
 | `dis config [--distro FILE] PKG` | Re-apply config for a single package |
 | `dis config [--distro FILE] --with-deps PKG` | Re-apply config for a package and everything it depends on |
 | `dis plan [--distro FILE]` | Show the ordered install plan without executing |
-| `dis search [--distro FILE] [--package REGEX]` | Search available packages by name (all packages when omitted) |
-| `dis search [--distro FILE] [--package REGEX] --content REGEX` | Search installer lines, e.g. to find which package defines an alias |
-| `dis search [--distro FILE] [--package REGEX] --configs` | Print the config files referenced by the matched packages |
+| `dis search packages REGEX [--distro FILE]` | Search the names of the available packages, installed or not |
+| `dis search installers REGEX [--package REGEX] [--distro FILE]` | Search installer lines, e.g. to find which package defines an alias |
+| `dis search configs REGEX [--package REGEX] [--distro FILE]` | Search the paths of the config files installers reference |
 | `dis search ... --json` | Print any search as a JSON array of `{package, path, line, text}` |
 | `dis edit [--distro FILE] PKG` | Open the package's installer and config files in `$DIS_EDITOR`, `$VISUAL`, `$EDITOR` or `vi` (first set) |
 | `dis edit [--distro FILE] PKG --installer` / `--configs` | Open only the installer, or only the config files |
 | `dis edit [--distro FILE] PKG --apply` | Open, then re-apply the package's config once the editor exits successfully |
 | `dis list` | List all packages recorded as installed |
-| `dis list --sources [--distro FILE] [--json]` | List the distro's resolved source directories, with their repo and package count |
+| `dis sources [--distro FILE] [--json]` | List the distro's resolved source directories, with their repo and package count |
 | `dis pull GIT-URL [--distro FILE] [--path DIR]` | Clone a distro repo and every repo it declares, and set it as the default distro |
 | `dis pull` | Clone or fast-forward the repos of the configured distro |
 | `dis tools add-rc-init` | Upsert a section in `~/rc/configs-generated/bash_init` |
@@ -348,60 +348,68 @@ The `--distro` flag is optional on all commands if a [config file](#config-file)
 
 ## Searching packages
 
-`dis search` finds packages by name, by what their installers contain, or by
-the config files they deploy. Patterns are [Go regular expressions](https://pkg.go.dev/regexp)
-and are not anchored: `git` matches any package name containing `git`.
+`dis search` looks through every package the distro's sources provide, installed
+or not. A subcommand says what to search; each takes exactly one pattern.
+Patterns are [Go regular expressions](https://pkg.go.dev/regexp) and are not
+anchored: `git` matches anything containing `git`.
 
 ```bash
 # Packages whose name contains "git"
-dis search --package git
+dis search packages git
 
 # Which package defines the `status` alias?
-dis search --content status
-dis search --package git --content status   # narrow to packages named *git*
-dis search --content 'status.*git'          # both terms on the same line
+dis search installers status
+dis search installers status --package git   # only in packages named *git*
+dis search installers 'status.*git'          # both terms on the same line
 
 # Config files of a tool (the source files in the repo, not the deployed copies)
-dis search --package starship --configs
+dis search configs . --package starship
+dis search configs tmux                      # config paths containing "tmux"
 ```
 
-Every mode prints the same shape, one aligned row per result: the package, then
-a path.
+Every subcommand prints the same shape, one aligned row per result: the package,
+then a path.
 
 ```
-$ dis search --package git
+$ dis search packages git
 common/git       …/installers/03_git.sh
-$ dis search --content status
+$ dis search installers status
 common/git       …/installers/03_git.sh:29  alias status='git status'
-$ dis search --package starship --configs
+$ dis search configs . --package starship
 common/starship  …/configs/starship/starship.toml
 ```
 
-- Without `--configs` the path is the installer. `--content` appends `:line` to
-  it and adds the matching text as a third column; the manifest header is skipped.
-- With `--configs` the path is a file or folder the installer references as
-  `$DIS_CONFIG_FOLDER/<path>`. The path stops at the first variable
-  (`$DIS_CONFIG_FOLDER/backgrounds/$THEME` gives the `backgrounds` folder),
-  comment lines are ignored and missing paths are skipped. It cannot be combined
-  with `--content`.
-- The command exits non-zero when nothing matches.
+- `packages` and `installers` print the installer path. `installers` appends
+  `:line` to it and adds the matching text as a third column; the manifest header
+  is skipped.
+- `configs` prints a file or folder the installer references as
+  `$DIS_CONFIG_FOLDER/<path>`, and matches the pattern against that path. The path
+  stops at the first variable (`$DIS_CONFIG_FOLDER/backgrounds/$THEME` gives the
+  `backgrounds` folder), comment lines are ignored and missing paths are skipped.
+- `--package REGEX` (`installers` and `configs`) only looks at the packages whose
+  name matches.
+- The command exits non-zero when nothing matches, and when the subcommand or
+  the pattern is missing.
+
+To see what is installed on this machine use `dis list`; to see where packages
+come from use `dis sources`.
 
 ### JSON output
 
 `--json` prints the same results as a JSON array, for scripts. Every object has
-`package` and `path`; `line` and `text` are set only with `--content`. An empty
+`package` and `path`; `line` and `text` are set only for `installers`. An empty
 search prints `[]` (and still exits non-zero).
 
 ```bash
-dis search --content status --json
+dis search installers status --json
 # [{"package": "common/git", "path": "…/03_git.sh", "line": 29, "text": "alias status='git status'"}]
 
 # Edit a tool's config, then re-deploy it
-vim $(dis search --package starship --configs --json | jq -r '.[].path')
+vim $(dis search configs . --package starship --json | jq -r '.[].path')
 dis config common/starship
 
 # Re-apply the package that defines an alias
-dis config "$(dis search --content 'alias status=' --json | jq -r '.[0].package')"
+dis config "$(dis search installers 'alias status=' --json | jq -r '.[0].package')"
 ```
 
 ---
@@ -497,7 +505,7 @@ Keep the block safe to run again, like any config step: check for the old state 
 no-op once the cleanup is done. List the blocks still waiting to be removed with:
 
 ```bash
-dis search -c 'MIGRATION\('
+dis search installers 'MIGRATION\('
 ```
 
 ---

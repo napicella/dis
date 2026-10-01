@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/napicella/dis/internal/dis"
@@ -131,5 +133,112 @@ func TestSearchRenderers(t *testing.T) {
 		if out.String() != "[]\n" {
 			t.Errorf("got %q, want %q", out.String(), "[]\n")
 		}
+	})
+}
+
+// searchFixture writes a distro whose single source provides common/git and
+// common/app (which references app.conf through $DIS_CONFIG_FOLDER) and returns
+// the distro file.
+func searchFixture(t *testing.T) string {
+	t.Helper()
+	t.Setenv("HOME", t.TempDir())
+	src := t.TempDir()
+	files := map[string]string{
+		"dis.ws.yml":       "packages:\n  - root: ./installers\n    configs: ./configs\n",
+		"configs/app.conf": "",
+		"installers/git.sh": "### -- Manifest\n### provides: common/git\n### depends_on: []\n### distro: [all]\n### -- End\n" +
+			"alias status='git status'\n",
+		"installers/app.sh": "### -- Manifest\n### provides: common/app\n### depends_on: []\n### distro: [all]\n### -- End\n" +
+			"cp $DIS_CONFIG_FOLDER/app.conf ~/\n",
+	}
+	for name, body := range files {
+		path := filepath.Join(src, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	distro := filepath.Join(t.TempDir(), "distro.yml")
+	if err := os.WriteFile(distro, []byte("os: ubuntu\nsources:\n  - "+src+"\npackages: []\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return distro
+}
+
+// runCmd executes the root command with args and returns its stdout and error.
+func runCmd(t *testing.T, args ...string) (string, error) {
+	t.Helper()
+	var out, errOut bytes.Buffer
+	rootCmd.SetOut(&out)
+	rootCmd.SetErr(&errOut)
+	rootCmd.SetArgs(args)
+	defer rootCmd.SetArgs(nil)
+	err := rootCmd.Execute()
+	return out.String(), err
+}
+
+func TestSearchSubcommands(t *testing.T) {
+	distro := searchFixture(t)
+
+	tests := []struct {
+		name    string
+		args    []string
+		want    []string // packages in the output, in order
+		wantErr string
+	}{
+		{"packages", []string{"search", "packages", "git"}, []string{"common/git"}, ""},
+		{"packages regex", []string{"search", "packages", "^common/"}, []string{"common/app", "common/git"}, ""},
+		{"installers", []string{"search", "installers", "status", "--package", ""}, []string{"common/git"}, ""},
+		{"installers narrowed by package", []string{"search", "installers", "status", "--package", "app"}, nil, "no matches"},
+		{"configs by path", []string{"search", "configs", `app\.conf`, "--package", ""}, []string{"common/app"}, ""},
+		{"configs narrowed by package", []string{"search", "configs", ".", "--package", "git"}, nil, "no matches"},
+		{"no subcommand", []string{"search"}, nil, "say what to search"},
+		{"a regex is not a subcommand", []string{"search", "git"}, nil, `unknown command "git"`},
+		{"missing regex", []string{"search", "packages"}, nil, "accepts 1 arg(s), received 0"},
+		{"extra argument", []string{"search", "installers", "a", "b"}, nil, "accepts 1 arg(s), received 2"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			args := tt.args
+			if len(args) > 2 { // the parent command takes no flags
+				args = append(args, "--distro", distro)
+			}
+			out, err := runCmd(t, args...)
+			if tt.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("error = %v, want one containing %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			var got []string
+			for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+				got = append(got, strings.Fields(line)[0])
+			}
+			if !slices.Equal(got, tt.want) {
+				t.Errorf("packages = %v, want %v\noutput:\n%s", got, tt.want, out)
+			}
+		})
+	}
+
+	t.Run("json", func(t *testing.T) {
+		out, err := runCmd(t, "search", "installers", "status", "--package", "", "--json", "--distro", distro)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var got []searchResult
+		if err := json.Unmarshal([]byte(out), &got); err != nil {
+			t.Fatalf("output is not JSON: %v\n%s", err, out)
+		}
+		// Line counts from the top of the file, manifest included.
+		if len(got) != 1 || got[0].Package != "common/git" || got[0].Line != 6 {
+			t.Errorf("got %+v, want common/git line 6", got)
+		}
+		// Reset the flag: cobra keeps flag values across Execute calls.
+		_ = searchInstallersCmd.Flags().Set("json", "false")
 	})
 }

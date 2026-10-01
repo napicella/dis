@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/napicella/dis/internal/dis"
@@ -60,5 +62,27 @@ func TestWithin(t *testing.T) {
 		if got := within(tt.path, tt.dir); got != tt.want {
 			t.Errorf("within(%q, %q) = %v, want %v", tt.path, tt.dir, got, tt.want)
 		}
+	}
+}
+
+func TestSourcesCommand(t *testing.T) {
+	distro := searchFixture(t)
+
+	out, err := runCmd(t, "sources", "--json", "--distro", distro)
+	_ = sourcesCmd.Flags().Set("json", "false") // cobra keeps flag values across Execute calls
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rows []sourceRow
+	if err := json.Unmarshal([]byte(out), &rows); err != nil {
+		t.Fatalf("output is not JSON: %v\n%s", err, out)
+	}
+	if len(rows) != 1 || !rows[0].Exists || rows[0].Packages != 2 {
+		t.Errorf("rows = %+v, want one existing source with 2 packages", rows)
+	}
+
+	// The sources used to be a mode of 'dis list'.
+	if _, err := runCmd(t, "list", "--sources"); err == nil || !strings.Contains(err.Error(), "unknown flag: --sources") {
+		t.Errorf("dis list --sources: error = %v, want unknown flag", err)
 	}
 }

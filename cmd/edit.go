@@ -21,7 +21,7 @@ var editCmd = &cobra.Command{
 	Short: "Open the installer and config files of a package in an editor",
 	Long: `Opens a package in an editor, all its files at once: the installer
 script first, then the config files it references through $DIS_CONFIG_FOLDER
-(the ones 'dis search --configs' lists). Referenced directories are expanded to
+(the ones 'dis search configs' lists). Referenced directories are expanded to
 the text files they contain, so binary configs such as wallpapers are skipped.
 
 The package may be given by its short name, the part after the last "/"
