@@ -16,12 +16,9 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
     cd -
   fi
 
-  # Install default supported themes
-  code --install-extension enkia.tokyo-night
   code --install-extension golang.Go
 fi
 
-# Config: always re-deploy VS Code settings and keybindings.
-mkdir -p ~/.config/Code/User
-cp $DIS_CONFIG_FOLDER/vscode/vs-code-settings.json $HOME/.config/Code/User/settings.json
-cp $DIS_CONFIG_FOLDER/vscode/keybindings.json $HOME/.config/Code/User/keybindings.json
+# Settings and keybindings come from VS Code Settings Sync.
+echo "gui/vscode: Settings and keybindings come from VS Code Settings Sync. 
+If not done yet, turn on Settings Sync (Accounts menu), with Settings and Keybindings ticked."

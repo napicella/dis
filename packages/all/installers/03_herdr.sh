@@ -1,6 +1,6 @@
 ### -- Manifest
 ### provides: common/herdr
-### depends_on: []
+### depends_on: [common/yq]
 ### distro: [all]
 ### -- End
 
@@ -21,6 +21,17 @@ if command -v mise &> /dev/null && mise config get --global tools.herdr &> /dev/
 fi
 
 mkdir -p ~/.claude/hooks && cp "$DIS_CONFIG_FOLDER/herdr/herdr-claude-title.sh" ~/.claude/hooks/
-mkdir -p ~/.config/herdr && cp "$DIS_CONFIG_FOLDER/herdr/config.toml" ~/.config/herdr/config.toml
 bash "$DIS_CONFIG_FOLDER/herdr/install-claude-title-hook.sh"
 mkdir -p ~/.claude/skills && cp -r "$DIS_CONFIG_FOLDER/herdr/spin-chat-herdr" ~/.claude/skills/
+
+# Keep the theme wal-picker set in the deployed copy ([theme]); a plain copy resets it.
+_cfg=~/.config/herdr/config.toml
+_theme=
+if [[ -f "$_cfg" ]] && command -v yq &> /dev/null; then
+  _theme=$(yq -p toml -o json -I0 '.theme // {}' "$_cfg")
+fi
+mkdir -p ~/.config/herdr && cp "$DIS_CONFIG_FOLDER/herdr/config.toml" "$_cfg"
+if [[ -n "$_theme" && "$_theme" != "{}" ]]; then
+  theme="$_theme" yq -i -p toml -o toml '.theme = (strenv(theme) | from_yaml)' "$_cfg"
+fi
+
