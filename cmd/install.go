@@ -20,7 +20,9 @@ topological order.
 
 When called with a package name, runs that single installer directly, skipping
 dependency resolution. Use this when you are confident all dependencies are
-already satisfied.
+already satisfied. Add --with-deps to also run the installers it depends on, in
+dependency order (e.g. every package of a bundle). Already-installed packages
+are skipped as usual, unless --reinstall is set.
 
 Before running each installer script the following env vars are set:
   DIS_PKG_ROOT      - root of the source folder that owns this installer
@@ -38,17 +40,22 @@ Installers run on the host machine.
 
 Examples:
   dis install --distro ~/dotfiles/dis/distros/home-server.yml
-  dis install --distro ~/dotfiles/dis/distros/home-server.yml home-server/containers`,
+  dis install --distro ~/dotfiles/dis/distros/home-server.yml home-server/containers
+  dis install --distro ~/dotfiles/dis/distros/home-server.yml --with-deps bundle/cli-tools`,
 	Args:    cobra.MaximumNArgs(1),
 	PreRunE: bindSharedConfigFlags,
 	RunE:    installCmdFn,
 }
 
-var installReinstall bool
+var (
+	installReinstall bool
+	installWithDeps  bool
+)
 
 func init() {
 	installCmd.Flags().String("distro", "", "Path to the distro YAML file")
 	installCmd.Flags().BoolVar(&installReinstall, "reinstall", false, "Re-run installers even if already recorded as installed")
+	installCmd.Flags().BoolVar(&installWithDeps, "with-deps", false, "With a package name, also run the installers it depends on, dependencies first")
 	rootCmd.AddCommand(installCmd)
 }
 
@@ -73,6 +80,22 @@ func installCmdFn(cmd *cobra.Command, args []string) error {
 
 	if err := runner.RunPreconditions(ctx, ic); err != nil {
 		return err
+	}
+
+	// With --with-deps, run the named package and everything it depends on.
+	if len(args) == 1 && installWithDeps {
+		pkgName := args[0]
+		toRun, err := ic.ResolveInstallOrderFor(pkgName)
+		if err != nil {
+			return renderPackageNotFound(cmd, err)
+		}
+		for _, manifest := range toRun {
+			if err := runner.RunInstaller(ctx, ic, manifest.Provides); err != nil {
+				return fmt.Errorf("installer %q failed: %w", manifest.Provides, err)
+			}
+		}
+		fmt.Printf("✅ %s and its dependencies installed successfully.\n", pkgName)
+		return nil
 	}
 
 	// If a package name is provided, run just that single installer (skipping dep resolution).

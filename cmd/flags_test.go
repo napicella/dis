@@ -121,3 +121,16 @@ func TestCommandsBindSharedFlagsAtRunTime(t *testing.T) {
 		}
 	}
 }
+
+func TestWithDepsFlag(t *testing.T) {
+	for _, c := range []*cobra.Command{installCmd, configCmd} {
+		f := c.Flags().Lookup("with-deps")
+		if f == nil {
+			t.Errorf("%s: --with-deps flag not registered", c.Name())
+			continue
+		}
+		if f.DefValue != "false" {
+			t.Errorf("%s: --with-deps default = %q, want false", c.Name(), f.DefValue)
+		}
+	}
+}

@@ -51,6 +51,23 @@ dis tools add-rc-aliases \
   it on every call. `dis tools` rc helpers already are (they upsert).
 - The script runs under `bash -e`: a failing command aborts the install.
 
+## One-time migrations
+
+Cleanup that only exists because of an older version of a package (a renamed
+package's rc lock, a stale binary or unit file, a removed rc section) goes in a
+config step marked with the date it was added:
+
+```bash
+# MIGRATION(2026-10-01): one-time cleanup; drop once every host has run dis config since then.
+# <why the cleanup is needed>
+if <old state is present>; then
+  <cleanup>
+fi
+```
+
+- Check for the old state first, so the block is a no-op once done.
+- `dis search -c 'MIGRATION\('` lists the blocks still waiting to be removed.
+
 ## Environment
 
 | Variable | Value |

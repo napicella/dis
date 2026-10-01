@@ -98,3 +98,82 @@ func TestFindPackageNotFound(t *testing.T) {
 		})
 	}
 }
+
+// depsContext loads an install context whose only source provides the given
+// packages, each with the listed dependencies.
+func depsContext(t *testing.T, pkgs map[string][]string) *InstallContext {
+	t.Helper()
+	src := t.TempDir()
+	i := 0
+	for name, deps := range pkgs {
+		depList := ""
+		for j, d := range deps {
+			if j > 0 {
+				depList += ", "
+			}
+			depList += d
+		}
+		installer := "### -- Manifest\n### provides: " + name + "\n### depends_on: [" + depList + "]\n### distro: [all]\n### -- End\n"
+		path := filepath.Join(src, "pkg"+string(rune('a'+i))+".sh")
+		if err := os.WriteFile(path, []byte(installer), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		i++
+	}
+	distro := filepath.Join(t.TempDir(), "distro.yml")
+	yml := "os: ubuntu\nsources:\n  - " + src + "\npackages: []\n"
+	if err := os.WriteFile(distro, []byte(yml), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ic, err := NewInstallContext(distro)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ic
+}
+
+func TestResolveInstallOrderFor(t *testing.T) {
+	ic := depsContext(t, map[string][]string{
+		"bundle/tools": {"common/one", "common/two"},
+		"common/one":   {},
+		"common/two":   {"common/base"},
+		"common/base":  {},
+		"common/other": {},
+	})
+
+	// Dependencies come first, each once, and unrelated packages are left out.
+	want := []string{"common/one", "common/base", "common/two", "bundle/tools"}
+	for _, name := range []string{"bundle/tools", "tools"} {
+		t.Run(name, func(t *testing.T) {
+			got, err := ic.ResolveInstallOrderFor(name)
+			if err != nil {
+				t.Fatalf("ResolveInstallOrderFor(%q): %v", name, err)
+			}
+			var names []string
+			for _, m := range got {
+				names = append(names, m.Provides)
+			}
+			if !reflect.DeepEqual(names, want) {
+				t.Errorf("ResolveInstallOrderFor(%q) = %v, want %v", name, names, want)
+			}
+		})
+	}
+
+	t.Run("package without dependencies", func(t *testing.T) {
+		got, err := ic.ResolveInstallOrderFor("common/other")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(got) != 1 || got[0].Provides != "common/other" {
+			t.Errorf("got %v, want only common/other", got)
+		}
+	})
+
+	t.Run("unknown package", func(t *testing.T) {
+		_, err := ic.ResolveInstallOrderFor("common/nope")
+		var nf *PackageNotFoundError
+		if !errors.As(err, &nf) {
+			t.Fatalf("error = %v, want *PackageNotFoundError", err)
+		}
+	})
+}

@@ -1,16 +1,16 @@
 ### -- Manifest
 ### provides: common/thefuck
-### depends_on: []
-### distro: [ubuntu]
+### depends_on: [common/brew]
+### distro: [amazon_linux]
 ### -- End
 
 # Install thefuck: https://github.com/nvbn/thefuck
+# Amazon Linux has no package for it, so it comes from brew, like node and python.
 if [[ -n "${DIS_INSTALL:-}" ]]; then
-  sudo apt -y install thefuck
+  brew install thefuck
 fi
 
-# On Debian-based distros, manual activation is required.
-# The following adds the activation in the bash init which is included in bashrc.
+# thefuck needs its aliases set up by hand; the bash init is included in bashrc.
 dis tools add-rc-init \
   --name 'TheFuck' \
   --content 'if command -v thefuck &> /dev/null

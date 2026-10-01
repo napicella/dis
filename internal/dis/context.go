@@ -170,6 +170,17 @@ func (ic *InstallContext) ResolveInstallOrder() ([]Manifest, error) {
 	return ic.pkgm.depsForAll(ic.Cfg.Packages)
 }
 
+// ResolveInstallOrderFor returns the named package and its transitive
+// dependencies in install order, dependencies first. name may be a short name,
+// as accepted by FindPackage, and is reported the same way when it is unknown.
+func (ic *InstallContext) ResolveInstallOrderFor(name string) ([]Manifest, error) {
+	pkg, err := ic.FindPackage(name)
+	if err != nil {
+		return nil, err
+	}
+	return ic.pkgm.depsForAll([]string{pkg.Provides})
+}
+
 // ListAvailablePackages returns the list of all the packages that have been loaded from the provided sources.
 func (ic *InstallContext) ListAvailablePackages() []PackageInfo {
 	var pkgInfos []PackageInfo

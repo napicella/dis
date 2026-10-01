@@ -143,6 +143,26 @@ Exported values are stored in a persistent cache at `~/.local/share/dis/exports-
 
 ---
 
+### Bundles
+
+A bundle is an installer with only a manifest: it `depends_on` the packages it groups and has no
+steps of its own. Listing it in a distro file installs all of them.
+
+```bash
+### -- Manifest
+### provides: bundle/containers
+### depends_on: [common/docker, common/lazydocker]
+### distro: [all]
+### -- End
+```
+
+- Full runs (`dis install`, `dis config` without a package name) resolve dependencies, so they
+  run the bundle's packages. With a package name, add `--with-deps`: `dis config bundle/containers`
+  alone runs only the empty bundle.
+- Put a bundle where every distro that loads it can also see all its packages. dis rejects any
+  loaded installer that depends on an unknown package, even if no distro lists it.
+- A bundle can only include packages that have an installer for each OS it runs on.
+
 ## Workspace file (dis.ws.yml)
 
 When a source directory contains a `dis.ws.yml`, dis uses it to determine which subdirectories to walk and what `DIS_CONFIG_FOLDER` to set for each package.
@@ -301,9 +321,11 @@ The `--distro` flag is optional on all commands if a [config file](#config-file)
 | `dis init` | Scaffold a workspace in the current directory |
 | `dis install [--distro FILE]` | Install all packages in the distro |
 | `dis install [--distro FILE] PKG` | Install a single package (skips dependency resolution) |
+| `dis install [--distro FILE] --with-deps PKG` | Install a package and everything it depends on, dependencies first (e.g. a whole bundle) |
 | `dis install [--distro FILE] --reinstall` | Re-run all installers, ignoring install state |
 | `dis config [--distro FILE]` | Re-apply configs for all packages (skips install steps) |
 | `dis config [--distro FILE] PKG` | Re-apply config for a single package |
+| `dis config [--distro FILE] --with-deps PKG` | Re-apply config for a package and everything it depends on |
 | `dis plan [--distro FILE]` | Show the ordered install plan without executing |
 | `dis search [--distro FILE] [--package REGEX]` | Search available packages by name (all packages when omitted) |
 | `dis search [--distro FILE] [--package REGEX] --content REGEX` | Search installer lines, e.g. to find which package defines an alias |
@@ -421,6 +443,9 @@ dis config
 
 # Re-apply config for a single package
 dis config common/starship
+
+# Re-apply config for a package and everything it depends on, e.g. a bundle
+dis config --with-deps bundle/shell
 ```
 
 `dis config` always runs regardless of install state and does **not** write install state afterwards.
@@ -453,6 +478,27 @@ cp "$DIS_CONFIG_FOLDER/starship/starship.toml" ~/.config/
 |------|--------------|-------------------|-------------------|
 | `dis install` | `"1"` | ✅ | ✅ |
 | `dis config` | absent | ❌ | ✅ |
+
+### One-time migrations
+
+Sometimes a config step only exists to clean up after an older version of a package: a renamed
+package releasing its old rc lock, a stale binary or unit file, a removed rc section. Mark such a
+block with the date it was added, so it can be deleted once every host has applied it:
+
+```bash
+# MIGRATION(2026-10-01): one-time cleanup; drop once every host has run dis config since then.
+# <why the cleanup is needed>
+if <old state is present>; then
+  <cleanup>
+fi
+```
+
+Keep the block safe to run again, like any config step: check for the old state first, so it is a
+no-op once the cleanup is done. List the blocks still waiting to be removed with:
+
+```bash
+dis search -c 'MIGRATION\('
+```
 
 ---
 

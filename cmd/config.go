@@ -20,6 +20,10 @@ without re-running the full installation (downloading binaries, apt-get, etc.).
 The already-installed state is ignored — every matched package is always run —
 and no install state is written after the run.
 
+With a package name, only that package is configured. Add --with-deps to also
+configure the packages it depends on, in dependency order (e.g. every package of
+a bundle).
+
 Installer scripts opt into the distinction by checking DIS_INSTALL:
 
   if [[ -n "${DIS_INSTALL:-}" ]]; then
@@ -37,14 +41,18 @@ Before running each script the following env vars are set (same as install):
 
 Examples:
   dis config --distro ~/dotfiles/dis/distros/home-server.yml
-  dis config --distro ~/dotfiles/dis/distros/home-server.yml common/starship`,
+  dis config --distro ~/dotfiles/dis/distros/home-server.yml common/starship
+  dis config --distro ~/dotfiles/dis/distros/home-server.yml --with-deps bundle/shell`,
 	Args:    cobra.MaximumNArgs(1),
 	PreRunE: bindSharedConfigFlags,
 	RunE:    configCmdFn,
 }
 
+var configWithDeps bool
+
 func init() {
 	configCmd.Flags().String("distro", "", "Path to the distro YAML file")
+	configCmd.Flags().BoolVar(&configWithDeps, "with-deps", false, "With a package name, also configure the packages it depends on, dependencies first")
 	rootCmd.AddCommand(configCmd)
 }
 
@@ -68,6 +76,22 @@ func configCmdFn(cmd *cobra.Command, args []string) error {
 
 	if err := runner.RunPreconditions(ctx, ic); err != nil {
 		return err
+	}
+
+	// With --with-deps, configure the named package and everything it depends on.
+	if len(args) == 1 && configWithDeps {
+		pkgName := args[0]
+		toRun, err := ic.ResolveInstallOrderFor(pkgName)
+		if err != nil {
+			return renderPackageNotFound(cmd, err)
+		}
+		for _, manifest := range toRun {
+			if err := runner.RunConfig(ctx, ic, manifest.Provides); err != nil {
+				return fmt.Errorf("config %q failed: %w", manifest.Provides, err)
+			}
+		}
+		fmt.Printf("✅ %s and its dependencies configured successfully.\n", pkgName)
+		return nil
 	}
 
 	// If a package name is provided, configure just that single package.
