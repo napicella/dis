@@ -47,7 +47,12 @@ func init() {
 
 	// RC helpers
 	rcFlags(addRCInitCmd)
-	rcFlags(addRCPathCmd)
+	addRCPathCmd.Flags().StringVar(&rcName, "name", "", "section identifier (unique per file)")
+	addRCPathCmd.Flags().StringVar(&rcContent, "content", "", "content to write into the section")
+	addRCPathCmd.Flags().StringArrayVar(&rcPaths, "path", nil, "directory to prepend to PATH, skipped if PATH already has it (repeatable)")
+	addRCPathCmd.MarkFlagRequired("name") //nolint:errcheck
+	addRCPathCmd.MarkFlagsOneRequired("content", "path")
+	addRCPathCmd.MarkFlagsMutuallyExclusive("content", "path")
 	rcFlags(addRCAliasesCmd)
 	addRCAliasesCmd.Flags().StringVar(&rcOwner, "owner", "", "lock the section to this owner (package name); only the same owner can overwrite it")
 	rcFlags(addHomeRCCmd)
@@ -87,6 +92,7 @@ var (
 	rcName    string
 	rcContent string
 	rcOwner   string
+	rcPaths   []string
 )
 
 // rcFlags registers --name and --content on a command and marks them required.
@@ -144,17 +150,29 @@ var addRCPathCmd = &cobra.Command{
 bash_paths is sourced by the dis wrapper before each installer runs, so PATH
 additions written here are available to subsequent installers in the same run.
 
-Example:
+Use --path for PATH entries: each dir is prepended to PATH, and skipped if PATH
+already has it, so shells started from another shell (tmux, herdr) don't repeat
+it. The first --path ends up first in PATH. Use --content for other exports.
+
+Examples:
   dis tools add-rc-path \
     --name "Mise path" \
-    --content 'export PATH="$HOME/.local/share/mise/shims:$PATH"'
+    --path '$HOME/.local/share/mise/shims'
+
+  dis tools add-rc-path \
+    --name "Editor default" \
+    --content 'export EDITOR="${EDITOR:-vim}"'
 `,
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		path, err := rcFilePath("rc/configs-generated/bash_paths")
 		if err != nil {
 			return err
 		}
-		return tools.AddRCSection(path, rcName, rcContent, "")
+		content := rcContent
+		if len(rcPaths) > 0 {
+			content = tools.PathPrependContent(rcPaths)
+		}
+		return tools.AddRCSection(path, rcName, content, "")
 	},
 }
 

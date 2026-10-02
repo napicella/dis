@@ -107,7 +107,7 @@ Installers that need to register shell initialization, PATH entries, or aliases 
 | bash function (old) | dis command (new) |
 |---|---|
 | `bashrc_init_add "NAME" "CONTENT"` | `dis tools add-rc-init --name NAME --content CONTENT` |
-| `bashrc_path_add "NAME" "CONTENT"` | `dis tools add-rc-path --name NAME --content CONTENT` |
+| `bashrc_path_add "NAME" "CONTENT"` | `dis tools add-rc-path --name NAME --path DIR` (PATH entries) or `--content CONTENT` (other exports) |
 | `bashrc_aliases_add "NAME" "CONTENT"` | `dis tools add-rc-aliases --name NAME --content CONTENT` |
 | `__bashrc_home_add "NAME" "CONTENT"` | `dis tools add-home-rc --name NAME --content CONTENT` |
 

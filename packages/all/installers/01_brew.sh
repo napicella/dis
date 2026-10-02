@@ -9,7 +9,7 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
   # add the brew path last, favoring other tools first
-  dis tools add-rc-path --name 'Brew' --content 'export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH'
+  dis tools add-rc-path --name 'Brew' --path '/home/linuxbrew/.linuxbrew/bin'
 fi
 
 # Adding brew to path so other installers can rely on it

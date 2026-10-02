@@ -11,4 +11,4 @@ fi
 
 dis tools add-rc-path \
   --name 'Cargo' \
-  --content 'export PATH="$HOME/.cargo/bin:$PATH"'
+  --path '$HOME/.cargo/bin'

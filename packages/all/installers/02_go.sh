@@ -31,6 +31,8 @@ go env -w GOPROXY=direct
 # start. The PATH line is for dis installers: the wrapper sources bash_paths without
 # mise activate, so `_.path` above doesn't reach them.
 dis tools add-rc-path \
+  --name 'GOBIN env' \
+  --content 'export GOBIN="$HOME/go/bin"'
+dis tools add-rc-path \
   --name 'GOBIN' \
-  --content 'export GOBIN="$HOME/go/bin"
-export PATH="$GOBIN:$PATH"'
+  --path '$HOME/go/bin'

@@ -10,7 +10,7 @@ echo "==> sample/hello installer running"
 # Register a PATH entry — appears in ~/rc/configs-generated/bash_paths
 dis tools add-rc-path \
   --name 'sample hello path' \
-  --content 'export PATH="$HOME/.local/share/sample-hello/bin:$PATH"'
+  --path '$HOME/.local/share/sample-hello/bin'
 
 # Register shell init code — appears in ~/rc/configs-generated/bash_init
 dis tools add-rc-init \

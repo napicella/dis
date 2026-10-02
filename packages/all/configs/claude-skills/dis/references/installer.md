@@ -89,7 +89,7 @@ Each upserts a named section in a file under `~/rc/configs-generated/`, which
 
 | Command | File | Use for |
 |---|---|---|
-| `dis tools add-rc-path` | `bash_paths` | `PATH` and other `export`s. Also sourced before each installer, so later installers see them. |
+| `dis tools add-rc-path` | `bash_paths` | `--path DIR` for `PATH` entries (prepended, skipped if already in PATH, so nested shells don't repeat them); `--content` for other `export`s. Also sourced before each installer, so later installers see them. |
 | `dis tools add-rc-aliases` | `bash_aliases` | Aliases and functions. `--owner` locks the section to a package. |
 | `dis tools add-rc-init` | `bash_init` | Code for interactive shells only (prompt hooks, completions). |
 | `dis tools rm-rc-aliases` | `bash_aliases` | Remove a section a package no longer provides. |

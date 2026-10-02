@@ -10,7 +10,7 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
   # into ~/.bashrc for future shell sessions.
   dis tools add-rc-path \
     --name 'Ubuntu tools' \
-    --content "export PATH=\"$DIS_PKG_ROOT/bin:\$PATH\""
+    --path "$DIS_PKG_ROOT/bin"
   # Also add it to PATH for the remainder of this installer session.
   export PATH="$DIS_PKG_ROOT/bin:$PATH"
 

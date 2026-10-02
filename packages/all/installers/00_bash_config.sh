@@ -16,7 +16,7 @@ dis tools add-home-rc \
 # Add ./local/bin to the path
 dis tools add-rc-path \
   --name './local/bin' \
-  --content 'export PATH="$HOME/.local/bin:$PATH"'
+  --path '$HOME/.local/bin'
 
 # Default terminal editor. The guards keep a value set earlier, so a package
 # can override it.

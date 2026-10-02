@@ -72,7 +72,7 @@ dis tools add-rc-init \
 # default GOBIN. Tools installed outside mise's dirs never get a shim. They're reached
 # through PATH instead and never need a reshim, like go tools once common/go sets
 # GOBIN=~/go/bin.
-dis tools add-rc-path --name 'Mise path' --content 'export PATH="$HOME/.local/share/mise/shims:$PATH"'
+dis tools add-rc-path --name 'Mise path' --path '$HOME/.local/share/mise/shims'
 
 # Resulting interactive PATH, highest priority first:
 #   ~/.local/share/mise/installs/<tool>/<ver>/bin      mise activate: real dirs of the active versions,

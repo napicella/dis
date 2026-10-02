@@ -221,3 +221,22 @@ func appendSection(path, existing, begin, content, end string) error {
 
 	return os.WriteFile(path, []byte(sb.String()), 0o644)
 }
+
+// PathPrependContent returns bash_paths content that prepends dirs to PATH,
+// skipping a dir PATH already has. Nested shells inherit PATH and source
+// bash_paths again, so an unguarded prepend repeats every entry once per level.
+//
+// Dirs are written as given, so $HOME and the like expand when the file is
+// sourced. A trailing slash is dropped so "dir/" and "dir" are the same entry.
+// The first dir ends up first in PATH.
+func PathPrependContent(dirs []string) string {
+	lines := make([]string, 0, len(dirs))
+	for i := len(dirs) - 1; i >= 0; i-- {
+		dir := dirs[i]
+		if len(dir) > 1 {
+			dir = strings.TrimRight(dir, "/")
+		}
+		lines = append(lines, fmt.Sprintf(`case ":$PATH:" in *":%[1]s:"*) ;; *) export PATH="%[1]s:$PATH" ;; esac`, dir))
+	}
+	return strings.Join(lines, "\n")
+}

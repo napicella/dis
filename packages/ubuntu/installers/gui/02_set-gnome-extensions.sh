@@ -35,7 +35,7 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
   # [1] https://github.com/essembeh/gnome-extensions-cli
   pipx install gnome-extensions-cli --system-site-packages
   # Note that to start using gnome-extensions-cli (gext), $HOME/.local/bin needs to be in PATH.
-  bashrc_path_add '$HOME/.local/bin path' 'export PATH="$HOME/.local/bin:$PATH"'
+  dis tools add-rc-path --name '$HOME/.local/bin path' --path '$HOME/.local/bin'
   # To start using getx from the remaining of the commands, we are going to explicitly add it to the path.
   export PATH=$HOME/.local/bin:$PATH
 

@@ -292,9 +292,11 @@ Installers that need to register shell init code, PATH entries, or aliases use `
 dis tools add-rc-init --name "Autojump" \
   --content '[[ -s ~/.autojump/etc/profile.d/autojump.sh ]] && source ~/.autojump/etc/profile.d/autojump.sh'
 
-# Add a PATH export to ~/rc/configs-generated/bash_paths
-dis tools add-rc-path --name "Mise path" \
-  --content 'export PATH="$HOME/.local/share/mise/shims:$PATH"'
+# Prepend a dir to PATH in ~/rc/configs-generated/bash_paths (skipped if PATH already has it)
+dis tools add-rc-path --name "Mise path" --path '$HOME/.local/share/mise/shims'
+
+# Add another export to bash_paths
+dis tools add-rc-path --name "Editor default" --content 'export EDITOR="${EDITOR:-vim}"'
 
 # Add an alias block to ~/rc/configs-generated/bash_aliases
 dis tools add-rc-aliases --name "Notifier" \
@@ -309,6 +311,8 @@ dis tools add-home-rc --name "bashrc" \
 ```
 
 `bash_paths` and `bash_aliases` are sourced by the wrapper before each installer, so PATH additions written by one installer are available to later ones in the same run. `bash_init` is sourced by `~/.bashrc` for interactive shells only.
+
+Use `--path` rather than a hand-written `export PATH=...`: shells started from another shell (tmux, herdr) inherit PATH and source `bash_paths` again, and `--path` writes a guard so the dir is not added twice. `--path` can be repeated; the first one ends up first in PATH.
 
 ---
 
@@ -339,7 +343,7 @@ The `--distro` flag is optional on all commands if a [config file](#config-file)
 | `dis pull GIT-URL [--distro FILE] [--path DIR]` | Clone a distro repo and every repo it declares, and set it as the default distro |
 | `dis pull` | Clone or fast-forward the repos of the configured distro |
 | `dis tools add-rc-init` | Upsert a section in `~/rc/configs-generated/bash_init` |
-| `dis tools add-rc-path` | Upsert a section in `~/rc/configs-generated/bash_paths` |
+| `dis tools add-rc-path` | Upsert a section in `~/rc/configs-generated/bash_paths` (`--path DIR` for PATH entries, `--content` for other exports) |
 | `dis tools add-rc-aliases` | Upsert a section in `~/rc/configs-generated/bash_aliases` |
 | `dis tools rm-rc-aliases` | Remove a section from `~/rc/configs-generated/bash_aliases` |
 | `dis tools add-home-rc` | Upsert a section in `~/.bashrc` |
