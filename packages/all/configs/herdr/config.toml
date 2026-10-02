@@ -55,57 +55,141 @@ default_shell = "/bin/bash"
 # Named punctuation such as minus, comma, ampersand, plus, and backtick is also accepted.
 # Most reliable direct bindings are ctrl+letter, function keys, and explicit modified chords.
 # alt+..., cmd/super, and punctuation-with-modifiers may depend on your terminal/tmux setup.
+# desc: prefix key that enters prefix mode
 # prefix = "ctrl+b"
 # Prefix-mode actions
+# desc: open keybinding help
 # help = "prefix+?"
+# desc: open settings
 # settings = "prefix+s"
+# desc: detach the current client from its Herdr server
 # detach = "prefix+q"
+# desc: reload config.toml in the running app/server
 # reload_config = "prefix+shift+r"
+# desc: focus the currently visible notification target
 # open_notification_target = "prefix+o"
+# desc: open the workspace navigation surface
 # workspace_picker = "prefix+w"
+# desc: open the session navigator
 # goto = "prefix+g"
+# desc: move workspace selection up in navigate mode
+# navigate_workspace_up = "up"
+# desc: move workspace selection down in navigate mode
+# navigate_workspace_down = "down"
+# desc: focus the pane to the left in navigate mode
+# navigate_pane_left = "h"
+# desc: focus the pane below in navigate mode
+# navigate_pane_down = "j"
+# desc: focus the pane above in navigate mode
+# navigate_pane_up = "k"
+# desc: focus the pane to the right in navigate mode
+# navigate_pane_right = "l"
+# desc: create a new workspace
 # new_workspace = "prefix+shift+n"
+# desc: create a Git worktree from the selected workspace
 # new_worktree = "prefix+shift+g"
+# desc: open an existing Git worktree from the selected workspace
 # open_worktree = ""    # optional, unset by default
+# desc: delete the selected managed worktree checkout after confirmation
 # remove_worktree = ""  # optional, unset by default; opens confirmation
+# desc: rename the selected workspace
 # rename_workspace = "prefix+shift+w"
+# desc: close the selected workspace
 # close_workspace = "prefix+shift+d"
+# desc: select the previous workspace
 # previous_workspace = "" # optional, unset by default
+# desc: select the next workspace
 next_workspace = "alt+a"
+# desc: focus the previous agent shown in the agent panel
 # previous_agent = ""     # optional, unset by default
+# desc: focus the next agent shown in the agent panel
 # next_agent = ""         # optional, unset by default
+# desc: focus an agent by index 1-9
 # focus_agent = ""        # optional indexed binding, e.g. "prefix+alt+1..9"
+# desc: send a clipboard image to a remote Herdr session
 # remote_image_paste = "ctrl+v" # only active in herdr --remote; empty disables raw-key image paste
+# desc: create a new tab in the active workspace
 # new_tab = "prefix+c"
+# desc: rename the active tab
 # rename_tab = "prefix+shift+t"
+# desc: select the previous tab
 # previous_tab = "prefix+p"
+# desc: select the next tab
 next_tab = "alt+s"
+# desc: move the active tab one position toward the front
+# move_tab_previous = ""   # optional, e.g. "alt+shift+left" moves the tab toward the front
+# desc: move the active tab one position toward the back
+# move_tab_next = ""       # optional, e.g. "alt+shift+right" moves the tab toward the back
+# desc: switch to tab 1-9
 # switch_tab = "prefix+1..9"
+# desc: switch to workspace 1-9 from prefix mode
 # switch_workspace = ""   # optional indexed binding, e.g. "prefix+shift+1..9"
+# desc: close the active tab
 # close_tab = "prefix+shift+x"
+# desc: rename the focused pane
 # rename_pane = "prefix+shift+p"
+# desc: open the focused pane scrollback in $EDITOR
 # edit_scrollback = "prefix+e"
+# desc: enter keyboard copy mode for the focused pane
+# copy_mode = "prefix+["
+# desc: clear the focused pane screen and scrollback
+# clear_pane = ""                  # unbound; e.g. "prefix+ctrl+k"
+# desc: focus the pane to the left
 focus_pane_left = "alt+left"
+# desc: focus the pane below
 focus_pane_down = "alt+down"
+# desc: focus the pane above
 focus_pane_up = "alt+up"
+# desc: focus the pane to the right
 focus_pane_right = "alt+right"
-# focus_pane_left = "prefix+h"
-# focus_pane_down = "prefix+j"
-# focus_pane_up = "prefix+k"
-# focus_pane_right = "prefix+l"
+# desc: swap the focused pane with the pane to the left
+# swap_pane_left = "prefix+shift+h"
+# desc: swap the focused pane with the pane below
+# swap_pane_down = "prefix+shift+j"
+# desc: swap the focused pane with the pane above
+# swap_pane_up = "prefix+shift+k"
+# desc: swap the focused pane with the pane to the right
+# swap_pane_right = "prefix+shift+l"
+# desc: cycle to the next pane
 # cycle_pane_next = "prefix+tab"
+# desc: cycle to the previous pane
 # cycle_pane_previous = "prefix+shift+tab"
+# desc: focus the last focused pane across workspaces and tabs
 # last_pane = ""          # optional, unset by default; bind e.g. "prefix+tab" for global back-and-forth
+# desc: split pane vertically (side by side)
 split_vertical = "prefix+|"
+# desc: split pane horizontally (stacked)
+# split_horizontal = "prefix+minus"
+# desc: close the focused pane
+# close_pane = "prefix+x"
+# desc: toggle zoom for the focused pane
+# zoom = "prefix+z"       # legacy alias: fullscreen
+# desc: enter resize mode
+# resize_mode = "prefix+r"
+# desc: resize the focused pane toward the left
+# resize_pane_left = ""   # optional, e.g. "ctrl+shift+alt+left" resizes without entering resize mode
+# desc: resize the focused pane downward
+# resize_pane_down = ""   # optional, e.g. "ctrl+shift+alt+down"
+# desc: resize the focused pane upward
+# resize_pane_up = ""     # optional, e.g. "ctrl+shift+alt+up"
+# desc: resize the focused pane toward the right
+# resize_pane_right = ""  # optional, e.g. "ctrl+shift+alt+right"
+# desc: toggle sidebar collapse
+# toggle_sidebar = "prefix+b"
 
 [[keys.command]]
 key = "prefix+t"
 type = "pane"
-# command = "exec \"${SHELL:-sh}\""
 command = "exec bash"
 description = "open scratch terminal"
-# width = "80%"
-# height = "80%"
+
+[[keys.command]]
+key = "prefix+/"
+type = "popup"
+command = "bash \"$HOME/.config/herdr/herdr-keys.sh\""
+description = "search herdr shortcuts"
+width = "70%"
+height = "60%"
 
 [ui]
 show_agent_labels_on_pane_borders = false

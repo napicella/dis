@@ -1,6 +1,6 @@
 ### -- Manifest
 ### provides: common/herdr
-### depends_on: [common/yq]
+### depends_on: []
 ### distro: [all]
 ### -- End
 
@@ -23,15 +23,22 @@ fi
 mkdir -p ~/.claude/hooks && cp "$DIS_CONFIG_FOLDER/herdr/herdr-claude-title.sh" ~/.claude/hooks/
 bash "$DIS_CONFIG_FOLDER/herdr/install-claude-title-hook.sh"
 mkdir -p ~/.claude/skills && cp -r "$DIS_CONFIG_FOLDER/herdr/spin-chat-herdr" ~/.claude/skills/
+mkdir -p ~/.config/herdr && cp "$DIS_CONFIG_FOLDER/herdr/herdr-keys.sh" ~/.config/herdr/
 
 # Keep the theme wal-picker set in the deployed copy ([theme]); a plain copy resets it.
+# The [theme] block (with its [theme.*] subtables) is spliced in as text: a yq
+# rewrite drops the comments after each table's last key, like the "# desc:" lines.
 _cfg=~/.config/herdr/config.toml
+_theme_block() { awk '/^\[/ { in_theme = ($0 ~ /^\[theme[].]/) } in_theme' "$1"; }
 _theme=
-if [[ -f "$_cfg" ]] && command -v yq &> /dev/null; then
-  _theme=$(yq -p toml -o json -I0 '.theme // {}' "$_cfg")
+if [[ -f "$_cfg" ]]; then
+  _theme=$(_theme_block "$_cfg")
 fi
 mkdir -p ~/.config/herdr && cp "$DIS_CONFIG_FOLDER/herdr/config.toml" "$_cfg"
-if [[ -n "$_theme" && "$_theme" != "{}" ]]; then
-  theme="$_theme" yq -i -p toml -o toml '.theme = (strenv(theme) | from_yaml)' "$_cfg"
+if [[ -n "$_theme" ]]; then
+  theme="$_theme" awk '
+    /^\[/ { in_theme = ($0 ~ /^\[theme[].]/); if (in_theme && !done) { print ENVIRON["theme"] "\n"; done = 1 } }
+    !in_theme
+  ' "$_cfg" > "$_cfg.tmp" && mv "$_cfg.tmp" "$_cfg"
 fi
 
