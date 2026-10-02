@@ -20,6 +20,7 @@ dis sources                   # sources of the current distro: declared, path, r
 dis search packages .         # every package available (installed or not), with its installer path
 dis list                      # packages recorded as installed on this machine
 dis plan                      # what 'dis install' would run, in order
+dis doctor                    # drift: foreign ~/.bashrc lines, edited generated files, orphan sections, dead PATH dirs, dirty repos
 ```
 
 - The distro file comes from the `distro:` key of `~/.config/dis/config.yaml`,

@@ -25,6 +25,8 @@ dependency order (e.g. every package of a bundle). Already-installed packages
 are skipped as usual, unless --reinstall is set.
 
 Before running each installer script the following env vars are set:
+  DIS_PACKAGE       - name of the package being installed; 'dis tools add-rc-*'
+                      records it as the owner of the sections it writes
   DIS_PKG_ROOT      - root of the source folder that owns this installer
   DIS_DISTRO        - os name from the distro YAML (e.g. "ubuntu")
   DIS_EXPORTS_FILE  - path to a per-installer temp file; write KEY=value lines

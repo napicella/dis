@@ -186,3 +186,49 @@ func gitInteractive(out io.Writer, dir string, args ...string) error {
 	cmd.Stderr = out
 	return cmd.Run()
 }
+
+// RepoStatus is the local state of a clone, as git knows it without fetching.
+type RepoStatus struct {
+	// Missing is true when the clone's directory does not exist.
+	Missing bool
+	// Dirty is true when the work tree has uncommitted or untracked changes.
+	Dirty bool
+	// Branch is the checked-out branch; empty on a detached HEAD.
+	Branch string
+	// HasUpstream is true when Branch tracks a remote branch.
+	HasUpstream bool
+	// Ahead and Behind count commits relative to the upstream, as of the last
+	// fetch.
+	Ahead, Behind int
+}
+
+// GetRepoStatus reports the state of the clone at path. It does not fetch, so
+// Behind only counts commits fetched earlier (e.g. by 'dis pull').
+func GetRepoStatus(path string) (RepoStatus, error) {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return RepoStatus{Missing: true}, nil
+	} else if err != nil {
+		return RepoStatus{}, err
+	}
+	var st RepoStatus
+	status, err := git(path, "status", "--porcelain")
+	if err != nil {
+		return RepoStatus{}, err
+	}
+	st.Dirty = status != ""
+	if branch, err := git(path, "symbolic-ref", "-q", "--short", "HEAD"); err == nil {
+		st.Branch = branch
+	} else {
+		return st, nil
+	}
+	if _, err := git(path, "rev-parse", "--abbrev-ref", "@{u}"); err != nil {
+		return st, nil
+	}
+	st.HasUpstream = true
+	counts, err := git(path, "rev-list", "--left-right", "--count", "HEAD...@{u}")
+	if err != nil {
+		return RepoStatus{}, err
+	}
+	st.Ahead, st.Behind, err = parseAheadBehind(counts)
+	return st, err
+}

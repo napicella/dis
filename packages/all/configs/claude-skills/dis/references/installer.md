@@ -47,6 +47,9 @@ dis tools add-rc-aliases \
   tools, downloads.
 - **Outside:** everything else — copying configs, `dis tools add-rc-*`,
   building tools from local source (so `dis config` picks up local changes).
+- rc sections are config: `dis config` rewrites them and records their owner.
+  Put `dis tools add-rc-*` before the guard when it can `exit` early (e.g.
+  "already installed").
 - Every step outside the guard must be safe to run again: `dis config` re-runs
   it on every call. `dis tools` rc helpers already are (they upsert).
 - The script runs under `bash -e`: a failing command aborts the install.
@@ -72,6 +75,7 @@ fi
 
 | Variable | Value |
 |---|---|
+| `DIS_PACKAGE` | This package's name; rc sections it writes are owned by it |
 | `DIS_PKG_ROOT` | Package root from `dis.ws.yml`, or the source directory |
 | `DIS_CONFIG_FOLDER` | Configs directory from `dis.ws.yml`; empty when none is declared |
 | `DIS_INSTALLER` | Absolute path of this script (`$(dirname "$DIS_INSTALLER")` for files next to it) |
@@ -85,14 +89,15 @@ Reference config files as `$DIS_CONFIG_FOLDER/...`: that is how
 ## RC helpers
 
 Each upserts a named section in a file under `~/rc/configs-generated/`, which
-`~/.bashrc` sources in this order:
+`~/.bashrc` sources in this order. The files are rendered from
+`~/.local/share/dis/sections.yaml`: never edit them, change the installer.
 
 | Command | File | Use for |
 |---|---|---|
 | `dis tools add-rc-path` | `bash_paths` | `--path DIR` for `PATH` entries (prepended, skipped if already in PATH, so nested shells don't repeat them); `--content` for other `export`s. Also sourced before each installer, so later installers see them. |
-| `dis tools add-rc-aliases` | `bash_aliases` | Aliases and functions. `--owner` locks the section to a package. |
+| `dis tools add-rc-aliases` | `bash_aliases` | Aliases and functions. `--owner PKG` locks the section: only PKG can overwrite or remove it. |
 | `dis tools add-rc-init` | `bash_init` | Code for interactive shells only (prompt hooks, completions). |
-| `dis tools rm-rc-aliases` | `bash_aliases` | Remove a section a package no longer provides. |
+| `dis tools rm-rc-section --file FILE` | any of the three | Remove a section a package no longer provides. |
 | `dis tools add-home-rc` | `~/.bashrc` | Wiring a top-level rc file; rarely needed. |
 
 Section names must be unique per file; reuse the same name to update a section.

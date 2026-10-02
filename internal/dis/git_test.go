@@ -164,3 +164,39 @@ func TestRepoNameFromURL(t *testing.T) {
 		}
 	}
 }
+
+func TestGetRepoStatus(t *testing.T) {
+	if err := CheckGit(); err != nil {
+		t.Skip(err)
+	}
+	bare, pusher := newUpstream(t)
+	clone := filepath.Join(t.TempDir(), "clone")
+	runGit(t, filepath.Dir(clone), "clone", "-q", bare, clone)
+
+	st, err := GetRepoStatus(clone)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := (RepoStatus{Branch: "main", HasUpstream: true}); st != want {
+		t.Errorf("clean clone: got %+v, want %+v", st, want)
+	}
+
+	commit(t, clone, "local.txt")
+	pushNew(t, pusher, "remote.txt")
+	runGit(t, clone, "fetch", "-q")
+	if err := os.WriteFile(filepath.Join(clone, "untracked"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	st, err = GetRepoStatus(clone)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := (RepoStatus{Dirty: true, Branch: "main", HasUpstream: true, Ahead: 1, Behind: 1}); st != want {
+		t.Errorf("diverged dirty clone: got %+v, want %+v", st, want)
+	}
+
+	st, err = GetRepoStatus(filepath.Join(t.TempDir(), "absent"))
+	if err != nil || !st.Missing {
+		t.Errorf("absent clone: got %+v, %v", st, err)
+	}
+}

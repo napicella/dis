@@ -4,6 +4,11 @@
 ### distro: [all]
 ### -- End
 
+dis tools add-rc-init \
+  --name 'Sdkman' \
+  --content 'export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"'
+
 if [[ -n "${DIS_INSTALL:-}" ]]; then
   # Install sdkman: https://sdkman.io/install
   if command -v sdk &> /dev/null; then
@@ -17,9 +22,4 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
   curl -fsSL "https://get.sdkman.io" -o "$script"
   bash "$script"
   rm -f "$script"
-
-  dis tools add-rc-init \
-    --name 'Sdkman' \
-    --content 'export SDKMAN_DIR="$HOME/.sdkman"
-[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"'
 fi

@@ -4,6 +4,13 @@
 ### distro: [all]
 ### -- End
 
+# Wire starship into the shell RC.
+dis tools add-rc-init \
+  --name 'Starship' \
+  --content $'if [[ $- == *i* ]] && [[ ${TERM:-} != "dumb" ]] && command -v starship &> /dev/null; then
+  eval "$(starship init bash)"
+fi'
+
 if [[ -n "${DIS_INSTALL:-}" ]]; then
   # Use this method only if the Ubuntu version is earlier than 25.04.
   # Ubuntu 25.04 and later provide the package in the Ubuntu repository.
@@ -20,13 +27,6 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
     sh "$script" --yes
     rm -f "$script"
   fi
-
-  # Wire starship into the shell RC (one-time setup).
-  dis tools add-rc-init \
-    --name 'Starship' \
-    --content $'if [[ $- == *i* ]] && [[ ${TERM:-} != "dumb" ]] && command -v starship &> /dev/null; then
-  eval "$(starship init bash)"
-fi'
 fi
 
 # Config: always re-deploy the starship config file, but keep the colors wal-picker

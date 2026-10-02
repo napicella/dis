@@ -166,6 +166,7 @@ func (r *Installer) runScript(ctx context.Context, ic *InstallContext, pkgName s
 	defer os.Remove(exportsFile.Name())
 
 	envVars := map[string]string{
+		"DIS_PACKAGE":      manifest.Provides,
 		"DIS_PKG_ROOT":     manifest.PkgRoot,
 		"DIS_INSTALLER":    installerPath,
 		"DIS_DISTRO":       ic.Cfg.OS,

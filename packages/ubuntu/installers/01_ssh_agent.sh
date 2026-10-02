@@ -70,6 +70,10 @@
 # --------------------------------------------------------------------
 set -euo pipefail
 
+dis tools add-rc-init \
+  --name 'SSH agent socket' \
+  --content 'export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket"'
+
 if [[ -n "${DIS_INSTALL:-}" ]]; then
   SERVICE_DIR="$HOME/.config/systemd/user"
   SERVICE_FILE="$SERVICE_DIR/ssh-agent.service"
@@ -115,10 +119,6 @@ EOF
 
   echo "🔄 Reloading systemd user environment..."
   systemctl --user import-environment SSH_AUTH_SOCK || true
-
-  dis tools add-rc-init \
-    --name 'SSH agent socket' \
-    --content 'export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket"'
 
   echo "🎉 Done!"
   echo "➡️  Log out and back in, or run:"
