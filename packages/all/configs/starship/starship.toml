@@ -20,7 +20,7 @@ style = "secondary_color"
 format = "\\[[$path]($style)\\]"
 
 [aws]
-format = "\\[[($profile.)$region]($style)\\]"
+format = "\\[($profile.)$region\\]($style)"
 style = "secondary_color"
 force_display = false
 

@@ -141,7 +141,7 @@ gsettings set $SCHEMA highlight-colors-set false
 gsettings set $SCHEMA highlight-foreground-color '#ffffff'
 gsettings set $SCHEMA new-tab-button true
 gsettings set $SCHEMA new-tab-front-button false
-gsettings set $SCHEMA notebook-border true
+#gsettings set $SCHEMA notebook-border true
 gsettings set $SCHEMA override-window-animation true
 gsettings set $SCHEMA palette "['#171421', '#c01c28', '#26a269', '#a2734c', '#12488b', '#a347ba', '#2aa1b3', '#d0cfcc', '#5e5c64', '#f66151', '#33da7a', '#e9ad0c', '#2a7bde', '#c061cb', '#33c7de', '#ffffff']"
 gsettings set $SCHEMA panel-icon-type 'toggle-and-menu-button'
@@ -182,10 +182,10 @@ gsettings set $SCHEMA shortcuts-enabled true
 gsettings set $SCHEMA show-animation 'linear'
 gsettings set $SCHEMA show-animation-duration 0.14999999999999999
 gsettings set $SCHEMA show-scrollbar true
-gsettings set $SCHEMA tab-close-buttons true
+#gsettings set $SCHEMA tab-close-buttons true   # does not work on newer gnome
 gsettings set $SCHEMA tab-expand true
-gsettings set $SCHEMA tab-label-ellipsize-mode 'none'
-gsettings set $SCHEMA tab-label-width 0.10000000000000001
+#gsettings set $SCHEMA tab-label-ellipsize-mode 'none'   # does not work on newer gnome
+# gsettings set $SCHEMA tab-label-width 0.10000000000000001 # does not work on newer gnome
 gsettings set $SCHEMA tab-policy 'never'
 gsettings set $SCHEMA tab-position 'bottom'
 gsettings set $SCHEMA tab-show-shortcuts true
