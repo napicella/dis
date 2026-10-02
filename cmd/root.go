@@ -28,6 +28,7 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.Version = buildVersion()
 	cobra.OnInitialize(initConfig)
 }
 

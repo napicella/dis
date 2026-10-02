@@ -337,7 +337,9 @@ The files in `~/rc/configs-generated/` are generated: dis renders them from a st
 - unguarded `export PATH=X:$PATH` lines in sections
 - orphan sections: owned by a package that is neither in the distro nor installed, e.g. left behind by a package removed from the distro
 - PATH dirs that don't exist, each with the section or rc line that adds it and how to fix it
-- source repos with uncommitted changes, unpushed commits, or fetched commits not merged
+- source repos with uncommitted changes, unpushed commits, or fetched commits `dis pull` couldn't merge. Repos aren't fetched: run `dis pull` first to compare with the latest.
+
+The report starts with the dis build running (also `dis --version`): commit, commit time, and `+modified` for a build with uncommitted changes. After pulling the dis repo, rebuild dis if that commit is older.
 
 `dis doctor --fix` removes orphan sections (backing up their files) and regenerates generated files that are missing or behind the state. It never overwrites a generated file edited outside dis, and it only reports the lines in `~/.bashrc`: moving them would change when and in which shells they run.
 
@@ -366,6 +368,7 @@ The `--distro` flag is optional on all commands if a [config file](#config-file)
 | `dis edit [--distro FILE] PKG --installer` / `--configs` | Open only the installer, or only the config files |
 | `dis edit [--distro FILE] PKG --apply` | Open, then re-apply the package's config once the editor exits successfully |
 | `dis list` | List all packages recorded as installed |
+| `dis --version` | Show the commit dis was built from |
 | `dis doctor [--distro FILE] [--fix]` | Check the rc files, install state and source repos for drift; `--fix` removes orphan sections and regenerates missing or outdated generated files |
 | `dis sources [--distro FILE] [--json]` | List the distro's resolved source directories, with their repo and package count |
 | `dis pull GIT-URL [--distro FILE] [--path DIR]` | Clone a distro repo and every repo it declares, and set it as the default distro |

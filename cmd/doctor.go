@@ -28,14 +28,17 @@ var doctorCmd = &cobra.Command{
                     nor installed
   PATH dirs         dirs on PATH that don't exist, with the section or rc line
                     that adds each one
-  source repos      uncommitted changes, unpushed commits, and commits fetched
-                    but not merged
+  source repos      uncommitted changes, unpushed commits, and fetched commits
+                    'dis pull' could not merge
 
 Orphan sections and source repos need the distro file and are skipped without
 one. A section without an owner is never an orphan. PATH is read from the shell
 dis runs in, which inherits it from whatever started it (terminal, multiplexer
 server, desktop session): after a fix, old entries stay until those are
-restarted. Repos are not fetched: 'dis pull' does that.
+restarted. Repos are not fetched: run 'dis pull' first to get the latest.
+
+The first line shows the dis build running (as 'dis --version' does), e.g. to
+notice a binary older than a pulled dis repo.
 
 --fix first makes the mechanical fixes:
   - removes orphan sections, after backing up their files
@@ -76,6 +79,7 @@ func doctorCmdFn(cmd *cobra.Command, _ []string) error {
 	}
 	d := doctor.New(home, store)
 	out := cmd.OutOrStdout()
+	fmt.Fprintf(out, "dis %s\n\n", buildVersion())
 
 	// The distro is optional: without it the checks that need it are skipped.
 	var ic *dis.InstallContext
@@ -121,7 +125,7 @@ func doctorCmdFn(cmd *cobra.Command, _ []string) error {
 		d.CheckOrphans(),
 		d.CheckDeadPath(os.Getenv("PATH")),
 	}
-	repos := doctor.Result{OK: "source repos are in sync", Skipped: distroErr}
+	repos := doctor.Result{OK: "source repos have no local changes and nothing left to pull", Skipped: distroErr}
 	if ic != nil {
 		repos = d.CheckRepos(ic.Repos)
 	}

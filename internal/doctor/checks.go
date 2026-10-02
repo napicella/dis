@@ -257,7 +257,7 @@ func addsDir(text, dir string) bool {
 // differ from their upstream as of the last fetch.
 func (d *Doctor) CheckRepos(repos []dis.ResolvedRepo) Result {
 	r := Result{
-		OK:   "source repos are in sync",
+		OK:   "source repos have no local changes and nothing left to pull",
 		Hint: "commit and push local changes; 'dis pull' fetches and fast-forwards clean repos",
 	}
 	for _, repo := range repos {
