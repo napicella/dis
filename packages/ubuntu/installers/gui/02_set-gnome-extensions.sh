@@ -194,7 +194,9 @@ gsettings set $SCHEMA text-blink-mode 'always'
 gsettings set $SCHEMA theme-variant 'system'
 gsettings set $SCHEMA transparent-background true
 gsettings set $SCHEMA use-system-font true
-gsettings set $SCHEMA use-theme-colors true
+# use-theme-colors false -> do not use color from system theme.
+# This allows applications to set a palette for ddterm.
+gsettings set $SCHEMA use-theme-colors false 
 gsettings set $SCHEMA window-above true
 gsettings set $SCHEMA window-maximize true
 gsettings set $SCHEMA window-monitor 'current'
