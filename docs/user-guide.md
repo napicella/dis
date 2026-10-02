@@ -337,7 +337,6 @@ The files in `~/rc/configs-generated/` are generated: dis renders them from a st
 - unguarded `export PATH=X:$PATH` lines in sections
 - orphan sections: owned by a package that is neither in the distro nor installed, e.g. left behind by a package removed from the distro
 - PATH dirs that don't exist, each with the section or rc line that adds it and how to fix it
-- install records of packages the sources no longer provide (e.g. after a rename)
 - source repos with uncommitted changes, unpushed commits, or fetched commits not merged
 
 `dis doctor --fix` removes orphan sections (backing up their files) and regenerates generated files that are missing or behind the state. It never overwrites a generated file edited outside dis, and it only reports the lines in `~/.bashrc`: moving them would change when and in which shells they run.

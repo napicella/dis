@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/napicella/dis/internal/dis"
 	"github.com/napicella/dis/internal/rcstate"
 )
 
@@ -292,23 +291,6 @@ func TestFixKeepsEdits(t *testing.T) {
 	}
 	if got := read(t, store.Path("bash_paths")); got != edited {
 		t.Errorf("edited file changed:\n%s", got)
-	}
-}
-
-func TestCheckInstalledGone(t *testing.T) {
-	available := []dis.PackageInfo{{Provides: "common/eza"}, {Provides: "common/git"}}
-	sources := []dis.ResolvedSource{{Declared: "here", Path: t.TempDir()}}
-	r := CheckInstalledGone([]string{"common/eza", "tools/eza", "common/git"}, available, sources)
-	if got, want := texts(r), []string{"tools/eza"}; !reflect.DeepEqual(got, want) {
-		t.Errorf("Problems = %q, want %q", got, want)
-	}
-	if want := "1 install record for a package that no longer exists"; r.Warn != want {
-		t.Errorf("Warn = %q, want %q", r.Warn, want)
-	}
-
-	sources = append(sources, dis.ResolvedSource{Declared: "${repos.gone}/x", Path: filepath.Join(t.TempDir(), "absent")})
-	if r := CheckInstalledGone([]string{"tools/eza"}, available, sources); !strings.Contains(r.Skipped, "${repos.gone}/x is missing") {
-		t.Errorf("missing source: %+v", r)
 	}
 }
 

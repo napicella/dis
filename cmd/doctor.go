@@ -28,16 +28,14 @@ var doctorCmd = &cobra.Command{
                     nor installed
   PATH dirs         dirs on PATH that don't exist, with the section or rc line
                     that adds each one
-  install records   records of packages that no longer exist, e.g. after a
-                    rename
   source repos      uncommitted changes, unpushed commits, and commits fetched
                     but not merged
 
-Orphan sections, install records and source repos need the distro file and are
-skipped without one. A section without an owner is never an orphan. PATH is
-read from the shell dis runs in, which inherits it from whatever started it
-(terminal, multiplexer server, desktop session): after a fix, old entries stay
-until those are restarted. Repos are not fetched: 'dis pull' does that.
+Orphan sections and source repos need the distro file and are skipped without
+one. A section without an owner is never an orphan. PATH is read from the shell
+dis runs in, which inherits it from whatever started it (terminal, multiplexer
+server, desktop session): after a fix, old entries stay until those are
+restarted. Repos are not fetched: 'dis pull' does that.
 
 --fix first makes the mechanical fixes:
   - removes orphan sections, after backing up their files
@@ -123,13 +121,11 @@ func doctorCmdFn(cmd *cobra.Command, _ []string) error {
 		d.CheckOrphans(),
 		d.CheckDeadPath(os.Getenv("PATH")),
 	}
-	gone := doctor.Result{OK: "install records match packages", Skipped: distroErr}
 	repos := doctor.Result{OK: "source repos are in sync", Skipped: distroErr}
 	if ic != nil {
-		gone = doctor.CheckInstalledGone(installed, ic.ListAvailablePackages(), ic.Sources)
 		repos = d.CheckRepos(ic.Repos)
 	}
-	results = append(results, gone, repos)
+	results = append(results, repos)
 
 	if renderDoctorResults(out, results) {
 		cmd.SilenceUsage, cmd.SilenceErrors = true, true

@@ -253,33 +253,6 @@ func addsDir(text, dir string) bool {
 	return false
 }
 
-// CheckInstalledGone reports install records for packages the distro's
-// sources no longer provide, e.g. after a rename. It is skipped when a source
-// is missing: its packages would all look gone.
-func CheckInstalledGone(installed []string, available []dis.PackageInfo, sources []dis.ResolvedSource) Result {
-	r := Result{
-		OK:   "install records match packages",
-		Hint: "a renamed package keeps its old record: delete the line from ~/.local/share/dis/installed.txt",
-	}
-	for _, s := range sources {
-		if info, err := os.Stat(s.Path); err != nil || !info.IsDir() {
-			r.Skipped = fmt.Sprintf("source %s is missing ('dis pull' clones it)", s.Declared)
-			return r
-		}
-	}
-	known := map[string]bool{}
-	for _, p := range available {
-		known[p.Provides] = true
-	}
-	for _, name := range installed {
-		if !known[name] {
-			r.Problems = append(r.Problems, Problem{Text: name})
-		}
-	}
-	r.warn("1 install record for a package that no longer exists", "%d install records for packages that no longer exist")
-	return r
-}
-
 // CheckRepos reports source repos that are missing, have local changes, or
 // differ from their upstream as of the last fetch.
 func (d *Doctor) CheckRepos(repos []dis.ResolvedRepo) Result {
