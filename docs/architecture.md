@@ -47,9 +47,9 @@ When an installer exports values, those values are written both into the current
 3. **Resolve** — the full ordered list of manifests to install is computed by topological sort of the dependency graph for the declared packages.
 4. **Run** — each installer is executed in order via the wrapper script. If a package is already recorded as installed, it is skipped (but the cache may have already populated its exports). After each successful install, any exported values are merged into the parameters map and the cache, and the package is recorded as installed.
 
-### `dis run`
+### `dis install PKG`
 
-Same as `dis install` but targets a single named package, skipping dependency resolution. Generators and preconditions still run. Uses the same exports cache so exported values from previously-installed packages are available.
+Same as `dis install` but targets a single named package. Generators and preconditions still run. Before running it, dis checks that the packages it depends on are recorded as installed and fails if one is not (`--no-deps-check` skips the check; `--with-deps` runs them too, dependencies first). Uses the same exports cache so exported values from previously-installed packages are available.
 
 ### `dis plan`
 

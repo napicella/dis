@@ -9,36 +9,40 @@ import (
 	"strings"
 )
 
-// stateFilePath returns the path to the installed-packages state file.
-// It follows the XDG Base Directory spec: ~/.local/share/dis/installed.txt
-func stateFilePath() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("resolve home dir: %w", err)
-	}
-	return filepath.Join(home, ".local", "share", "dis", "installed.txt"), nil
+const (
+	// installedFile lists the installed packages, one per line.
+	installedFile = "installed.txt"
+	// exportsCacheFile stores all pkg:KEY=value pairs ever exported by
+	// installers, keyed by qualified name.
+	exportsCacheFile = "exports-cache.txt"
+)
+
+// State is the install state dis keeps on this machine: the packages recorded
+// as installed and the exports cache. Both are files in one directory, created
+// on first write.
+type State struct {
+	dir string
 }
 
-// exportsCacheFilePath returns the path to the exports cache file.
-// ~/.local/share/dis/exports-cache.txt stores all pkg:KEY=value pairs
-// ever exported by installers, keyed by qualified name.
-func exportsCacheFilePath() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("resolve home dir: %w", err)
-	}
-	return filepath.Join(home, ".local", "share", "dis", "exports-cache.txt"), nil
+// NewState returns the State kept in dir.
+func NewState(dir string) *State {
+	return &State{dir: dir}
 }
 
-// ReadExportsCache reads all cached exports and returns them as a map of
+// DefaultState returns the State kept in ~/.local/share/dis, following the XDG
+// Base Directory spec.
+func DefaultState() (*State, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("resolve home dir: %w", err)
+	}
+	return NewState(filepath.Join(home, ".local", "share", "dis")), nil
+}
+
+// ReadExports reads all cached exports and returns them as a map of
 // qualified key ("pkg:VAR") → value.
-func ReadExportsCache() (map[string]string, error) {
-	path, err := exportsCacheFilePath()
-	if err != nil {
-		return nil, err
-	}
-
-	data, err := os.ReadFile(path)
+func (s *State) ReadExports() (map[string]string, error) {
+	data, err := os.ReadFile(filepath.Join(s.dir, exportsCacheFile))
 	if os.IsNotExist(err) {
 		return map[string]string{}, nil
 	}
@@ -61,22 +65,18 @@ func ReadExportsCache() (map[string]string, error) {
 	return result, nil
 }
 
-// UpdateExportsCache merges newEntries into the persistent exports cache,
-// overwriting existing values for the same keys and writing the result back.
-func UpdateExportsCache(newEntries map[string]string) error {
+// UpdateExports merges newEntries into the exports cache, overwriting existing
+// values for the same keys and writing the result back.
+func (s *State) UpdateExports(newEntries map[string]string) error {
 	if len(newEntries) == 0 {
 		return nil
 	}
-	path, err := exportsCacheFilePath()
-	if err != nil {
-		return err
-	}
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(s.dir, 0755); err != nil {
 		return fmt.Errorf("create cache dir: %w", err)
 	}
 
 	// Read current cache, merge new entries, rewrite.
-	existing, err := ReadExportsCache()
+	existing, err := s.ReadExports()
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func UpdateExportsCache(newEntries map[string]string) error {
 		existing[k] = v
 	}
 
-	f, err := os.Create(path)
+	f, err := os.Create(filepath.Join(s.dir, exportsCacheFile))
 	if err != nil {
 		return fmt.Errorf("write exports cache: %w", err)
 	}
@@ -97,19 +97,13 @@ func UpdateExportsCache(newEntries map[string]string) error {
 	return nil
 }
 
-// RecordInstalled appends pkgName to the state file if it is not already
-// present. The state directory is created automatically on first use.
-func RecordInstalled(pkgName string) error {
-	path, err := stateFilePath()
-	if err != nil {
-		return err
-	}
-
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+// RecordInstalled records pkgName as installed, if it is not already.
+func (s *State) RecordInstalled(pkgName string) error {
+	if err := os.MkdirAll(s.dir, 0755); err != nil {
 		return fmt.Errorf("create state dir: %w", err)
 	}
 
-	already, err := IsInstalled(pkgName)
+	already, err := s.IsInstalled(pkgName)
 	if err != nil {
 		return err
 	}
@@ -117,7 +111,7 @@ func RecordInstalled(pkgName string) error {
 		return nil
 	}
 
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(filepath.Join(s.dir, installedFile), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("open state file: %w", err)
 	}
@@ -127,14 +121,10 @@ func RecordInstalled(pkgName string) error {
 	return err
 }
 
-// RemoveInstalled removes pkgName from the state file.
+// RemoveInstalled removes pkgName from the packages recorded as installed.
 // It is a no-op if the package is not recorded.
-func RemoveInstalled(pkgName string) error {
-	path, err := stateFilePath()
-	if err != nil {
-		return err
-	}
-
+func (s *State) RemoveInstalled(pkgName string) error {
+	path := filepath.Join(s.dir, installedFile)
 	lines, err := readStateLines(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -153,14 +143,9 @@ func RemoveInstalled(pkgName string) error {
 	return writeStateLines(path, filtered)
 }
 
-// IsInstalled reports whether pkgName is recorded in the state file.
-func IsInstalled(pkgName string) (bool, error) {
-	path, err := stateFilePath()
-	if err != nil {
-		return false, err
-	}
-
-	lines, err := readStateLines(path)
+// IsInstalled reports whether pkgName is recorded as installed.
+func (s *State) IsInstalled(pkgName string) (bool, error) {
+	lines, err := readStateLines(filepath.Join(s.dir, installedFile))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return false, nil
@@ -176,21 +161,16 @@ func IsInstalled(pkgName string) (bool, error) {
 	return false, nil
 }
 
-// ListInstalled returns all package names recorded in the state file.
-func ListInstalled() ([]string, error) {
-	path, err := stateFilePath()
-	if err != nil {
-		return nil, err
-	}
-
-	lines, err := readStateLines(path)
-	sort.Strings(lines)
+// ListInstalled returns all package names recorded as installed, sorted.
+func (s *State) ListInstalled() ([]string, error) {
+	lines, err := readStateLines(filepath.Join(s.dir, installedFile))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
 		return nil, err
 	}
+	sort.Strings(lines)
 	return lines, nil
 }
 

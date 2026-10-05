@@ -111,11 +111,11 @@ func (r *Installer) RunPreconditions(ctx context.Context, ic *InstallContext) er
 // installers. On success the package is recorded in the state file.
 func (r *Installer) RunInstaller(ctx context.Context, ic *InstallContext, pkgName string) error {
 	if r.Reinstall {
-		if err := RemoveInstalled(pkgName); err != nil {
+		if err := ic.State.RemoveInstalled(pkgName); err != nil {
 			return fmt.Errorf("removing install state for %q: %w", pkgName, err)
 		}
 	} else {
-		alreadyInstalled, err := IsInstalled(pkgName)
+		alreadyInstalled, err := ic.State.IsInstalled(pkgName)
 		if err != nil {
 			return fmt.Errorf("checking install state for %q: %w", pkgName, err)
 		}
@@ -129,7 +129,7 @@ func (r *Installer) RunInstaller(ctx context.Context, ic *InstallContext, pkgNam
 		return err
 	}
 
-	if err := RecordInstalled(pkgName); err != nil {
+	if err := ic.State.RecordInstalled(pkgName); err != nil {
 		return fmt.Errorf("recording install state for %q: %w", pkgName, err)
 	}
 

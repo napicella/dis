@@ -22,6 +22,9 @@ type InstallContext struct {
 	// Sources are the distro's sources in declaration order, with ${...}
 	// variables expanded and relative paths made absolute.
 	Sources []ResolvedSource
+	// State is this machine's install state: the packages recorded as
+	// installed and the exports cache.
+	State *State
 
 	// parameters is a flat map of all global configuration values available to
 	// installers: static values from the distro file and runtime exports from 
@@ -130,11 +133,17 @@ func NewInstallContext(distroFile string) (*InstallContext, error) {
 		}
 	}
 
+	state, err := DefaultState()
+	if err != nil {
+		return nil, err
+	}
+
 	return &InstallContext{
 		Cfg:              cfg,
 		DistroDir:        distroDir,
 		Repos:            repos,
 		Sources:          sources,
+		State:            state,
 		manifests:        manifests,
 		pkgm:             pkgm,
 		parameters:       params,
@@ -151,7 +160,7 @@ func NewInstallContextWithCache(distroFile string) (*InstallContext, error) {
 	if err != nil {
 		return nil, err
 	}
-	cache, err := ReadExportsCache()
+	cache, err := ic.State.ReadExports()
 	if err != nil {
 		return nil, fmt.Errorf("loading exports cache: %w", err)
 	}
@@ -171,14 +180,13 @@ func (ic *InstallContext) ResolveInstallOrder() ([]Manifest, error) {
 }
 
 // ResolveInstallOrderFor returns the named package and its transitive
-// dependencies in install order, dependencies first. name may be a short name,
-// as accepted by FindPackage, and is reported the same way when it is unknown.
+// dependencies in install order, dependencies first. name must be a full
+// package name; an unknown one returns a *PackageNotFoundError.
 func (ic *InstallContext) ResolveInstallOrderFor(name string) ([]Manifest, error) {
-	pkg, err := ic.FindPackage(name)
-	if err != nil {
-		return nil, err
+	if _, ok := ic.pkgm.get(name); !ok {
+		return nil, ic.packageNotFound(name)
 	}
-	return ic.pkgm.depsForAll([]string{pkg.Provides})
+	return ic.pkgm.depsFor(name)
 }
 
 // ListAvailablePackages returns the list of all the packages that have been loaded from the provided sources.
@@ -235,6 +243,24 @@ func (ic *InstallContext) packageNotFound(name string) *PackageNotFoundError {
 		names = append(names, p.Provides)
 	}
 	return &PackageNotFoundError{Name: name, Suggestions: suggestPackages(name, names)}
+}
+
+// MissingDeps returns the dependencies of the named package that are not
+// recorded as installed on this machine, with their own dependencies, in
+// install order. The package itself is not checked, and neither are the
+// dependencies of an installed package: they were in place when it was
+// installed, even if it gained new ones since. name must be a full package
+// name; an unknown one returns a *PackageNotFoundError.
+func (ic *InstallContext) MissingDeps(name string) ([]string, error) {
+	if _, ok := ic.pkgm.get(name); !ok {
+		return nil, ic.packageNotFound(name)
+	}
+	installed, err := ic.State.ListInstalled()
+	if err != nil {
+		return nil, err
+	}
+	isInstalled := func(pkg string) bool { return slices.Contains(installed, pkg) }
+	return ic.pkgm.depsUntil(name, isInstalled), nil
 }
 
 // envForInstaller returns the env var map for the given installer, resolved
@@ -368,5 +394,5 @@ func (rc *InstallContext) addExports(exportsFilePath, providerPkg string) error 
 		rc.parameters[qualifiedKey] = val
 		newEntries[qualifiedKey] = val
 	}
-	return UpdateExportsCache(newEntries)
+	return rc.State.UpdateExports(newEntries)
 }

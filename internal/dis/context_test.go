@@ -143,20 +143,16 @@ func TestResolveInstallOrderFor(t *testing.T) {
 
 	// Dependencies come first, each once, and unrelated packages are left out.
 	want := []string{"common/one", "common/base", "common/two", "bundle/tools"}
-	for _, name := range []string{"bundle/tools", "tools"} {
-		t.Run(name, func(t *testing.T) {
-			got, err := ic.ResolveInstallOrderFor(name)
-			if err != nil {
-				t.Fatalf("ResolveInstallOrderFor(%q): %v", name, err)
-			}
-			var names []string
-			for _, m := range got {
-				names = append(names, m.Provides)
-			}
-			if !reflect.DeepEqual(names, want) {
-				t.Errorf("ResolveInstallOrderFor(%q) = %v, want %v", name, names, want)
-			}
-		})
+	got, err := ic.ResolveInstallOrderFor("bundle/tools")
+	if err != nil {
+		t.Fatalf("ResolveInstallOrderFor(%q): %v", "bundle/tools", err)
+	}
+	var names []string
+	for _, m := range got {
+		names = append(names, m.Provides)
+	}
+	if !reflect.DeepEqual(names, want) {
+		t.Errorf("ResolveInstallOrderFor(%q) = %v, want %v", "bundle/tools", names, want)
 	}
 
 	t.Run("package without dependencies", func(t *testing.T) {
@@ -169,11 +165,65 @@ func TestResolveInstallOrderFor(t *testing.T) {
 		}
 	})
 
-	t.Run("unknown package", func(t *testing.T) {
-		_, err := ic.ResolveInstallOrderFor("common/nope")
-		var nf *PackageNotFoundError
-		if !errors.As(err, &nf) {
-			t.Fatalf("error = %v, want *PackageNotFoundError", err)
-		}
+	// Short names are for 'dis edit' only: here they are unknown packages.
+	for _, name := range []string{"common/nope", "tools"} {
+		t.Run("unknown package "+name, func(t *testing.T) {
+			_, err := ic.ResolveInstallOrderFor(name)
+			var nf *PackageNotFoundError
+			if !errors.As(err, &nf) {
+				t.Fatalf("error = %v, want *PackageNotFoundError", err)
+			}
+		})
+	}
+}
+
+func TestMissingDeps(t *testing.T) {
+	ic := depsContext(t, map[string][]string{
+		"bundle/tools": {"common/one", "common/two"},
+		"common/one":   {},
+		"common/two":   {"common/base"},
+		"common/base":  {},
+		"common/other": {},
 	})
+
+	tests := []struct {
+		name      string
+		installed []string
+		pkg       string
+		want      []string
+	}{
+		{"nothing installed: transitive deps, in install order", nil, "bundle/tools", []string{"common/one", "common/base", "common/two"}},
+		{"an installed dep's own deps are not checked", []string{"common/two"}, "bundle/tools", []string{"common/one"}},
+		{"all deps installed", []string{"common/one", "common/two", "common/base"}, "bundle/tools", nil},
+		{"the package itself is not checked", []string{"common/base"}, "common/two", nil},
+		{"no dependencies", nil, "common/other", nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ic.State = NewState(t.TempDir())
+			for _, p := range tt.installed {
+				if err := ic.State.RecordInstalled(p); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got, err := ic.MissingDeps(tt.pkg)
+			if err != nil {
+				t.Fatalf("MissingDeps(%q): %v", tt.pkg, err)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("MissingDeps(%q) = %v, want %v", tt.pkg, got, tt.want)
+			}
+		})
+	}
+
+	for _, name := range []string{"common/nope", "tools"} {
+		t.Run("unknown package "+name, func(t *testing.T) {
+			ic.State = NewState(t.TempDir())
+			_, err := ic.MissingDeps(name)
+			var nf *PackageNotFoundError
+			if !errors.As(err, &nf) {
+				t.Fatalf("error = %v, want *PackageNotFoundError", err)
+			}
+		})
+	}
 }

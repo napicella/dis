@@ -110,3 +110,28 @@ func topoSort(t *packageManager, id string, visited map[string]bool, ordered *[]
 	*ordered = append(*ordered, id)
 	return nil
 }
+
+// depsUntil returns the transitive dependencies of name in topological order
+// (dependencies first), without name itself. A dependency for which stop
+// returns true is left out, and so are its own dependencies, unless another
+// path reaches them.
+func (t *packageManager) depsUntil(name string, stop func(string) bool) []string {
+	var ordered []string
+	visited := map[string]bool{name: true}
+	var walk func(id string)
+	walk = func(id string) {
+		for _, dep := range t.manifest(id).DependsOn {
+			if visited[dep] {
+				continue
+			}
+			visited[dep] = true
+			if stop(dep) {
+				continue
+			}
+			walk(dep)
+			ordered = append(ordered, dep)
+		}
+	}
+	walk(name)
+	return ordered
+}

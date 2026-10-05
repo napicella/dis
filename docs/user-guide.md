@@ -157,7 +157,8 @@ steps of its own. Listing it in a distro file installs all of them.
 ```
 
 - Full runs (`dis install`, `dis config` without a package name) resolve dependencies, so they
-  run the bundle's packages. With a package name, add `--with-deps`: `dis config bundle/containers`
+  run the bundle's packages. With a package name, add `--with-deps`: `dis install bundle/containers`
+  alone fails because the bundle's packages are not installed, and `dis config bundle/containers`
   alone runs only the empty bundle.
 - Put a bundle where every distro that loads it can also see all its packages. dis rejects any
   loaded installer that depends on an unknown package, even if no distro lists it.
@@ -353,7 +354,8 @@ The `--distro` flag is optional on all commands if a [config file](#config-file)
 |---|---|
 | `dis init` | Scaffold a workspace in the current directory |
 | `dis install [--distro FILE]` | Install all packages in the distro |
-| `dis install [--distro FILE] PKG` | Install a single package (skips dependency resolution) |
+| `dis install [--distro FILE] PKG` | Install a single package. Fails before running it if a package it depends on is not recorded as installed, suggesting `--with-deps`. The dependencies of an installed package are not checked, nor is a package that is already installed (it is skipped) |
+| `dis install [--distro FILE] --no-deps-check PKG` | Install a single package without checking its dependencies (e.g. installed outside dis) |
 | `dis install [--distro FILE] --with-deps PKG` | Install a package and everything it depends on, dependencies first (e.g. a whole bundle) |
 | `dis install [--distro FILE] --reinstall` | Re-run all installers, ignoring install state |
 | `dis config [--distro FILE]` | Re-apply configs for all packages (skips install steps) |

@@ -23,7 +23,11 @@ func init() {
 }
 
 func listCmdFn(_ *cobra.Command, _ []string) error {
-	pkgs, err := dis.ListInstalled()
+	state, err := dis.DefaultState()
+	if err != nil {
+		return err
+	}
+	pkgs, err := state.ListInstalled()
 	if err != nil {
 		return fmt.Errorf("reading install state: %w", err)
 	}

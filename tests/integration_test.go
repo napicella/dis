@@ -580,6 +580,133 @@ func TestInstallIntegrationRCTools(t *testing.T) {
 	}
 }
 
+// TestInstallIntegrationMissingDeps verifies that installing a single package
+// fails when its dependencies are not recorded as installed, without running
+// its installer, and the two ways past it: --no-deps-check and --with-deps.
+//
+// Flow, on a fresh container where nothing is installed:
+//  1. dis install test/consumer → fails naming test/producer; consumer did not run.
+//  2. dis install --no-deps-check test/consumer → the check is skipped; the
+//     installer then fails on its own, as TOKEN was never exported.
+//  3. dis install --with-deps test/consumer → producer then consumer run.
+//  4. With test/producer dropped from the install state, dis install
+//     test/consumer → consumer is installed, so it is skipped unchecked.
+//  5. dis install --reinstall test/consumer → consumer would run, so the
+//     check fails, and the hint says to reinstall after installing the deps.
+func TestInstallIntegrationMissingDeps(t *testing.T) {
+	if _, err := exec.LookPath("docker"); err != nil {
+		t.Skip("docker not found in PATH; skipping integration test")
+	}
+
+	binPath := os.Getenv("DISGO_BIN")
+	if binPath == "" {
+		t.Fatal("DISGO_BIN env var not set; run tests via 'make test-integration'")
+	}
+	if _, err := os.Stat(binPath); err != nil {
+		t.Fatalf("DISGO_BIN %q not found: %v", binPath, err)
+	}
+
+	testdataAbs, err := filepath.Abs("testdata")
+	if err != nil {
+		t.Fatalf("resolving testdata path: %v", err)
+	}
+	dockerfilePath := filepath.Join(testdataAbs, "Dockerfile")
+	mustRun(t, "docker", "build", "-t", testImage, "-f", dockerfilePath, testdataAbs)
+
+	containerID := mustRun(t, "docker", "run", "-d", "--rm", testImage, "sleep", "300")
+	containerID = strings.TrimSpace(containerID)
+	t.Cleanup(func() {
+		exec.Command("docker", "rm", "-f", containerID).Run() //nolint:errcheck
+	})
+
+	mustRun(t, "docker", "cp", binPath, containerID+":/usr/local/bin/dis")
+	mustDockerExec(t, containerID, "sudo", "chmod", "+x", "/usr/local/bin/dis")
+	mustRun(t, "docker", "cp", testdataAbs, containerID+":/testdata")
+	mustDockerExec(t, containerID, "sudo", "chown", "-R", "dev:dev", "/testdata")
+	mustDockerExec(t, containerID, "chmod", "-R", "+x", "/testdata")
+
+	install := func(args ...string) (string, error) {
+		cmd := append([]string{"exec", containerID, "/usr/local/bin/dis", "install", "--distro", "/testdata/distro.yml"}, args...)
+		out, err := exec.Command("docker", cmd...).CombinedOutput()
+		return string(out), err
+	}
+
+	t.Run("missing dependency fails before running the installer", func(t *testing.T) {
+		out, err := install("test/consumer")
+		if err == nil {
+			t.Fatalf("expected dis install to fail, output: %s", out)
+		}
+		want := "test/consumer depends on packages that are not installed: test/producer"
+		if !strings.Contains(out, want) {
+			t.Fatalf("expected output to contain %q, got: %s", want, out)
+		}
+		if !strings.Contains(out, "dis install --distro /testdata/distro.yml --with-deps test/consumer") {
+			t.Fatalf("expected the --with-deps hint, got: %s", out)
+		}
+		if err := exec.Command("docker", "exec", containerID, "test", "-f", "/tmp/consumer-ran").Run(); err == nil {
+			t.Fatal("consumer installer ran, want it skipped")
+		}
+	})
+
+	t.Run("--no-deps-check skips the check", func(t *testing.T) {
+		out, err := install("--no-deps-check", "test/consumer")
+		if err == nil {
+			t.Fatalf("expected dis install to fail on the missing TOKEN export, output: %s", out)
+		}
+		if strings.Contains(out, "depends on packages that are not installed") {
+			t.Fatalf("dependency check ran despite --no-deps-check: %s", out)
+		}
+		if !strings.Contains(out, "has not been exported") {
+			t.Fatalf("expected the missing-export error, got: %s", out)
+		}
+	})
+
+	t.Run("--with-deps installs the missing dependency first", func(t *testing.T) {
+		if out, err := install("--with-deps", "test/consumer"); err != nil {
+			t.Fatalf("dis install --with-deps failed: %v\noutput: %s", err, out)
+		}
+		for _, f := range []string{"/tmp/producer-ran", "/tmp/consumer-ran"} {
+			if err := exec.Command("docker", "exec", containerID, "test", "-f", f).Run(); err != nil {
+				t.Fatalf("%s missing: installer did not run", f)
+			}
+		}
+	})
+
+	// Forget test/producer, as if test/consumer had gained the dependency
+	// after it was installed.
+	mustDockerExec(t, containerID, "sed", "-i", `\#^test/producer$#d`, "/home/dev/.local/share/dis/installed.txt")
+	mustDockerExec(t, containerID, "rm", "-f", "/tmp/consumer-ran")
+
+	t.Run("an installed package is skipped without checking", func(t *testing.T) {
+		out, err := install("test/consumer")
+		if err != nil {
+			t.Fatalf("dis install failed: %v\noutput: %s", err, out)
+		}
+		if !strings.Contains(out, "Skipping test/consumer (already installed)") {
+			t.Fatalf("expected test/consumer to be skipped, got: %s", out)
+		}
+	})
+
+	t.Run("--reinstall checks, as the installer would run", func(t *testing.T) {
+		out, err := install("--reinstall", "test/consumer")
+		if err == nil {
+			t.Fatalf("expected dis install --reinstall to fail, output: %s", out)
+		}
+		for _, want := range []string{
+			"test/consumer depends on packages that are not installed: test/producer",
+			"Run 'dis install --distro /testdata/distro.yml --with-deps test/consumer' to install them first,",
+			"then 'dis install --distro /testdata/distro.yml --reinstall test/consumer' again,",
+		} {
+			if !strings.Contains(out, want) {
+				t.Fatalf("expected output to contain %q, got: %s", want, out)
+			}
+		}
+		if err := exec.Command("docker", "exec", containerID, "test", "-f", "/tmp/consumer-ran").Run(); err == nil {
+			t.Fatal("consumer installer ran, want it skipped")
+		}
+	})
+}
+
 // mustDockerCat reads the contents of a file inside the container.
 func mustDockerCat(t *testing.T, containerID, path string) string {
 	t.Helper()

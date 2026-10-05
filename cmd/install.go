@@ -18,11 +18,14 @@ When called without a package name, walks the declared source folders to collect
 installer manifests, resolves dependencies, and runs each installer in
 topological order.
 
-When called with a package name, runs that single installer directly, skipping
-dependency resolution. Use this when you are confident all dependencies are
-already satisfied. Add --with-deps to also run the installers it depends on, in
-dependency order (e.g. every package of a bundle). Already-installed packages
-are skipped as usual, unless --reinstall is set.
+When called with a package name, runs that single installer only. Before
+running it, dis checks that the packages it depends on are recorded as
+installed, and fails if one is not. The dependencies of an installed package are
+not checked, and neither is a package that is already installed and will be
+skipped. --no-deps-check skips the check, for dependencies installed outside
+dis. Add --with-deps to also run the installers it depends on, in dependency
+order (e.g. every package of a bundle). Already-installed packages are skipped
+as usual, unless --reinstall is set.
 
 Before running each installer script the following env vars are set:
   DIS_PACKAGE       - name of the package being installed; 'dis tools add-rc-*'
@@ -50,14 +53,16 @@ Examples:
 }
 
 var (
-	installReinstall bool
-	installWithDeps  bool
+	installReinstall   bool
+	installWithDeps    bool
+	installNoDepsCheck bool
 )
 
 func init() {
 	installCmd.Flags().String("distro", "", "Path to the distro YAML file")
 	installCmd.Flags().BoolVar(&installReinstall, "reinstall", false, "Re-run installers even if already recorded as installed")
 	installCmd.Flags().BoolVar(&installWithDeps, "with-deps", false, "With a package name, also run the installers it depends on, dependencies first")
+	installCmd.Flags().BoolVar(&installNoDepsCheck, "no-deps-check", false, "With a package name and without --with-deps, run it even if its dependencies are not recorded as installed")
 	rootCmd.AddCommand(installCmd)
 }
 
@@ -100,9 +105,15 @@ func installCmdFn(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// If a package name is provided, run just that single installer (skipping dep resolution).
+	// If a package name is provided, run just that single installer, once its
+	// dependencies are known to be installed.
 	if len(args) == 1 {
 		pkgName := args[0]
+		if !installNoDepsCheck {
+			if err := checkDepsInstalled(cmd, ic, pkgName); err != nil {
+				return err
+			}
+		}
 		if err := runner.RunInstaller(ctx, ic, pkgName); err != nil {
 			return renderPackageNotFound(cmd, err)
 		}
@@ -123,5 +134,28 @@ func installCmdFn(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println("✅ All packages installed successfully.")
+	return nil
+}
+
+// checkDepsInstalled fails when the installer of pkgName is about to run but
+// some of the packages it depends on are not recorded as installed. It passes
+// when the package is already installed and will be skipped (no --reinstall).
+func checkDepsInstalled(cmd *cobra.Command, ic *dis.InstallContext, pkgName string) error {
+	if !installReinstall {
+		installed, err := ic.State.IsInstalled(pkgName)
+		if err != nil {
+			return fmt.Errorf("checking install state for %q: %w", pkgName, err)
+		}
+		if installed {
+			return nil
+		}
+	}
+	missing, err := ic.MissingDeps(pkgName)
+	if err != nil {
+		return renderPackageNotFound(cmd, err)
+	}
+	if len(missing) > 0 {
+		return renderMissingDeps(cmd, pkgName, missing, installReinstall)
+	}
 	return nil
 }

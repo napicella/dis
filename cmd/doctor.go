@@ -84,7 +84,11 @@ func doctorCmdFn(cmd *cobra.Command, _ []string) error {
 	// The distro is optional: without it the checks that need it are skipped.
 	var ic *dis.InstallContext
 	distroErr := "needs the distro file: pass --distro or run 'dis pull'"
-	installed, installedErr := dis.ListInstalled()
+	var installed []string
+	state, installedErr := dis.DefaultState()
+	if installedErr == nil {
+		installed, installedErr = state.ListInstalled()
+	}
 	if distroFile := viper.GetString("distro"); distroFile != "" {
 		if ic, err = dis.NewInstallContext(distroFile); err != nil {
 			distroErr = fmt.Sprintf("loading the distro: %v", err)

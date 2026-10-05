@@ -62,3 +62,58 @@ func TestRenderPackageNotFound(t *testing.T) {
 		})
 	}
 }
+
+func TestRenderMissingDeps(t *testing.T) {
+	tests := []struct {
+		name      string
+		distro    string
+		reinstall bool
+		want      string
+	}{
+		{
+			name: "install",
+			want: "Error: tools/app depends on packages that are not installed: common/base, common/mid\n" +
+				"  Run 'dis install --with-deps tools/app' to install them first,\n" +
+				"  or pass --no-deps-check if they were installed outside dis.\n",
+		},
+		{
+			name:      "reinstall",
+			reinstall: true,
+			want: "Error: tools/app depends on packages that are not installed: common/base, common/mid\n" +
+				"  Run 'dis install --with-deps tools/app' to install them first,\n" +
+				"  then 'dis install --reinstall tools/app' again,\n" +
+				"  or pass --no-deps-check if they were installed outside dis.\n",
+		},
+		{
+			name:   "--distro given on the command line",
+			distro: "/x/distro.yml",
+			want: "Error: tools/app depends on packages that are not installed: common/base, common/mid\n" +
+				"  Run 'dis install --distro /x/distro.yml --with-deps tools/app' to install them first,\n" +
+				"  or pass --no-deps-check if they were installed outside dis.\n",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().String("distro", "", "")
+			if tt.distro != "" {
+				if err := cmd.Flags().Set("distro", tt.distro); err != nil {
+					t.Fatal(err)
+				}
+			}
+			var out bytes.Buffer
+			cmd.SetErr(&out)
+
+			err := renderMissingDeps(cmd, "tools/app", []string{"common/base", "common/mid"}, tt.reinstall)
+			if err == nil {
+				t.Fatal("renderMissingDeps returned nil, want an error")
+			}
+			if out.String() != tt.want {
+				t.Errorf("output =\n%s\nwant\n%s", out.String(), tt.want)
+			}
+			if !cmd.SilenceUsage || !cmd.SilenceErrors {
+				t.Error("cobra usage and error output not silenced")
+			}
+		})
+	}
+}
