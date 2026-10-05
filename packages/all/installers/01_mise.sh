@@ -66,7 +66,8 @@ dis tools add-rc-init \
 # and IDEs don't read the rc, so they need this dir in their own PATH (or
 # `mise exec --`). If no active version has the binary (e.g. a tool left under an older
 # Go), the shim runs the next match on PATH, else fails with "No version is set for
-# shim". Shims exist only for binaries inside mise's install dirs, and mise updates
+# shim". That search skips the dirs mise activate added (listed in the inherited
+# __MISE_DIFF), so a process started from an activated shell can still fail. Shims exist only for binaries inside mise's install dirs, and mise updates
 # them only when it installs or uninstalls. A binary put there behind its back needs
 # `mise reshim`, e.g. `pip install` into mise's python, or `go install` with mise's
 # default GOBIN. Tools installed outside mise's dirs never get a shim. They're reached
