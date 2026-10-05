@@ -104,9 +104,18 @@ ddterm_schema() {
 
 SCHEMA=$(ddterm_schema)
 
+# Colors: install-only defaults. Theming tools may set background, foreground
+# and palette afterwards, so 'dis config' must not reset them. The foreground
+# must be readable on its own: use-theme-colors is false below, so these colors
+# are used as they are until something else sets them.
+if [[ -n "${DIS_INSTALL:-}" ]]; then
+  gsettings set $SCHEMA background-color '#181818'
+  gsettings set $SCHEMA foreground-color '#d0cfcc'
+  gsettings set $SCHEMA palette "['#171421', '#c01c28', '#26a269', '#a2734c', '#12488b', '#a347ba', '#2aa1b3', '#d0cfcc', '#5e5c64', '#f66151', '#33da7a', '#e9ad0c', '#2a7bde', '#c061cb', '#33c7de', '#ffffff']"
+fi
+
 gsettings set $SCHEMA allow-hyperlink true
 gsettings set $SCHEMA audible-bell true
-gsettings set $SCHEMA background-color '#181818'
 gsettings set $SCHEMA background-opacity 0.90000000000000000
 gsettings set $SCHEMA backspace-binding 'ascii-delete'
 gsettings set $SCHEMA bold-color '#000000'
@@ -131,7 +140,6 @@ gsettings set $SCHEMA detect-urls-http true
 gsettings set $SCHEMA detect-urls-news-man true
 gsettings set $SCHEMA detect-urls-voip true
 gsettings set $SCHEMA force-x11-gdk-backend false
-gsettings set $SCHEMA foreground-color '#171421'
 gsettings set $SCHEMA hide-animation 'ease-in-quad'
 gsettings set $SCHEMA hide-animation-duration 0.15000000000000000
 gsettings set $SCHEMA hide-when-focus-lost true
@@ -143,7 +151,6 @@ gsettings set $SCHEMA new-tab-button true
 gsettings set $SCHEMA new-tab-front-button false
 #gsettings set $SCHEMA notebook-border true
 gsettings set $SCHEMA override-window-animation true
-gsettings set $SCHEMA palette "['#171421', '#c01c28', '#26a269', '#a2734c', '#12488b', '#a347ba', '#2aa1b3', '#d0cfcc', '#5e5c64', '#f66151', '#33da7a', '#e9ad0c', '#2a7bde', '#c061cb', '#33c7de', '#ffffff']"
 gsettings set $SCHEMA panel-icon-type 'toggle-and-menu-button'
 gsettings set $SCHEMA pointer-autohide false
 gsettings set $SCHEMA preserve-working-directory true
@@ -196,7 +203,7 @@ gsettings set $SCHEMA transparent-background true
 gsettings set $SCHEMA use-system-font true
 # use-theme-colors false -> do not use color from system theme.
 # This allows applications to set a palette for ddterm.
-gsettings set $SCHEMA use-theme-colors false 
+gsettings set $SCHEMA use-theme-colors false
 gsettings set $SCHEMA window-above true
 gsettings set $SCHEMA window-maximize true
 gsettings set $SCHEMA window-monitor 'current'
