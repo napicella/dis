@@ -82,5 +82,7 @@ time_format = "%F %T"
 style = "secondary_color"
 
 # Machine name exported by the bashrc from ~/.config/machine-name (short hostname over SSH as a fallback).
+# The cloud is the Nerd Font glyph U+F0C2, drawn by the terminal font itself: a plain
+# Unicode symbol (☁) falls back to another font and newer VTE versions cut it off.
 [env_var.MACHINE_NAME]
-format = '[☁  $env_value](main_color bold) '
+format = '[  $env_value](main_color bold) '
