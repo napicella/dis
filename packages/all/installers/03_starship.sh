@@ -34,9 +34,9 @@ fi
 _cfg=~/.config/starship.toml
 _palette= _main= _secondary=
 if [[ -f "$_cfg" ]] && command -v yq &> /dev/null; then
-  _palette=$(yq -p toml '.palette // ""' "$_cfg")
-  _main=$(yq -p toml '.palettes.custom.main_color // ""' "$_cfg")
-  _secondary=$(yq -p toml '.palettes.custom.secondary_color // ""' "$_cfg")
+  _palette=$(yq -p toml -oy '.palette // ""' "$_cfg")
+  _main=$(yq -p toml -oy '.palettes.custom.main_color // ""' "$_cfg")
+  _secondary=$(yq -p toml -oy '.palettes.custom.secondary_color // ""' "$_cfg")
 fi
 mkdir -p ~/.config/
 cp "$DIS_CONFIG_FOLDER/starship/starship.toml" "$_cfg"
