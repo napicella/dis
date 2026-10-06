@@ -120,10 +120,10 @@ func TestAddRCEnv(t *testing.T) {
 	}
 }
 
-func TestAddRCPathContentRemoved(t *testing.T) {
+func TestAddRCPath(t *testing.T) {
 	home := t.TempDir()
-	err := runRC(t, home, "common/x", "add-rc-path", "--name", "Editor default", "--content", "export EDITOR=vim")
-	if err == nil || err.Error() != "add-rc-path --content was removed: write exports with 'dis tools add-rc-env'" {
+	// Exports go to add-rc-env: add-rc-path has no --content.
+	if err := runRC(t, home, "common/x", "add-rc-path", "--name", "Editor default", "--content", "export EDITOR=vim"); err == nil || !strings.Contains(err.Error(), "unknown flag: --content") {
 		t.Errorf("--content: error = %v", err)
 	}
 	if err := runRC(t, home, "common/x", "add-rc-path", "--name", "Bin"); err == nil || !strings.Contains(err.Error(), `required flag(s) "path" not set`) {
@@ -131,9 +131,6 @@ func TestAddRCPathContentRemoved(t *testing.T) {
 	}
 	if got := rcState(t, home)["bash_paths"]; len(got) != 0 {
 		t.Errorf("bash_paths = %+v", got)
-	}
-	if f := addRCPathCmd.Flags().Lookup("content"); f == nil || !f.Hidden {
-		t.Errorf("--content is not a hidden flag: %+v", f)
 	}
 
 	if err := runRC(t, home, "common/x", "add-rc-path", "--name", "Bin", "--path", "/b/", "--path", "/a"); err != nil {
@@ -143,56 +140,5 @@ func TestAddRCPathContentRemoved(t *testing.T) {
 		"case \":$PATH:\" in *\":/b:\"*) ;; *) export PATH=\"/b:$PATH\" ;; esac"}}
 	if got := rcState(t, home)["bash_paths"]; !reflect.DeepEqual(got, want) {
 		t.Errorf("bash_paths = %+v, want %+v", got, want)
-	}
-}
-
-// The section of the same name that 'add-rc-path --content' wrote moves to
-// bash_env, unless another package owns it or locked it.
-func TestAddRCEnvMovesFromBashPaths(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	store, err := rcstate.DefaultStore()
-	if err != nil {
-		t.Fatal(err)
-	}
-	old := []rcstate.Section{
-		{Name: "Editor default", Owner: "common/bash-config", Content: "export EDITOR=vim"},
-		{Name: "Locale", Owner: "common/os-libs", Content: "export LANG=C"},
-		{Name: "Pinned", Owner: "tools/pin", Locked: true, Content: "export P=1"},
-		{Name: "Mine", Owner: "common/bash-config", Locked: true, Content: "export M=1"},
-		{Name: "./local/bin", Owner: "common/bash-config", Content: `case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac`},
-	}
-	err = store.Update(func(st *rcstate.State) error {
-		st.Files["bash_paths"] = append([]rcstate.Section(nil), old...)
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for _, name := range []string{"Editor default", "Locale", "Pinned", "Mine"} {
-		if err := runRC(t, home, "common/bash-config", "add-rc-env", "--name", name, "--content", "export NEW=1"); err != nil {
-			t.Fatal(err)
-		}
-	}
-	files := rcState(t, home)
-	// Locale is owned by another package and Pinned locked by one: they stay.
-	if got, want := files["bash_paths"], []rcstate.Section{old[1], old[2], old[4]}; !reflect.DeepEqual(got, want) {
-		t.Errorf("bash_paths:\ngot  %+v\nwant %+v", got, want)
-	}
-	var names []string
-	for _, s := range files["bash_env"] {
-		names = append(names, s.Name)
-	}
-	if want := []string{"Editor default", "Locale", "Pinned", "Mine"}; !reflect.DeepEqual(names, want) {
-		t.Errorf("bash_env sections = %q, want %q", names, want)
-	}
-
-	// Running again changes nothing.
-	if err := runRC(t, home, "common/bash-config", "add-rc-env", "--name", "Editor default", "--content", "export NEW=1"); err != nil {
-		t.Fatal(err)
-	}
-	if again := rcState(t, home); !reflect.DeepEqual(again, files) {
-		t.Errorf("second run:\ngot  %+v\nwant %+v", again, files)
 	}
 }

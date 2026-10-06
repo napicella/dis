@@ -72,11 +72,6 @@
 # --------------------------------------------------------------------
 set -euo pipefail
 
-# MIGRATION(2026-10-06): one-time cleanup; drop once every host has run dis config since then.
-# The export used to be in bash_init, which only interactive shells source now.
-# It then moved to bash_paths; add-rc-env below moves it on to bash_env.
-dis tools rm-rc-section --file bash_init --name 'SSH agent socket'
-
 dis tools add-rc-env \
   --name 'SSH agent socket' \
   --content 'export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket"'

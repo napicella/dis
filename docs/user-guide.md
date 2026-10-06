@@ -314,7 +314,7 @@ dis tools add-home-rc --name "bashrc" \
 
 `~/.bashrc` (through `~/rc/bash_config.sh`) sources `bash_env`, then `bash_paths`, then `bash_aliases`, and, in interactive shells only, `bash_init`. `bash_env` comes first so PATH entries can use the variables it exports. The wrapper sources the first three before each installer, so exports and PATH additions written by one installer are available to later ones in the same run. Debian and Ubuntu's bash also reads `~/.bashrc` for non-interactive commands run over SSH (`ssh host cmd`), which skip `bash_init`: whatever such commands need belongs in `bash_env` (exports, with `add-rc-env`) and `bash_paths` (PATH entries, with `add-rc-path --path`).
 
-`add-rc-path` only takes `--path`: it used to take `--content` for exports, which now fails with a message pointing at `add-rc-env`. When `add-rc-env` writes a section, it removes the section of the same name from `bash_paths` if the same package owns it, so switching an installer from `add-rc-path --content` to `add-rc-env` moves the section on the next `dis config`.
+`add-rc-path` only takes `--path`; exports go to `bash_env` with `add-rc-env`.
 
 Use `--path` rather than a hand-written `export PATH=...`: shells started from another shell (tmux, herdr) inherit PATH and source `bash_paths` again, and `--path` writes a guard so the dir is not added twice. `--path` can be repeated; the first one ends up first in PATH.
 
