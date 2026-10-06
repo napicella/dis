@@ -104,7 +104,7 @@ Each upserts a named section in a file under `~/rc/configs-generated/`, which
 |---|---|---|
 | `dis tools add-rc-path` | `bash_paths` | `--path DIR` for `PATH` entries (prepended, skipped if already in PATH, so nested shells don't repeat them); `--content` for other `export`s. Also sourced before each installer, so later installers see them. |
 | `dis tools add-rc-aliases` | `bash_aliases` | Aliases and functions. `--owner PKG` locks the section: only PKG can overwrite or remove it. |
-| `dis tools add-rc-init` | `bash_init` | Code for interactive shells only (prompt hooks, completions). |
+| `dis tools add-rc-init` | `bash_init` | Code for interactive shells only (prompt hooks, completions, key bindings). Not sourced by `ssh host cmd`: exports those need go in `bash_paths`. |
 | `dis tools rm-rc-section --file FILE` | any of the three | Remove a section a package no longer provides. |
 | `dis tools add-home-rc` | `~/.bashrc` | Wiring a top-level rc file; rarely needed. |
 

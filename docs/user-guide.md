@@ -312,7 +312,7 @@ dis tools add-home-rc --name "bashrc" \
   --content 'if [ -f /path/to/dotfiles/.bashrc ]; then . /path/to/dotfiles/.bashrc; fi'
 ```
 
-`bash_paths` and `bash_aliases` are sourced by the wrapper before each installer, so PATH additions written by one installer are available to later ones in the same run. `bash_init` is sourced by `~/.bashrc` for interactive shells only.
+`bash_paths` and `bash_aliases` are sourced by the wrapper before each installer, so PATH additions written by one installer are available to later ones in the same run. `bash_init` is sourced by `~/.bashrc` for interactive shells only. Debian and Ubuntu's bash also reads `~/.bashrc` for non-interactive commands run over SSH (`ssh host cmd`), which skip `bash_init`: whatever such commands need, like `PATH` entries and exports, belongs in `bash_paths`.
 
 Use `--path` rather than a hand-written `export PATH=...`: shells started from another shell (tmux, herdr) inherit PATH and source `bash_paths` again, and `--path` writes a guard so the dir is not added twice. `--path` can be repeated; the first one ends up first in PATH.
 

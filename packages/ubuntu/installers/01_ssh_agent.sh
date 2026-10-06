@@ -16,8 +16,10 @@
 #      only affects systemd-started user services, NOT interactive shells.
 #      See "Why bashrc?" below.
 #   3. Enables and starts the ssh-agent systemd user service.
-#   4. Adds SSH_AUTH_SOCK export to ~/rc/configs-generated/bash_init via
-#      dis tools add-rc-init, so every shell (SSH or local) sees the agent.
+#   4. Adds SSH_AUTH_SOCK export to ~/rc/configs-generated/bash_paths via
+#      dis tools add-rc-path, so every shell (SSH or local) sees the agent,
+#      including non-interactive commands like `ssh host git pull`
+#      (bash_init is only sourced by interactive shells).
 #
 # --------------------------------------------------------------------
 # Why bashrc and not just environment.d?
@@ -70,7 +72,11 @@
 # --------------------------------------------------------------------
 set -euo pipefail
 
-dis tools add-rc-init \
+# MIGRATION(2026-10-06): one-time cleanup; drop once every host has run dis config since then.
+# The export used to be in bash_init, which only interactive shells source now.
+dis tools rm-rc-section --file bash_init --name 'SSH agent socket'
+
+dis tools add-rc-path \
   --name 'SSH agent socket' \
   --content 'export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket"'
 

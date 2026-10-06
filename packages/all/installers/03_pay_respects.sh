@@ -35,9 +35,12 @@ dis tools rm-rc-section --file bash_init --name 'TheFuck'
 
 # --nocnf: leave the shell's command-not-found handler alone (Ubuntu's suggests
 # packages), as thefuck did.
+# Interactive shells only: its setup binds a key, which warns "line editing not
+# enabled" in shells that read the rc without being interactive, like the
+# 'bash -c' pay-respects runs the fixed command in, over SSH on Debian/Ubuntu.
 dis tools add-rc-init \
   --name 'pay-respects' \
-  --content 'if command -v pay-respects &> /dev/null; then
+  --content 'if [[ $- == *i* ]] && command -v pay-respects &> /dev/null; then
   eval "$(pay-respects bash --alias fuck --nocnf)"
   eval "$(pay-respects bash --alias please --nocnf)"
 fi'
