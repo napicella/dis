@@ -185,7 +185,8 @@ func pickDistro(repoDir, distro string) (string, error) {
 		var b strings.Builder
 		for _, f := range found {
 			rel, _ := filepath.Rel(repoDir, f)
-			b.WriteString("\n  " + rel)
+			b.WriteString("\n  ")
+			b.WriteString(rel)
 		}
 		return "", fmt.Errorf("several distro files in %s, pick one with --distro:%s", repoDir, b.String())
 	}

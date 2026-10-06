@@ -115,11 +115,15 @@ func Render(st *State, file string) []byte {
 	var b bytes.Buffer
 	b.WriteString(header)
 	for _, s := range st.Files[file] {
-		b.WriteString("\n" + tools.BeginMarker(s.Name, s.Owner, s.Locked) + "\n")
+		b.WriteByte('\n')
+		b.WriteString(tools.BeginMarker(s.Name, s.Owner, s.Locked))
+		b.WriteByte('\n')
 		if s.Content != "" {
-			b.WriteString(s.Content + "\n")
+			b.WriteString(s.Content)
+			b.WriteByte('\n')
 		}
-		b.WriteString(tools.EndMarker(s.Name) + "\n")
+		b.WriteString(tools.EndMarker(s.Name))
+		b.WriteByte('\n')
 	}
 	return b.Bytes()
 }
