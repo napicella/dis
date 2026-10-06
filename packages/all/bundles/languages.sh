@@ -1,6 +1,6 @@
 ### -- Manifest
 ### provides: bundle/languages
-### depends_on: [common/mise, common/go, common/node, common/python, common/sdkman, tools/cargo]
+### depends_on: [common/mise, common/go, common/node, common/python, common/java, tools/cargo]
 ### distro: [all]
 ### -- End
 
