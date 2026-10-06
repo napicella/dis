@@ -10,7 +10,13 @@
 
 if [[ -n "${DIS_INSTALL:-}" ]]; then
   echo "Installing pay-respects via cargo..."
-  cargo install --locked pay-respects
+  # Build with the physical path of CARGO_HOME. pay-respects' templates (askama)
+  # are found through a relative path with '..', which leaves the crate when the
+  # home dir is a symlink (Cloud Desktops: /home/x -> /local/home/x), and the
+  # build fails with "couldn't read .../templates/init.bash".
+  _cargo_home="${CARGO_HOME:-$HOME/.cargo}"
+  mkdir -p "$_cargo_home"
+  CARGO_HOME="$(cd "$_cargo_home" && pwd -P)" cargo install --locked pay-respects
 
   # MIGRATION(2026-10-06): one-time cleanup; drop once every host has run dis install since then.
   # Remove thefuck, which common/thefuck installed.
