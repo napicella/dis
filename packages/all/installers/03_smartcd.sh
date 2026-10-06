@@ -28,9 +28,14 @@
 
 # Manual activation is required.
 # The following adds the activation in the bash init which is included in bashrc.
+# It also checks smartcd itself is installed: 'dis config' writes this section and
+# .smartcd_config on hosts where the install step has not run yet, and sourcing the
+# config there fails on every line (it loads ~/.smartcd/lib/core/*).
 dis tools add-rc-init \
   --name 'smartcd (https://github.com/cxreg/smartcd)' \
-  --content '[ -r "$HOME/.smartcd_config" ] && ( [ -n $BASH_VERSION ] || [ -n $ZSH_VERSION ] ) && source ~/.smartcd_config'
+  --content 'if [ -r "$HOME/.smartcd/lib/core/smartcd" ] && [ -r "$HOME/.smartcd_config" ] && { [ -n "$BASH_VERSION" ] || [ -n "$ZSH_VERSION" ]; }; then
+  source ~/.smartcd_config
+fi'
 
 if [[ -n "${DIS_INSTALL:-}" ]]; then
   if command -v smartcd &> /dev/null; then

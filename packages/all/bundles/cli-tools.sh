@@ -1,6 +1,6 @@
 ### -- Manifest
 ### provides: bundle/cli-tools
-### depends_on: [common/git, common/eza, common/herdr, common/tldr, common/cheat, common/yq, common/tmux, common/mkcert, common/thefuck, common/claude-skill-dis]
+### depends_on: [common/git, common/eza, common/herdr, common/tldr, common/cheat, common/yq, common/tmux, common/mkcert, common/pay-respects, common/claude-skill-dis]
 ### distro: [all]
 ### -- End
 
