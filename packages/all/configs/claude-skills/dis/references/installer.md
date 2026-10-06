@@ -52,6 +52,14 @@ dis tools add-rc-aliases \
   "already installed").
 - Every step outside the guard must be safe to run again: `dis config` re-runs
   it on every call. `dis tools` rc helpers already are (they upsert).
+- A config another tool also writes (a theming tool sets the theme name or
+  colors): don't `cp` it or hand-roll yq/awk, render it from a template with
+  `dis tools render-config SRC DEST`; name the template after the file plus
+  `.tmpl` (`config.toml.tmpl`) so editors don't flag the `{{ }}`. `{{ keep "theme.name" "dark" }}` keeps
+  DEST's current value (or the default) and `{{- keepTable "theme.custom" }}`
+  a whole TOML table. A key holding dots is quoted, in backticks:
+  ``{{ keep `"workbench.colorTheme"` "Default Dark+" }}``. See "Config
+  templates" in the user guide.
 - The script runs under `bash -e`: a failing command aborts the install.
 
 ## One-time migrations

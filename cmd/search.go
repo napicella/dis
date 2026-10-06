@@ -44,7 +44,7 @@ Examples:
   dis search installers 'status.*git'
   dis search configs . --package starship
   vim $(dis search configs . --package starship --json | jq -r '.[].path')`,
-	Args: cobra.NoArgs,
+	Args: unknownSubcommand,
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("say what to search: dis search packages|installers|configs REGEX")
 	},

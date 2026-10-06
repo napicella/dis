@@ -15,6 +15,8 @@ import (
 var toolsCmd = &cobra.Command{
 	Use:   "tools",
 	Short: "Collection of helper tools for use inside installer scripts",
+	Args:  unknownSubcommand,
+	RunE:  showHelp,
 }
 
 // ── GNOME shortcut ────────────────────────────────────────────────────────────
@@ -72,6 +74,8 @@ func init() {
 	exportEnvCmd.Flags().StringVar(&exportKey, "key", "", "key to export")
 	exportEnvCmd.Flags().StringVar(&exportValue, "value", "", "value to export")
 	toolsCmd.AddCommand(exportEnvCmd)
+
+	toolsCmd.AddCommand(renderConfigCmd)
 
 	rootCmd.AddCommand(toolsCmd)
 }
@@ -296,5 +300,61 @@ var exportEnvCmd = &cobra.Command{
 
 		_, err = fmt.Fprintf(f, "%s=%s\n", exportKey, exportValue)
 		return err
+	},
+}
+
+// ── Config templates ─────────────────────────────────────────────────────────
+
+var renderConfigCmd = &cobra.Command{
+	Use:   "render-config SRC DEST",
+	Short: "Render a config template to DEST, keeping values other tools wrote in DEST",
+	Long: `Render the Go text/template SRC to DEST, keeping values from DEST's current
+content. Use it for configs that other tools also write (e.g. a theming tool
+that sets the theme name or colors), which copying the file over would lose.
+
+Template functions:
+  keep PATH DEFAULT  The value at PATH in DEST, or DEFAULT (a string, number
+                     or bool) when DEST does not exist or has no value there.
+                     Rendered as a literal in DEST's format, e.g. "dark"
+                     quoted, 3 or true as is.
+  keepTable PATH     TOML only. A blank line, then the table at PATH in DEST
+                     as TOML text: the [PATH] header, its other keys, then
+                     its subtables with their own headers, each sorted by
+                     key. Inline tables come out as subtables, arrays of
+                     tables as inline arrays: the same TOML data. Empty when
+                     DEST has no such table.
+
+PATH: "." separates keys, and a key in double quotes is one key, dots and
+spaces included (\" and \\ escape inside); an unquoted key can't hold
+whitespace. The template's quotes only make the string keep receives, so
+write a path holding quotes in backticks:
+  {{ keep "palettes.custom.main_color" "#fff" }}      palettes -> custom -> main_color
+  {{ keep ` + "`" + `"workbench.colorTheme"` + "`" + ` "Default Dark+" }}  the key workbench.colorTheme
+
+Write keepTable as {{- keepTable PATH }} on the line after the last line
+before the table, followed by a blank line: the table gets one blank line on
+each side, and when DEST has none a single blank line is left.
+
+DEST's format comes from its extension: .json, .toml, .yaml or .yml. DEST is
+parsed only when the template calls keep or keepTable, so a template without
+them is a plain copy of SRC. A literal "{{" in SRC is written {{ "{{" }}.
+
+DEST is left untouched when it can't be parsed or the template fails. It is
+written atomically, parent dirs are created, and it keeps its file mode (0644
+for a new file). A DEST symlink is kept and its target written, even when the
+target does not exist yet.
+
+See "Config templates" in docs/user-guide.md for more.
+
+Example:
+  # ulauncher.json.tmpl in the configs folder has the line
+  #   "theme-name": {{ keep "theme-name" "dark" }}
+  dis tools render-config "$DIS_CONFIG_FOLDER/ulauncher.json.tmpl" ~/.config/ulauncher/settings.json
+`,
+	Args: cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// The arguments are fine: an error from here on is not a usage error.
+		cmd.SilenceUsage = true
+		return tools.RenderConfig(args[0], args[1])
 	},
 }

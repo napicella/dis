@@ -1,0 +1,4 @@
+# Config templates (*.toml.tmpl) are rendered by 'dis tools render-config':
+# their {{ }} actions are not TOML, so don't lint or format them.
+[files]
+exclude = ["**/*.toml.tmpl"]

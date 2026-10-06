@@ -25,7 +25,9 @@ list_keys() {
     section == "[keys]" && /^# desc: / { pending = substr($0, 9); next }
     # An active line overrides the commented default of the same action.
     section == "[keys]" && /^[a-z_]+ *= *"/ { add($0, 1); pending = ""; next }
-    section == "[keys]" && /^# [a-z_]+ = "/ { add(substr($0, 3), 0); pending = ""; next }
+    # A commented default ends at its value or a trailing comment; this skips prose
+    # such as the custom-command docs: # type = "pane" opens a temporary pane ...
+    section == "[keys]" && /^# [a-z_]+ = "[^"]*" *(#.*)?$/ { add(substr($0, 3), 0); pending = ""; next }
     section == "[keys]" { pending = ""; next }
     section == "[[keys.command]]" && /^key *=/ { cmd_key[n] = value($0) }
     section == "[[keys.command]]" && /^description *=/ { cmd_desc[n] = value($0) }

@@ -1,6 +1,6 @@
 ### -- Manifest
 ### provides: common/starship
-### depends_on: [common/yq]
+### depends_on: []
 ### distro: [all]
 ### -- End
 
@@ -30,19 +30,6 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
 fi
 
 # Config: always re-deploy the starship config file, but keep the colors wal-picker
-# set in the deployed copy (palette and [palettes.custom]); a plain copy resets them.
-_cfg=~/.config/starship.toml
-_palette= _main= _secondary=
-if [[ -f "$_cfg" ]] && command -v yq &> /dev/null; then
-  _palette=$(yq -p toml -oy '.palette // ""' "$_cfg")
-  _main=$(yq -p toml -oy '.palettes.custom.main_color // ""' "$_cfg")
-  _secondary=$(yq -p toml -oy '.palettes.custom.secondary_color // ""' "$_cfg")
-fi
+# set in the deployed copy (palette and [palettes.custom]); starship.toml marks them with keep.
 mkdir -p ~/.config/
-cp "$DIS_CONFIG_FOLDER/starship/starship.toml" "$_cfg"
-# starship config edits the file in place and keeps its formatting.
-if command -v starship &> /dev/null; then
-  if [[ -n "$_palette" ]]; then starship config palette "$_palette"; fi
-  if [[ -n "$_main" ]]; then starship config palettes.custom.main_color "$_main"; fi
-  if [[ -n "$_secondary" ]]; then starship config palettes.custom.secondary_color "$_secondary"; fi
-fi
+dis tools render-config "$DIS_CONFIG_FOLDER/starship/starship.toml.tmpl" ~/.config/starship.toml

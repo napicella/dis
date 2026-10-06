@@ -346,6 +346,110 @@ The report starts with the dis build running (also `dis --version`): commit, com
 
 ---
 
+## Config templates
+
+Some config files are also written by other tools: a theming tool sets the theme name or the colors. Copying the file from the configs folder would lose those values. `dis tools render-config SRC DEST` renders SRC, a [Go template](https://pkg.go.dev/text/template), to DEST, and the template can keep values from DEST's current content:
+
+- `{{ keep "PATH" DEFAULT }}`: the value at PATH in DEST (`theme-name`, `theme.name`, `palettes.custom.main_color`; see [Paths](#paths)), or DEFAULT when DEST does not exist or has no value there (null counts as no value). DEFAULT is a string, number or bool. The value is rendered as a literal in DEST's format: `"dark"` quoted and escaped, `3` and `true` as is, arrays and maps as JSON values, TOML inline tables (keys sorted) or YAML flow collections.
+- `{{ keepTable "PATH" }}` (TOML only): a blank line, then the table at PATH as TOML text: the `[PATH]` header, its other keys, then its subtables with their own headers, each sorted by key. Empty when DEST has no such table. See [Optional tables](#optional-tables) for where to put it.
+
+- **Naming.** Name a template after its destination plus `.tmpl` (`config.toml.tmpl`, `settings.json.tmpl`). The format comes from DEST, so the suffix changes nothing for `render-config`, but it keeps editors from validating the template as TOML or JSON, where every `{{ }}` is an error. The repo's `tombi.toml` skips `**/*.toml.tmpl`; to keep highlighting in VS Code, map `*.toml.tmpl` to TOML in `files.associations` (JSON templates are best mapped to plain text: VS Code's JSON checker can't be turned off per file).
+
+```bash
+# $DIS_CONFIG_FOLDER/ulauncher.json.tmpl has the line
+#   "theme-name": {{ keep "theme-name" "dark" }}
+dis tools render-config "$DIS_CONFIG_FOLDER/ulauncher.json.tmpl" ~/.config/ulauncher/settings.json
+
+# $DIS_CONFIG_FOLDER/starship/starship.toml.tmpl has the lines
+#   palette = {{ keep "palette" "custom" }}
+#
+#   [palettes.custom]
+#   main_color = {{ keep "palettes.custom.main_color" "#A08AE2" }}
+#   secondary_color = {{ keep "palettes.custom.secondary_color" "#A9E9B7" }}
+dis tools render-config "$DIS_CONFIG_FOLDER/starship/starship.toml.tmpl" ~/.config/starship.toml
+```
+
+Keep each key of a table the template needs, as starship does, rather than the whole table with `keepTable`: on a new host `keepTable` renders nothing, and `palette = "custom"` would name a palette that doesn't exist.
+
+- **Format.** It comes from DEST's extension: `.json`, `.toml`, `.yaml` or `.yml`. DEST is parsed only when the template calls `keep` or `keepTable`, so a template without them is a plain copy, for any file.
+- **Errors.** A DEST that can't be parsed, or a template error (reported with its line and column in SRC), fails the command and leaves DEST untouched. The parse error comes first and says how to recover, naming the installer's package (`$DIS_PACKAGE`) when there is one: `cannot parse /home/me/.config/herdr/config.toml (line 3, column 8: toml: incomplete number): fix or delete it, then re-run dis config for common/herdr`.
+- **Writing.** DEST is written atomically (a temp file in its directory, then a rename), its parent dirs are created, and it keeps its file mode (0644 for a new file). A DEST that is a symlink stays one: its target is written, and created when the link is dangling (a relative target is relative to the link's directory).
+- **Re-rendering.** What `keep` and `keepTable` write is read back by the next run, so running it again (e.g. `dis config`) gives the same file.
+- **Literal braces.** A `{{` that belongs to the config itself is written `{{ "{{" }}` in SRC.
+
+### Paths
+
+A path goes through two layers. The template's quotes, `"…"` or backticks, only make a Go string, like any other template argument. `keep` and `keepTable` then parse the characters they receive: `.` separates keys, and double quotes group a key, dots included, with `\"` and `\\` as escapes inside, as in TOML dotted keys.
+
+| Template | `keep` receives | Keys looked up |
+|---|---|---|
+| `"palettes.custom.main_color"` | `palettes.custom.main_color` | `palettes` → `custom` → `main_color` |
+| `"workbench.colorTheme"` | `workbench.colorTheme` | `workbench` → `colorTheme` (not the flat key) |
+| `` `"workbench.colorTheme"` `` | `"workbench.colorTheme"` | `workbench.colorTheme` |
+| `"\"workbench.colorTheme\""` | `"workbench.colorTheme"` | same, escaped instead of backticks |
+| `` `"[python]"."editor.tabSize"` `` | `"[python]"."editor.tabSize"` | `[python]` → `editor.tabSize` |
+
+With VS Code's `settings.json` holding `{ "workbench.colorTheme": "Nord" }`:
+
+```
+{{ keep "workbench.colorTheme" "Default Dark+" }}
+{{ keep `"workbench.colorTheme"` "Default Dark+" }}
+```
+
+the first line renders `"Default Dark+"`, as the file has no `workbench` object, and the second `"Nord"`. Write a path that needs quotes in backticks: the quotes reach `keep` as typed, with no Go escaping to get right. A path without quotes parses as plain dotted keys. An unquoted key can't hold whitespace, so a stray space (`x. y`) fails instead of looking up the key ` y`; quote a key whose name has spaces (`` `"weird key"` ``). An unquoted key with whitespace, an unterminated quote, an empty key (`a..b`, or a leading or trailing dot) or anything but `.` after a closing quote fails the render with the path in the error.
+
+### Optional tables
+
+A table only the other tool writes, like herdr's `[theme.custom]` colors, goes in the template as `{{- keepTable "PATH" }}` on the line after the last line before it, followed by a blank line and the next section:
+
+```toml
+# text = "#cdd6f4"
+{{- keepTable "theme.custom" }}
+
+[terminal]
+```
+
+`{{-` and `-}}` are standard Go template [whitespace trimming](https://pkg.go.dev/text/template#hdr-Text_and_spaces): they drop the spaces and newlines before or after the action (the space after `{{-` is required). Here `{{-` drops the newline before it, and since `keepTable` starts with a blank line there is exactly one blank line on each side of the table, whether DEST has it or not. Without the table in DEST:
+
+```toml
+# text = "#cdd6f4"
+
+[terminal]
+```
+
+With it:
+
+```toml
+# text = "#cdd6f4"
+
+[theme.custom]
+accent = "#ff79c6"
+
+[theme.custom.dark]
+panel_bg = "#1e1e2e"
+
+[terminal]
+```
+
+The bare form, `{{ keepTable "theme.custom" }}` on its own line without `{{-`, keeps the newline before the action, so the table gets two blank lines before it, and a DEST without it leaves two blank lines in a row: use the `{{-` form.
+
+The table is written from DEST's parsed values, so comments and blank lines inside it (between its keys or subtables) are not kept: only its header, keys and subtables are. TOML tables are unordered, so keys and subtables are written sorted, and how a table was written in DEST is not kept either: an inline table (`dark = { panel_bg = "#1e1e2e" }`) or dotted keys (`dark.panel_bg = ...`) come out as a `[theme.custom.dark]` subtable, an array of tables (`[[...]]`) as an inline array of inline tables. The data is the same. `keepTable` on an array of tables itself fails (`an array of tables, not a table; use keep`): `keep` renders it as an inline array. Comments elsewhere in the template are text and are written as they are.
+
+For a default table when DEST has none, use `with` and `else`:
+
+```toml
+# text = "#cdd6f4"
+{{- with keepTable "theme.custom" }}{{ . }}{{ else }}
+
+[theme.custom]
+accent = "#f5c2e7"
+{{- end }}
+
+[terminal]
+```
+
+---
+
 ## Commands
 
 The `--distro` flag is optional on all commands if a [config file](#config-file) is present.
@@ -380,6 +484,7 @@ The `--distro` flag is optional on all commands if a [config file](#config-file)
 | `dis tools add-rc-aliases` | Upsert a section in `~/rc/configs-generated/bash_aliases` |
 | `dis tools rm-rc-section --file FILE --name NAME` | Remove a section from a generated file (`bash_paths`, `bash_aliases` or `bash_init`) |
 | `dis tools add-home-rc` | Upsert a section in `~/.bashrc` |
+| `dis tools render-config SRC DEST` | Render the template SRC to DEST, keeping values other tools wrote in DEST (see [Config templates](#config-templates)) |
 
 ---
 
@@ -413,7 +518,7 @@ common/git       …/installers/03_git.sh
 $ dis search installers status
 common/git       …/installers/03_git.sh:29  alias status='git status'
 $ dis search configs . --package starship
-common/starship  …/configs/starship/starship.toml
+common/starship  …/configs/starship/starship.toml.tmpl
 ```
 
 - `packages` and `installers` print the installer path. `installers` appends
@@ -514,9 +619,9 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
   curl -sS https://starship.rs/install.sh | sh
 fi
 
-# Config: always re-deploy the config file
-mkdir -p ~/.config/
-cp "$DIS_CONFIG_FOLDER/starship/starship.toml" ~/.config/
+# Config: always re-deploy the config file, keeping the colors a theming tool
+# set (starship.toml is a template, see Config templates)
+dis tools render-config "$DIS_CONFIG_FOLDER/starship/starship.toml.tmpl" ~/.config/starship.toml
 ```
 
 | Mode | `DIS_INSTALL` | Install steps run? | Config steps run? |

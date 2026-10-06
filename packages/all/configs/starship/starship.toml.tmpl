@@ -4,7 +4,7 @@ $aws$git_branch
 ${env_var.MACHINE_NAME}$username$character
 """
 
-palette = "custom"
+palette = {{ keep "palette" "custom" }}
 
 # Define custom palettes
 [palettes.default]
@@ -12,8 +12,8 @@ main_color = '#875fff'
 secondary_color = '#d446d2'
 
 [palettes.custom]
-main_color = "#A08AE2"
-secondary_color = "#A9E9B7"
+main_color = {{ keep "palettes.custom.main_color" "#A08AE2" }}
+secondary_color = {{ keep "palettes.custom.secondary_color" "#A9E9B7" }}
 
 [directory]
 style = "secondary_color"
