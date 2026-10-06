@@ -36,8 +36,8 @@ Before running each installer script the following env vars are set:
                       here to export values to downstream installers
   DIS_INSTALL       - set to "1"; use this to guard install-only steps in scripts
 
-Each installer is run inside a wrapper that sources ~/rc/configs-generated/bash_paths
-and ~/rc/configs-generated/bash_aliases so that PATH additions from earlier
+Each installer is run inside a wrapper that sources ~/rc/configs-generated/bash_env,
+bash_paths and bash_aliases so that exports and PATH additions from earlier
 installers are available. Installer scripts can call 'dis tools ...' directly
 because the dis binary directory is prepended to PATH.
 

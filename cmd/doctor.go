@@ -24,6 +24,8 @@ var doctorCmd = &cobra.Command{
                     or behind the state they are rendered from
   unguarded PATH    'export PATH=X:$PATH' in a section, repeated by every
                     nested shell
+  misplaced lines   exports and other non-PATH lines in bash_paths, PATH
+                    changes in bash_env
   orphan sections   sections owned by a package that is neither in the distro
                     nor installed
   PATH dirs         dirs on PATH that don't exist, with the section or rc line
@@ -126,6 +128,7 @@ func doctorCmdFn(cmd *cobra.Command, _ []string) error {
 		d.CheckBashrc(),
 		d.CheckGenerated(),
 		d.CheckUnguardedPath(),
+		d.CheckMisplaced(),
 		d.CheckOrphans(),
 		d.CheckDeadPath(os.Getenv("PATH")),
 	}

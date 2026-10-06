@@ -20,7 +20,7 @@ dis tools add-rc-path \
 
 # Default terminal editor. The guards keep a value set earlier, so a package
 # can override it.
-dis tools add-rc-path \
+dis tools add-rc-env \
   --name 'Editor default' \
   --content 'export EDITOR="${EDITOR:-vim}"
 export VISUAL="${VISUAL:-$EDITOR}"'

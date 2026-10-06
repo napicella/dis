@@ -49,9 +49,9 @@ go env -w GOPROXY=direct
 # GOPATH is left unset: Go's default is ~/go. GOBIN is exported to override a stale
 # value inherited from the login session (e.g. a versioned dir from the old setup),
 # and it's set statically: `$(go env GOBIN)` ran go through the shim at every shell
-# start. The PATH line is for dis installers: the wrapper sources bash_paths without
-# mise activate, so `_.path` above doesn't reach them.
-dis tools add-rc-path \
+# start. The PATH line is for dis installers: the wrapper sources bash_env and
+# bash_paths without mise activate, so `_.path` above doesn't reach them.
+dis tools add-rc-env \
   --name 'GOBIN env' \
   --content 'export GOBIN="$HOME/go/bin"'
 dis tools add-rc-path \

@@ -22,7 +22,7 @@ import (
 )
 
 // Files are the generated rc files, in the order dis renders them.
-var Files = []string{"bash_paths", "bash_aliases", "bash_init"}
+var Files = []string{"bash_env", "bash_paths", "bash_aliases", "bash_init"}
 
 // IsFile reports whether name is one of Files.
 func IsFile(name string) bool {

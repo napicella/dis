@@ -51,12 +51,14 @@ func init() {
 
 	// RC helpers
 	rcFlags(addRCInitCmd)
+	rcFlags(addRCEnvCmd)
 	addRCPathCmd.Flags().StringVar(&rcName, "name", "", "section identifier (unique per file)")
-	addRCPathCmd.Flags().StringVar(&rcContent, "content", "", "content to write into the section")
-	addRCPathCmd.Flags().StringArrayVar(&rcPaths, "path", nil, "directory to prepend to PATH, skipped if PATH already has it (repeatable)")
-	addRCPathCmd.MarkFlagRequired("name") //nolint:errcheck
-	addRCPathCmd.MarkFlagsOneRequired("content", "path")
-	addRCPathCmd.MarkFlagsMutuallyExclusive("content", "path")
+	addRCPathCmd.Flags().StringArrayVar(&rcPaths, "path", nil, "directory to prepend to PATH, skipped if PATH already has it (repeatable, required)")
+	// --content was removed; it stays registered, hidden, so RunE can say what
+	// to use instead of cobra's "unknown flag".
+	addRCPathCmd.Flags().StringVar(&rcContent, "content", "", "removed: use 'dis tools add-rc-env'")
+	addRCPathCmd.Flags().MarkHidden("content") //nolint:errcheck
+	addRCPathCmd.MarkFlagRequired("name")      //nolint:errcheck
 	rcFlags(addRCAliasesCmd)
 	addRCAliasesCmd.Flags().StringVar(&rcOwner, "owner", "", "lock the section to this owner (package name); only the same owner can overwrite or remove it")
 	rcFlags(addHomeRCCmd)
@@ -66,6 +68,7 @@ func init() {
 	rmRCSectionCmd.MarkFlagRequired("file") //nolint:errcheck
 	rmRCSectionCmd.MarkFlagRequired("name") //nolint:errcheck
 	toolsCmd.AddCommand(addRCInitCmd)
+	toolsCmd.AddCommand(addRCEnvCmd)
 	toolsCmd.AddCommand(addRCPathCmd)
 	toolsCmd.AddCommand(addRCAliasesCmd)
 	toolsCmd.AddCommand(rmRCSectionCmd)
@@ -132,8 +135,9 @@ unless it is locked to another owner.`
 
 // upsertRCSection writes a section to a generated file, owned by the running
 // installer's package. A section locked to another owner is skipped with a
-// warning, as before.
-func upsertRCSection(file, content string) error {
+// warning, as before. then, when not nil, runs in the same state update after
+// the section is written.
+func upsertRCSection(file, content string, then func(*rcstate.State, rcstate.Section) error) error {
 	store, err := rcstate.DefaultStore()
 	if err != nil {
 		return err
@@ -142,12 +146,39 @@ func upsertRCSection(file, content string) error {
 	if rcOwner != "" {
 		sec.Owner, sec.Locked = rcOwner, true
 	}
-	err = store.Update(func(st *rcstate.State) error { return st.Upsert(file, sec) })
+	err = store.Update(func(st *rcstate.State) error {
+		if err := st.Upsert(file, sec); err != nil {
+			return err
+		}
+		if then != nil {
+			return then(st, sec)
+		}
+		return nil
+	})
 	if errors.Is(err, rcstate.ErrLocked) {
 		fmt.Fprintf(os.Stderr, "skipping section: %v\n", err)
 		return nil
 	}
 	return err
+}
+
+// MIGRATION(2026-10-06): one-time cleanup; drop once every host has run dis config since then.
+// Exports used to be written to bash_paths with 'add-rc-path --content'. When
+// add-rc-env writes a section, the section of the same name in bash_paths is
+// removed if the same package owns it (and so no one else locked it), so an
+// installer only switches helper and the next dis config moves the section.
+func moveFromBashPaths(st *rcstate.State, sec rcstate.Section) error {
+	for _, s := range st.Files["bash_paths"] {
+		if s.Name != sec.Name || s.Owner != sec.Owner {
+			continue
+		}
+		if _, err := st.Remove("bash_paths", s.Name, sec.Owner); err != nil {
+			return err
+		}
+		fmt.Fprintf(os.Stderr, "moved section %q from bash_paths to bash_env\n", s.Name)
+		return nil
+	}
+	return nil
 }
 
 var addRCInitCmd = &cobra.Command{
@@ -166,39 +197,69 @@ Example:
     --content '[[ -s ~/.autojump/etc/profile.d/autojump.sh ]] && source ~/.autojump/etc/profile.d/autojump.sh'
 `,
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		return upsertRCSection("bash_init", rcContent)
+		return upsertRCSection("bash_init", rcContent, nil)
 	},
 }
+
+var addRCEnvCmd = &cobra.Command{
+	Use:   "add-rc-env",
+	Short: "Upsert a named section in ~/rc/configs-generated/bash_env",
+	Long: `Upsert a named section in ~/rc/configs-generated/bash_env.
+
+bash_env is intended for environment variables (exports). It is sourced in
+every shell that loads ~/rc/bash_config.sh, interactive or not (e.g. 'ssh host
+cmd'), and by the dis wrapper before each installer runs, so exports written
+here are available to subsequent installers in the same run. It is sourced
+before bash_paths, so PATH entries can use the variables it exports. Use
+'dis tools add-rc-path --path' for PATH entries.
+
+A section of the same name in bash_paths, owned by the same package, is
+removed: it is where 'add-rc-path --content' used to write exports.
+
+` + rcSectionsHelp + `
+
+Example:
+  dis tools add-rc-env \
+    --name "Editor default" \
+    --content 'export EDITOR="${EDITOR:-vim}"'
+`,
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		return upsertRCSection("bash_env", rcContent, moveFromBashPaths)
+	},
+}
+
+// errRCPathContent is returned for the removed 'add-rc-path --content'.
+var errRCPathContent = errors.New("add-rc-path --content was removed: write exports with 'dis tools add-rc-env'")
 
 var addRCPathCmd = &cobra.Command{
 	Use:   "add-rc-path",
 	Short: "Upsert a named section in ~/rc/configs-generated/bash_paths",
 	Long: `Upsert a named section in ~/rc/configs-generated/bash_paths.
 
-bash_paths is sourced by the dis wrapper before each installer runs, so PATH
-additions written here are available to subsequent installers in the same run.
+bash_paths is for PATH entries. It is sourced by the dis wrapper before each
+installer runs, so PATH additions written here are available to subsequent
+installers in the same run. It is sourced after bash_env, so a dir can use a
+variable exported there.
 
-Use --path for PATH entries: each dir is prepended to PATH, and skipped if PATH
-already has it, so shells started from another shell (tmux, herdr) don't repeat
-it. The first --path ends up first in PATH. Use --content for other exports.
+Each --path dir is prepended to PATH, and skipped if PATH already has it, so
+shells started from another shell (tmux, herdr) don't repeat it. The first
+--path ends up first in PATH. Write other exports with 'dis tools add-rc-env'.
 
 ` + rcSectionsHelp + `
 
-Examples:
+Example:
   dis tools add-rc-path \
     --name "Mise path" \
     --path '$HOME/.local/share/mise/shims'
-
-  dis tools add-rc-path \
-    --name "Editor default" \
-    --content 'export EDITOR="${EDITOR:-vim}"'
 `,
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		content := rcContent
-		if len(rcPaths) > 0 {
-			content = tools.PathPrependContent(rcPaths)
+		if cmd.Flags().Changed("content") {
+			return errRCPathContent
 		}
-		return upsertRCSection("bash_paths", content)
+		if len(rcPaths) == 0 {
+			return errors.New(`required flag(s) "path" not set`)
+		}
+		return upsertRCSection("bash_paths", tools.PathPrependContent(rcPaths), nil)
 	},
 }
 
@@ -221,7 +282,7 @@ Examples:
     --content "alias ls='eza --icons=auto'"
 `,
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		return upsertRCSection("bash_aliases", rcContent)
+		return upsertRCSection("bash_aliases", rcContent, nil)
 	},
 }
 
@@ -229,7 +290,7 @@ var rmRCSectionCmd = &cobra.Command{
 	Use:   "rm-rc-section",
 	Short: "Remove a named section from a generated rc file",
 	Long: `Remove a named section from a file in ~/rc/configs-generated:
-bash_paths, bash_aliases or bash_init.
+bash_env, bash_paths, bash_aliases or bash_init.
 
 Use this when a package stops providing a section it used to add, so the stale
 section does not linger. Removing a section that is not present is a no-op. A

@@ -6,6 +6,7 @@ packages:
   - test/consumer
   - test/jq
   - test/rc-tools
+  - test/rc-env-reader
 
 config_generators:
   - script: ./generators/gen_greeting.sh

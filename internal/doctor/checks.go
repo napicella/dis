@@ -23,7 +23,7 @@ const maxDiffLines = 30
 func (d *Doctor) CheckBashrc() Result {
 	r := Result{
 		OK:   "~/.bashrc has only dis sections",
-		Hint: "move each line into the installer of the tool that added it (e.g. with 'dis tools add-rc-path --path'), then delete it from ~/.bashrc",
+		Hint: "move each line into the installer of the tool that added it (e.g. with 'dis tools add-rc-path --path' or 'dis tools add-rc-env'), then delete it from ~/.bashrc",
 	}
 	lines, err := readLines(d.bashrc())
 	if os.IsNotExist(err) {
@@ -148,6 +148,51 @@ func (d *Doctor) CheckUnguardedPath() Result {
 		}
 	}
 	r.warn("1 PATH addition is not guarded: nested shells repeat it", "%d PATH additions are not guarded: nested shells repeat them")
+	return r
+}
+
+// pathChange matches a line that sets PATH, guarded or not. MANPATH= and the
+// like don't match.
+var pathChange = regexp.MustCompile(`\bPATH\+?=`)
+
+// CheckMisplaced reports lines in the wrong generated file: in bash_paths,
+// anything but a PATH change (e.g. an export 'add-rc-path --content' used to
+// write); in bash_env, PATH changes. Comments and blank lines are ignored.
+func (d *Doctor) CheckMisplaced() Result {
+	r := Result{OK: "bash_env has the exports and bash_paths the PATH entries"}
+	if d.stateErr != nil {
+		r.Skipped = "the state file can't be read"
+		return r
+	}
+	for _, c := range []struct {
+		file, want string
+		misplaced  func(line string) bool
+		helper     string
+	}{
+		{"bash_paths", "not a PATH change", func(l string) bool { return !pathChange.MatchString(l) }, "dis tools add-rc-env --name NAME --content CONTENT"},
+		{"bash_env", "a PATH change", pathChange.MatchString, "dis tools add-rc-path --name NAME --path DIR"},
+	} {
+		for _, s := range d.state.Files[c.file] {
+			var lines []string
+			for _, l := range strings.Split(s.Content, "\n") {
+				l = strings.TrimSpace(l)
+				if l != "" && !strings.HasPrefix(l, "#") && c.misplaced(l) {
+					lines = append(lines, l)
+				}
+			}
+			if len(lines) == 0 {
+				continue
+			}
+			where := "in the installer that writes it"
+			if s.Owner != "" {
+				where = "in the installer of " + s.Owner
+			}
+			p := Problem{Text: sectionRef(c.file, s) + ": " + c.want}
+			p.Detail = append(lines, fmt.Sprintf("fix: %s, write it with '%s'", where, c.helper))
+			r.Problems = append(r.Problems, p)
+		}
+	}
+	r.warn("1 rc section has lines that belong in another file", "%d rc sections have lines that belong in another file")
 	return r
 }
 

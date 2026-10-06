@@ -171,13 +171,59 @@ func TestCheckUnguardedPath(t *testing.T) {
 		rcstate.Section{Name: "Editor", Content: "export EDITOR=vim"},
 	)
 	withSections(t, store, "bash_init", rcstate.Section{Name: "X", Content: "true\nPATH=${PATH}:/x"})
+	withSections(t, store, "bash_env", rcstate.Section{Name: "Y", Owner: "tools/y", Content: `export PATH="/y:$PATH"`})
 	r := New(home, store).CheckUnguardedPath()
-	want := []string{`"Cargo" in bash_paths, owned by tools/cargo`, `"X" in bash_init`}
+	want := []string{`"Y" in bash_env, owned by tools/y`, `"Cargo" in bash_paths, owned by tools/cargo`, `"X" in bash_init`}
 	if got := texts(r); !reflect.DeepEqual(got, want) {
 		t.Errorf("Problems:\ngot  %q\nwant %q", got, want)
 	}
-	if got := r.Problems[1].Detail; !reflect.DeepEqual(got, []string{"PATH=${PATH}:/x"}) {
+	if got := r.Problems[2].Detail; !reflect.DeepEqual(got, []string{"PATH=${PATH}:/x"}) {
 		t.Errorf("Detail = %q", got)
+	}
+}
+
+func TestCheckMisplaced(t *testing.T) {
+	home, store := newHome(t, nil)
+	withSections(t, store, "bash_paths",
+		rcstate.Section{Name: "Mise", Owner: "common/mise", Content: "# shims\n" + guarded("$HOME/m")},
+		rcstate.Section{Name: "Cargo", Content: `export PATH="$HOME/.cargo/bin:$PATH"`},
+		rcstate.Section{Name: "Editor default", Owner: "common/bash-config", Content: "export EDITOR=vim\n\nexport VISUAL=vim"},
+		rcstate.Section{Name: "Man", Content: "export MANPATH=/m"},
+	)
+	withSections(t, store, "bash_env",
+		rcstate.Section{Name: "GOBIN env", Owner: "common/go", Content: `export GOBIN="$HOME/go/bin"`},
+		rcstate.Section{Name: "Bin", Owner: "tools/bin", Content: "export BIN=/b\n" + guarded("$BIN")},
+	)
+	withSections(t, store, "bash_init", rcstate.Section{Name: "Hook", Content: "eval x"})
+
+	r := New(home, store).CheckMisplaced()
+	want := []string{
+		`"Editor default" in bash_paths, owned by common/bash-config: not a PATH change`,
+		`"Man" in bash_paths: not a PATH change`,
+		`"Bin" in bash_env, owned by tools/bin: a PATH change`,
+	}
+	if got := texts(r); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Problems:\ngot  %q\nwant %q", got, want)
+	}
+	wantDetail := [][]string{
+		{"export EDITOR=vim", "export VISUAL=vim", "fix: in the installer of common/bash-config, write it with 'dis tools add-rc-env --name NAME --content CONTENT'"},
+		{"export MANPATH=/m", "fix: in the installer that writes it, write it with 'dis tools add-rc-env --name NAME --content CONTENT'"},
+		{guarded("$BIN"), "fix: in the installer of tools/bin, write it with 'dis tools add-rc-path --name NAME --path DIR'"},
+	}
+	for i, p := range r.Problems {
+		if !reflect.DeepEqual(p.Detail, wantDetail[i]) {
+			t.Errorf("Detail[%d]:\ngot  %q\nwant %q", i, p.Detail, wantDetail[i])
+		}
+	}
+	if r.Warn != "3 rc sections have lines that belong in another file" {
+		t.Errorf("Warn = %q", r.Warn)
+	}
+
+	clean, cleanStore := newHome(t, nil)
+	withSections(t, cleanStore, "bash_paths", rcstate.Section{Name: "Mise", Content: guarded("$HOME/m")})
+	withSections(t, cleanStore, "bash_env", rcstate.Section{Name: "GOBIN env", Content: `export GOBIN="$HOME/go/bin"`})
+	if r := New(clean, cleanStore).CheckMisplaced(); len(r.Problems) != 0 || r.Warn != "" || r.Skipped != "" {
+		t.Errorf("clean: %+v", r)
 	}
 }
 

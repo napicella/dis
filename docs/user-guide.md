@@ -276,8 +276,8 @@ dis injects `GID_DOCKER` (the bare name, without the `myapp/docker:` prefix) int
 
 dis wraps every installer in a small shell script (`wrapper.sh`) before running it. The wrapper:
 
-1. Creates `~/rc/configs-generated/` and ensures `bash_paths`, `bash_init`, and `bash_aliases` exist.
-2. Sources `bash_paths` and `bash_aliases` so PATH additions from earlier installers propagate to the current one.
+1. Creates `~/rc/configs-generated/` and ensures `bash_env`, `bash_paths`, `bash_aliases`, and `bash_init` exist.
+2. Sources `bash_env`, `bash_paths` and `bash_aliases`, in that order, so exports and PATH additions from earlier installers propagate to the current one.
 3. Prepends the `dis` binary directory to `PATH` so installers can call `dis tools ...` directly.
 4. Runs the installer with `bash -e` (exit on error).
 
@@ -287,18 +287,18 @@ You do **not** need to add any `source` line to your installer scripts.
 
 ## RC helper tools
 
-Installers that need to register shell init code, PATH entries, or aliases use `dis tools` subcommands. Each command upserts a named section, so running the same command twice is safe (idempotent), and updating the content replaces the section in place.
+Installers that need to register exports, PATH entries, shell init code, or aliases use `dis tools` subcommands. Each command upserts a named section, so running the same command twice is safe (idempotent), and updating the content replaces the section in place.
 
 ```bash
 # Add a block to ~/rc/configs-generated/bash_init (sourced on interactive shell startup)
 dis tools add-rc-init --name "Autojump" \
   --content '[[ -s ~/.autojump/etc/profile.d/autojump.sh ]] && source ~/.autojump/etc/profile.d/autojump.sh'
 
+# Add an export to ~/rc/configs-generated/bash_env
+dis tools add-rc-env --name "Editor default" --content 'export EDITOR="${EDITOR:-vim}"'
+
 # Prepend a dir to PATH in ~/rc/configs-generated/bash_paths (skipped if PATH already has it)
 dis tools add-rc-path --name "Mise path" --path '$HOME/.local/share/mise/shims'
-
-# Add another export to bash_paths
-dis tools add-rc-path --name "Editor default" --content 'export EDITOR="${EDITOR:-vim}"'
 
 # Add an alias block to ~/rc/configs-generated/bash_aliases
 dis tools add-rc-aliases --name "Notifier" \
@@ -312,7 +312,9 @@ dis tools add-home-rc --name "bashrc" \
   --content 'if [ -f /path/to/dotfiles/.bashrc ]; then . /path/to/dotfiles/.bashrc; fi'
 ```
 
-`bash_paths` and `bash_aliases` are sourced by the wrapper before each installer, so PATH additions written by one installer are available to later ones in the same run. `bash_init` is sourced by `~/.bashrc` for interactive shells only. Debian and Ubuntu's bash also reads `~/.bashrc` for non-interactive commands run over SSH (`ssh host cmd`), which skip `bash_init`: whatever such commands need, like `PATH` entries and exports, belongs in `bash_paths`.
+`~/.bashrc` (through `~/rc/bash_config.sh`) sources `bash_env`, then `bash_paths`, then `bash_aliases`, and, in interactive shells only, `bash_init`. `bash_env` comes first so PATH entries can use the variables it exports. The wrapper sources the first three before each installer, so exports and PATH additions written by one installer are available to later ones in the same run. Debian and Ubuntu's bash also reads `~/.bashrc` for non-interactive commands run over SSH (`ssh host cmd`), which skip `bash_init`: whatever such commands need belongs in `bash_env` (exports, with `add-rc-env`) and `bash_paths` (PATH entries, with `add-rc-path --path`).
+
+`add-rc-path` only takes `--path`: it used to take `--content` for exports, which now fails with a message pointing at `add-rc-env`. When `add-rc-env` writes a section, it removes the section of the same name from `bash_paths` if the same package owns it, so switching an installer from `add-rc-path --content` to `add-rc-env` moves the section on the next `dis config`.
 
 Use `--path` rather than a hand-written `export PATH=...`: shells started from another shell (tmux, herdr) inherit PATH and source `bash_paths` again, and `--path` writes a guard so the dir is not added twice. `--path` can be repeated; the first one ends up first in PATH.
 
@@ -336,6 +338,7 @@ The files in `~/rc/configs-generated/` are generated: dis renders them from a st
 - lines in `~/.bashrc` outside dis sections (e.g. a tool's own PATH line), and a `~/.bashrc` that doesn't load `~/rc/bash_config.sh`
 - generated files edited outside dis (with a diff), missing, or behind the state
 - unguarded `export PATH=X:$PATH` lines in sections
+- lines in the wrong generated file: exports and other non-PATH lines in `bash_paths` sections, PATH changes in `bash_env` sections
 - orphan sections: owned by a package that is neither in the distro nor installed, e.g. left behind by a package removed from the distro
 - PATH dirs that don't exist, each with the section or rc line that adds it and how to fix it
 - source repos with uncommitted changes, unpushed commits, or fetched commits `dis pull` couldn't merge. Repos aren't fetched: run `dis pull` first to compare with the latest.
@@ -479,10 +482,11 @@ The `--distro` flag is optional on all commands if a [config file](#config-file)
 | `dis sources [--distro FILE] [--json]` | List the distro's resolved source directories, with their repo and package count |
 | `dis pull GIT-URL [--distro FILE] [--path DIR]` | Clone a distro repo and every repo it declares, and set it as the default distro |
 | `dis pull` | Clone or fast-forward the repos of the configured distro |
+| `dis tools add-rc-env` | Upsert a section in `~/rc/configs-generated/bash_env` (exports) |
+| `dis tools add-rc-path` | Upsert a section in `~/rc/configs-generated/bash_paths` (`--path DIR` for PATH entries) |
 | `dis tools add-rc-init` | Upsert a section in `~/rc/configs-generated/bash_init` |
-| `dis tools add-rc-path` | Upsert a section in `~/rc/configs-generated/bash_paths` (`--path DIR` for PATH entries, `--content` for other exports) |
 | `dis tools add-rc-aliases` | Upsert a section in `~/rc/configs-generated/bash_aliases` |
-| `dis tools rm-rc-section --file FILE --name NAME` | Remove a section from a generated file (`bash_paths`, `bash_aliases` or `bash_init`) |
+| `dis tools rm-rc-section --file FILE --name NAME` | Remove a section from a generated file (`bash_env`, `bash_paths`, `bash_aliases` or `bash_init`) |
 | `dis tools add-home-rc` | Upsert a section in `~/.bashrc` |
 | `dis tools render-config SRC DEST` | Render the template SRC to DEST, keeping values other tools wrote in DEST (see [Config templates](#config-templates)) |
 

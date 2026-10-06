@@ -24,6 +24,6 @@ fi
 # Amazon Linux sets the locale only in login shells (/etc/profile.d/lang.sh), so
 # shells started otherwise (ssh host cmd, VS Code remote, a multiplexer server)
 # fall back to the ASCII C locale. Fill in LANG when it's missing.
-dis tools add-rc-path \
+dis tools add-rc-env \
   --name 'Locale' \
   --content 'export LANG="${LANG:-en_US.UTF-8}"'
