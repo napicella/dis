@@ -138,12 +138,10 @@ func (d *Doctor) CheckUnguardedPath() Result {
 		r.Skipped = "the state file can't be read"
 		return r
 	}
-	for _, file := range rcstate.Files {
-		for _, s := range d.state.Files[file] {
-			for _, l := range strings.Split(s.Content, "\n") {
-				if unguardedPath.MatchString(l) {
-					r.Problems = append(r.Problems, Problem{Text: sectionRef(file, s), Detail: []string{strings.TrimSpace(l)}})
-				}
+	for file, s := range d.state.All() {
+		for _, l := range strings.Split(s.Content, "\n") {
+			if unguardedPath.MatchString(l) {
+				r.Problems = append(r.Problems, Problem{Text: sectionRef(file, s), Detail: []string{strings.TrimSpace(l)}})
 			}
 		}
 	}
@@ -156,8 +154,8 @@ func (d *Doctor) CheckUnguardedPath() Result {
 var pathChange = regexp.MustCompile(`\bPATH\+?=`)
 
 // CheckMisplaced reports lines in the wrong generated file: in bash_paths,
-// anything but a PATH change (e.g. an export 'add-rc-path --content' used to
-// write); in bash_env, PATH changes. Comments and blank lines are ignored.
+// anything but a PATH change (an export, say); in bash_env, PATH changes.
+// Comments and blank lines are ignored.
 func (d *Doctor) CheckMisplaced() Result {
 	r := Result{OK: "bash_env has the exports and bash_paths the PATH entries"}
 	if d.stateErr != nil {
@@ -212,11 +210,9 @@ func (d *Doctor) CheckOrphans() Result {
 		r.Skipped = "the state file can't be read"
 		return r
 	}
-	for _, file := range rcstate.Files {
-		for _, s := range d.state.Files[file] {
-			if d.isOrphan(s) {
-				r.Problems = append(r.Problems, Problem{Text: sectionRef(file, s), Detail: []string{s.Owner + " is neither in this distro nor installed"}})
-			}
+	for file, s := range d.state.All() {
+		if d.isOrphan(s) {
+			r.Problems = append(r.Problems, Problem{Text: sectionRef(file, s), Detail: []string{s.Owner + " is neither in this distro nor installed"}})
 		}
 	}
 	r.warn("1 rc section belongs to a package that's gone", "%d rc sections belong to packages that are gone")
@@ -251,20 +247,18 @@ var notFound = []string{
 // pathOrigin returns where dir is added to PATH and how to fix it.
 func (d *Doctor) pathOrigin(dir string) []string {
 	if d.stateErr == nil {
-		for _, file := range rcstate.Files {
-			for _, s := range d.state.Files[file] {
-				if !addsDir(d.expandHome(s.Content), dir) {
-					continue
-				}
-				where := "added by " + sectionRef(file, s)
-				switch {
-				case d.isOrphan(s):
-					return []string{where, s.Owner + " is neither in this distro nor installed", "fix: 'dis doctor --fix' removes the section"}
-				case s.Owner != "":
-					return []string{where, fmt.Sprintf("fix: install %s again ('dis install --reinstall %s'), or drop the dir from its installer", s.Owner, s.Owner)}
-				}
-				return []string{where, fmt.Sprintf("fix: remove the section with 'dis tools rm-rc-section --file %s --name %q'", file, s.Name)}
+		for file, s := range d.state.All() {
+			if !addsDir(d.expandHome(s.Content), dir) {
+				continue
 			}
+			where := "added by " + sectionRef(file, s)
+			switch {
+			case d.isOrphan(s):
+				return []string{where, s.Owner + " is neither in this distro nor installed", "fix: 'dis doctor --fix' removes the section"}
+			case s.Owner != "":
+				return []string{where, fmt.Sprintf("fix: install %s again ('dis install --reinstall %s'), or drop the dir from its installer", s.Owner, s.Owner)}
+			}
+			return []string{where, fmt.Sprintf("fix: remove the section with 'dis tools rm-rc-section --file %s --name %q'", file, s.Name)}
 		}
 	}
 	for _, path := range d.homeRCFiles() {

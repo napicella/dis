@@ -29,7 +29,8 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
   fi
 fi
 
-# Config: always re-deploy the starship config file, but keep the colors wal-picker
-# set in the deployed copy (palette and [palettes.custom]); starship.toml marks them with keep.
+# Config: always re-deploy the starship config file, but keep the colors another tool
+# (e.g. a theme engine) set in the deployed copy (palette and [palettes.custom]);
+# starship.toml.tmpl marks them with keep.
 mkdir -p ~/.config/
 dis tools render-config "$DIS_CONFIG_FOLDER/starship/starship.toml.tmpl" ~/.config/starship.toml

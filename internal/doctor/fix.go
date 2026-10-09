@@ -43,15 +43,13 @@ func (d *Doctor) Fix() ([]string, error) {
 		sec  rcstate.Section
 	}
 	var orphans []orphan
-	for _, file := range rcstate.Files {
-		for _, s := range d.state.Files[file] {
-			switch {
-			case !d.isOrphan(s):
-			case edited[file]:
-				done = append(done, fmt.Sprintf("kept orphan section %s: %s was edited outside dis", sectionRef(file, s), d.short(d.Store.Path(file))))
-			default:
-				orphans = append(orphans, orphan{file, s})
-			}
+	for file, s := range d.state.All() {
+		switch {
+		case !d.isOrphan(s):
+		case edited[file]:
+			done = append(done, fmt.Sprintf("kept orphan section %s: %s was edited outside dis", sectionRef(file, s), d.short(d.Store.Path(file))))
+		default:
+			orphans = append(orphans, orphan{file, s})
 		}
 	}
 	if len(orphans) == 0 && len(regenerate) == 0 {
@@ -72,9 +70,9 @@ func (d *Doctor) Fix() ([]string, error) {
 			return nil, fmt.Errorf("backing up %s: %w", path, err)
 		}
 	}
-	_, err := d.Store.UpdateKeepingEdits(func(st *rcstate.State) error {
+	err := d.Store.UpdateKeepingEdits(func(st *rcstate.State) error {
 		for _, o := range orphans {
-			if _, err := st.Remove(o.file, o.sec.Name, o.sec.Owner); err != nil {
+			if err := st.Remove(o.file, o.sec.Name, o.sec.Owner); err != nil {
 				return err
 			}
 		}

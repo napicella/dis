@@ -353,8 +353,8 @@ The report starts with the dis build running (also `dis --version`): commit, com
 
 Some config files are also written by other tools: a theming tool sets the theme name or the colors. Copying the file from the configs folder would lose those values. `dis tools render-config SRC DEST` renders SRC, a [Go template](https://pkg.go.dev/text/template), to DEST, and the template can keep values from DEST's current content:
 
-- `{{ keep "PATH" DEFAULT }}`: the value at PATH in DEST (`theme-name`, `theme.name`, `palettes.custom.main_color`; see [Paths](#paths)), or DEFAULT when DEST does not exist or has no value there (null counts as no value). DEFAULT is a string, number or bool. The value is rendered as a literal in DEST's format: `"dark"` quoted and escaped, `3` and `true` as is, arrays and maps as JSON values, TOML inline tables (keys sorted) or YAML flow collections.
-- `{{ keepTable "PATH" }}` (TOML only): a blank line, then the table at PATH as TOML text: the `[PATH]` header, its other keys, then its subtables with their own headers, each sorted by key. Empty when DEST has no such table. See [Optional tables](#optional-tables) for where to put it.
+- `{{ keep "PATH" DEFAULT }}`: the value at PATH in DEST (`theme-name`, `theme.name`, `palettes.custom.main_color`; see [Paths](#paths)), or DEFAULT when DEST does not exist or has no value there (null counts as no value). DEFAULT is a string, number or bool. The value must be a leaf (a string, number, bool or date/time) or a flat array of leaves (`[80, 120]`, `["git", "eza"]`), and is rendered as a literal in DEST's format by that format's library (encoding/json, go-toml, yaml.v3): a string quoted as the library chooses (`"dark"` in JSON, `'dark'` in TOML, `dark` in YAML when it needs no quotes; a multi-line YAML string double-quoted, to stay on one line), a JSON number as written in DEST (TOML and YAML write the parsed value, so `0x1F` comes back as `31`), an array on one line (`[1,"x"]` in JSON, `[1, 'x']` in TOML, `[1, x, 'a, b']` in YAML). A table (a JSON object, a YAML mapping) fails the render, `keep "theme": a table, not a value: keep each of its keys instead (theme.KEY)`, and so does an array holding a table or another array (TOML's `[[x]]` arrays of tables included): write those in the template. YAML values come back in yaml.v3's standard form (a custom tag like `!Ref` is dropped, a date is written as a full timestamp), and an alias (`*name`) is resolved: the value is written, not the alias (an alias that contains itself, like `a: &x [1, *x]`, makes DEST fail to parse).
+- `{{ has "PATH" }}`: true when DEST has a value at PATH (a table, an array or a single value), false when DEST does not exist or has no value there (null counts as no value). Use it in `{{ if }}` blocks: see [Conditional blocks](#conditional-blocks).
 
 - **Naming.** Name a template after its destination plus `.tmpl` (`config.toml.tmpl`, `settings.json.tmpl`). The format comes from DEST, so the suffix changes nothing for `render-config`, but it keeps editors from validating the template as TOML or JSON, where every `{{ }}` is an error. The repo's `tombi.toml` skips `**/*.toml.tmpl`; to keep highlighting in VS Code, map `*.toml.tmpl` to TOML in `files.associations` (JSON templates are best mapped to plain text: VS Code's JSON checker can't be turned off per file).
 
@@ -372,17 +372,17 @@ dis tools render-config "$DIS_CONFIG_FOLDER/ulauncher.json.tmpl" ~/.config/ulaun
 dis tools render-config "$DIS_CONFIG_FOLDER/starship/starship.toml.tmpl" ~/.config/starship.toml
 ```
 
-Keep each key of a table the template needs, as starship does, rather than the whole table with `keepTable`: on a new host `keepTable` renders nothing, and `palette = "custom"` would name a palette that doesn't exist.
+A table the config always needs, like starship's palette, is written in full with a `keep` for each key, so a new host gets the defaults (`palette = "custom"` must name a palette that exists). A table only the other tool writes goes in a [conditional block](#conditional-blocks).
 
-- **Format.** It comes from DEST's extension: `.json`, `.toml`, `.yaml` or `.yml`. DEST is parsed only when the template calls `keep` or `keepTable`, so a template without them is a plain copy, for any file.
+- **Format.** It comes from DEST's extension: `.json`, `.toml`, `.yaml` or `.yml`. DEST is parsed only when the template calls `keep` or `has`, so a template without them is a plain copy, for any file.
 - **Errors.** A DEST that can't be parsed, or a template error (reported with its line and column in SRC), fails the command and leaves DEST untouched. The parse error comes first and says how to recover, naming the installer's package (`$DIS_PACKAGE`) when there is one: `cannot parse /home/me/.config/herdr/config.toml (line 3, column 8: toml: incomplete number): fix or delete it, then re-run dis config for common/herdr`.
 - **Writing.** DEST is written atomically (a temp file in its directory, then a rename), its parent dirs are created, and it keeps its file mode (0644 for a new file). A DEST that is a symlink stays one: its target is written, and created when the link is dangling (a relative target is relative to the link's directory).
-- **Re-rendering.** What `keep` and `keepTable` write is read back by the next run, so running it again (e.g. `dis config`) gives the same file.
+- **Re-rendering.** What `keep` writes is read back by the next run, so running it again (e.g. `dis config`) gives the same file.
 - **Literal braces.** A `{{` that belongs to the config itself is written `{{ "{{" }}` in SRC.
 
 ### Paths
 
-A path goes through two layers. The template's quotes, `"…"` or backticks, only make a Go string, like any other template argument. `keep` and `keepTable` then parse the characters they receive: `.` separates keys, and double quotes group a key, dots included, with `\"` and `\\` as escapes inside, as in TOML dotted keys.
+A path goes through two layers. The template's quotes, `"…"` or backticks, only make a Go string, like any other template argument. `keep` and `has` then parse the characters they receive: `.` separates keys, and double quotes group a key, dots included, with `\"` and `\\` as escapes inside, as in TOML dotted keys.
 
 | Template | `keep` receives | Keys looked up |
 |---|---|---|
@@ -401,18 +401,23 @@ With VS Code's `settings.json` holding `{ "workbench.colorTheme": "Nord" }`:
 
 the first line renders `"Default Dark+"`, as the file has no `workbench` object, and the second `"Nord"`. Write a path that needs quotes in backticks: the quotes reach `keep` as typed, with no Go escaping to get right. A path without quotes parses as plain dotted keys. An unquoted key can't hold whitespace, so a stray space (`x. y`) fails instead of looking up the key ` y`; quote a key whose name has spaces (`` `"weird key"` ``). An unquoted key with whitespace, an unterminated quote, an empty key (`a..b`, or a leading or trailing dot) or anything but `.` after a closing quote fails the render with the path in the error.
 
-### Optional tables
+### Conditional blocks
 
-A table only the other tool writes, like herdr's `[theme.custom]` colors, goes in the template as `{{- keepTable "PATH" }}` on the line after the last line before it, followed by a blank line and the next section:
+A table only the other tool writes, like herdr's `[theme.custom]` colors (a theme engine may write it for some themes and delete it for others), goes in an `{{ if has "PATH" }}` block that lists its keys:
 
 ```toml
 # text = "#cdd6f4"
-{{- keepTable "theme.custom" }}
+{{- if has "theme.custom" }}
+
+[theme.custom]
+accent = {{ keep "theme.custom.accent" "cyan" }}
+red = {{ keep "theme.custom.red" "red" }}
+{{- end }}
 
 [terminal]
 ```
 
-`{{-` and `-}}` are standard Go template [whitespace trimming](https://pkg.go.dev/text/template#hdr-Text_and_spaces): they drop the spaces and newlines before or after the action (the space after `{{-` is required). Here `{{-` drops the newline before it, and since `keepTable` starts with a blank line there is exactly one blank line on each side of the table, whether DEST has it or not. Without the table in DEST:
+`{{-` and `-}}` are standard Go template [whitespace trimming](https://pkg.go.dev/text/template#hdr-Text_and_spaces): they drop the spaces and newlines before or after the action (the space after `{{-` is required). Here they drop the newline after `# text` and after the last key, so there is one blank line on each side of the table, and one in all when DEST has none. Without the table in DEST:
 
 ```toml
 # text = "#cdd6f4"
@@ -426,30 +431,13 @@ With it:
 # text = "#cdd6f4"
 
 [theme.custom]
-accent = "#ff79c6"
-
-[theme.custom.dark]
-panel_bg = "#1e1e2e"
+accent = '#ff79c6'
+red = '#ff5555'
 
 [terminal]
 ```
 
-The bare form, `{{ keepTable "theme.custom" }}` on its own line without `{{-`, keeps the newline before the action, so the table gets two blank lines before it, and a DEST without it leaves two blank lines in a row: use the `{{-` form.
-
-The table is written from DEST's parsed values, so comments and blank lines inside it (between its keys or subtables) are not kept: only its header, keys and subtables are. TOML tables are unordered, so keys and subtables are written sorted, and how a table was written in DEST is not kept either: an inline table (`dark = { panel_bg = "#1e1e2e" }`) or dotted keys (`dark.panel_bg = ...`) come out as a `[theme.custom.dark]` subtable, an array of tables (`[[...]]`) as an inline array of inline tables. The data is the same. `keepTable` on an array of tables itself fails (`an array of tables, not a table; use keep`): `keep` renders it as an inline array. Comments elsewhere in the template are text and are written as they are.
-
-For a default table when DEST has none, use `with` and `else`:
-
-```toml
-# text = "#cdd6f4"
-{{- with keepTable "theme.custom" }}{{ . }}{{ else }}
-
-[theme.custom]
-accent = "#f5c2e7"
-{{- end }}
-
-[terminal]
-```
+The trade-off: the template lists the keys, so a key the other tool starts writing must be added to the template too, or the next render drops it. In return the block is ordinary template text: keys come out in the template's order with its comments, and a key the table lacks gets its default.
 
 ---
 

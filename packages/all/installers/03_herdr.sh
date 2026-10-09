@@ -16,7 +16,8 @@ bash "$DIS_CONFIG_FOLDER/herdr/install-claude-title-hook.sh"
 mkdir -p ~/.claude/skills && cp -r "$DIS_CONFIG_FOLDER/herdr/spin-chat-herdr" ~/.claude/skills/
 mkdir -p ~/.config/herdr && cp "$DIS_CONFIG_FOLDER/herdr/herdr-keys.sh" ~/.config/herdr/
 
-# Config: always re-deploy the herdr config file, but keep the theme wal-picker set in
-# the deployed copy; config.toml marks theme.name and the [theme.custom] table with keep.
+# Config: always re-deploy the herdr config file, but keep the theme another tool (e.g. a
+# theme engine) set in the deployed copy; config.toml.tmpl keeps theme.name and, when
+# present, the [theme.custom] colors.
 mkdir -p ~/.config/herdr
 dis tools render-config "$DIS_CONFIG_FOLDER/herdr/config.toml.tmpl" ~/.config/herdr/config.toml

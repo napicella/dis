@@ -56,8 +56,11 @@ dis tools add-rc-aliases \
   colors): don't `cp` it or hand-roll yq/awk, render it from a template with
   `dis tools render-config SRC DEST`; name the template after the file plus
   `.tmpl` (`config.toml.tmpl`) so editors don't flag the `{{ }}`. `{{ keep "theme.name" "dark" }}` keeps
-  DEST's current value (or the default) and `{{- keepTable "theme.custom" }}`
-  a whole TOML table. A key holding dots is quoted, in backticks:
+  DEST's current value (or the default): a leaf (string, number, bool,
+  date/time) or a flat array of leaves, never a table, which is kept key by
+  key. A table only the other tool writes
+  goes in an `{{ if has "theme.custom" }}` block listing its keys, each with
+  `keep`. A key holding dots is quoted, in backticks:
   ``{{ keep `"workbench.colorTheme"` "Default Dark+" }}``. See "Config
   templates" in the user guide.
 - The script runs under `bash -e`: a failing command aborts the install.

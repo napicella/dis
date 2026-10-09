@@ -38,7 +38,17 @@ auto_switch = false
 # [theme.custom.dark]
 # panel_bg = "#1e1e2e"
 # text = "#cdd6f4"
-{{- keepTable "theme.custom" }}
+{{- if has "theme.custom" }}
+
+[theme.custom]
+accent = {{ keep "theme.custom.accent" "cyan" }}
+red = {{ keep "theme.custom.red" "red" }}
+green = {{ keep "theme.custom.green" "green" }}
+blue = {{ keep "theme.custom.blue" "blue" }}
+yellow = {{ keep "theme.custom.yellow" "yellow" }}
+mauve = {{ keep "theme.custom.mauve" "magenta" }}
+teal = {{ keep "theme.custom.teal" "cyan" }}
+{{- end }}
 
 [terminal]
 # Executable used for new interactive panes.

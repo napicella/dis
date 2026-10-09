@@ -39,7 +39,7 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
   git clone https://github.com/rose-pine/ulauncher.git /tmp/rose-pine && cp -r /tmp/rose-pine/dist/rose-pine ~/.config/ulauncher/user-themes/
 fi
 
-# Config: always re-deploy the ulauncher settings file, but keep the theme-name
-# wal-picker set in the deployed copy; ulauncher.json.tmpl marks it with keep.
+# Config: always re-deploy the ulauncher settings file, but keep the theme-name another
+# tool (e.g. a theme engine) set in the deployed copy; ulauncher.json.tmpl marks it with keep.
 mkdir -p ~/.config/ulauncher
 dis tools render-config "$DIS_CONFIG_FOLDER/ulauncher.json.tmpl" ~/.config/ulauncher/settings.json

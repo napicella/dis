@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/napicella/dis/internal/rcstate"
@@ -112,15 +113,6 @@ func rcFlags(cmd *cobra.Command) {
 	cmd.MarkFlagRequired("content") //nolint:errcheck
 }
 
-// rcFilePath returns $HOME/<rel>, failing if $HOME is unset.
-func rcFilePath(rel string) (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("resolving home directory: %w", err)
-	}
-	return filepath.Join(home, rel), nil
-}
-
 // rcSectionsHelp is shared by the add-rc-* commands.
 const rcSectionsHelp = `The generated files are rendered from ~/.local/share/dis/sections.yaml:
 don't edit them, the next write overwrites the change (after backing up the
@@ -130,25 +122,29 @@ Run from an installer, the section is owned by the installer's package
 ($DIS_PACKAGE). The last writer wins: a section is replaced, and changes owner,
 unless it is locked to another owner.`
 
-// upsertRCSection writes a section to a generated file, owned by the running
-// installer's package. A section locked to another owner is skipped with a
-// warning, as before. then, when not nil, runs in the same state update after
-// the section is written.
-func upsertRCSection(file, content string) error {
+// updateRCState applies fn to the rc state and renders the generated files. A
+// section locked to another owner is skipped with a warning, not an error.
+func updateRCState(fn func(*rcstate.State) error) error {
 	store, err := rcstate.DefaultStore()
 	if err != nil {
 		return err
 	}
-	sec := rcstate.Section{Name: rcName, Owner: os.Getenv("DIS_PACKAGE"), Content: content}
-	if rcOwner != "" {
-		sec.Owner, sec.Locked = rcOwner, true
-	}
-	err = store.Update(func(st *rcstate.State) error { return st.Upsert(file, sec) })
+	err = store.Update(fn)
 	if errors.Is(err, rcstate.ErrLocked) {
 		fmt.Fprintf(os.Stderr, "skipping section: %v\n", err)
 		return nil
 	}
 	return err
+}
+
+// upsertRCSection writes a section to a generated file, owned by the running
+// installer's package, or locked to --owner when it is set.
+func upsertRCSection(file, content string) error {
+	sec := rcstate.Section{Name: rcName, Owner: os.Getenv("DIS_PACKAGE"), Content: content}
+	if rcOwner != "" {
+		sec.Owner, sec.Locked = rcOwner, true
+	}
+	return updateRCState(func(st *rcstate.State) error { return st.Upsert(file, sec) })
 }
 
 var addRCInitCmd = &cobra.Command{
@@ -258,22 +254,10 @@ Example:
   dis tools rm-rc-section --file bash_aliases --name 'Coder'
 `,
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		if !rcstate.IsFile(rcFile) {
+		if !slices.Contains(rcstate.Files, rcFile) {
 			return fmt.Errorf("--file must be one of %s, not %q", strings.Join(rcstate.Files, ", "), rcFile)
 		}
-		store, err := rcstate.DefaultStore()
-		if err != nil {
-			return err
-		}
-		err = store.Update(func(st *rcstate.State) error {
-			_, err := st.Remove(rcFile, rcName, rcOwner)
-			return err
-		})
-		if errors.Is(err, rcstate.ErrLocked) {
-			fmt.Fprintf(os.Stderr, "skipping section: %v\n", err)
-			return nil
-		}
-		return err
+		return updateRCState(func(st *rcstate.State) error { return st.Remove(rcFile, rcName, rcOwner) })
 	},
 }
 
@@ -291,11 +275,11 @@ Example:
     --content 'if [ -f /path/to/dotfiles/.bashrc ]; then . /path/to/dotfiles/.bashrc; fi'
 `,
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		path, err := rcFilePath(".bashrc")
+		home, err := os.UserHomeDir()
 		if err != nil {
-			return err
+			return fmt.Errorf("resolving home directory: %w", err)
 		}
-		return tools.AddRCSection(path, rcName, rcContent, "")
+		return tools.AddRCSection(filepath.Join(home, ".bashrc"), rcName, rcContent, "")
 	},
 }
 
@@ -305,10 +289,11 @@ var (
 )
 
 var exportEnvCmd = &cobra.Command{
-	Use: "export-env",
+	Use:   "export-env",
+	Short: "Export a value (--key, --value) from an installer to the installers that run after it",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		exportFile, exists := os.LookupEnv("DIS_EXPORTS_FILE")
-		if !exists || exportFile == "" {
+		exportFile := os.Getenv("DIS_EXPORTS_FILE")
+		if exportFile == "" {
 			return errors.New("failed to export env variable: DIS_EXPORTS_FILE env variable is empty")
 		}
 		f, err := os.OpenFile(exportFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -334,14 +319,16 @@ that sets the theme name or colors), which copying the file over would lose.
 Template functions:
   keep PATH DEFAULT  The value at PATH in DEST, or DEFAULT (a string, number
                      or bool) when DEST does not exist or has no value there.
-                     Rendered as a literal in DEST's format, e.g. "dark"
-                     quoted, 3 or true as is.
-  keepTable PATH     TOML only. A blank line, then the table at PATH in DEST
-                     as TOML text: the [PATH] header, its other keys, then
-                     its subtables with their own headers, each sorted by
-                     key. Inline tables come out as subtables, arrays of
-                     tables as inline arrays: the same TOML data. Empty when
-                     DEST has no such table.
+                     Rendered as a literal in DEST's format by its library,
+                     e.g. "dark" in JSON, 'dark' in TOML, dark in YAML, and
+                     3 or true as is. The value must be a leaf
+                     (string, number, bool, date/time) or a flat array of
+                     leaves, on one line; a table, or an array holding a
+                     table or an array, is an error: keep each key instead.
+                     YAML aliases are resolved: the value is written.
+  has PATH           Whether DEST has a value at PATH (a table, an array or
+                     a single value): false when DEST does not exist, has no value
+                     there or the value is null. For {{ if has PATH }} blocks.
 
 PATH: "." separates keys, and a key in double quotes is one key, dots and
 spaces included (\" and \\ escape inside); an unquoted key can't hold
@@ -350,13 +337,19 @@ write a path holding quotes in backticks:
   {{ keep "palettes.custom.main_color" "#fff" }}      palettes -> custom -> main_color
   {{ keep ` + "`" + `"workbench.colorTheme"` + "`" + ` "Default Dark+" }}  the key workbench.colorTheme
 
-Write keepTable as {{- keepTable PATH }} on the line after the last line
-before the table, followed by a blank line: the table gets one blank line on
-each side, and when DEST has none a single blank line is left.
+A table only another tool writes goes in an if block listing its keys. {{-
+drops the newline before the action, so the block, blank line included,
+leaves nothing when DEST has no such table:
+  # last line
+  {{- if has "theme.custom" }}
+
+  [theme.custom]
+  accent = {{ keep "theme.custom.accent" "cyan" }}
+  {{- end }}
 
 DEST's format comes from its extension: .json, .toml, .yaml or .yml. DEST is
-parsed only when the template calls keep or keepTable, so a template without
-them is a plain copy of SRC. A literal "{{" in SRC is written {{ "{{" }}.
+parsed only when the template calls keep or has, so a template without them
+is a plain copy of SRC. A literal "{{" in SRC is written {{ "{{" }}.
 
 DEST is left untouched when it can't be parsed or the template fails. It is
 written atomically, parent dirs are created, and it keeps its file mode (0644

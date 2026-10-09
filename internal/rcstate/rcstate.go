@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"iter"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,16 +24,6 @@ import (
 
 // Files are the generated rc files, in the order dis renders them.
 var Files = []string{"bash_env", "bash_paths", "bash_aliases", "bash_init"}
-
-// IsFile reports whether name is one of Files.
-func IsFile(name string) bool {
-	for _, f := range Files {
-		if f == name {
-			return true
-		}
-	}
-	return false
-}
 
 const version = 1
 
@@ -92,22 +83,36 @@ func (st *State) Upsert(file string, sec Section) error {
 	return nil
 }
 
-// Remove deletes the section name from file and reports whether it was there.
-// A section locked by an owner other than owner is kept, and Remove returns
-// an error wrapping ErrLocked.
-func (st *State) Remove(file, name, owner string) (bool, error) {
+// Remove deletes the section name from file, if it is there. A section locked
+// by an owner other than owner is kept, and Remove returns an error wrapping
+// ErrLocked.
+func (st *State) Remove(file, name, owner string) error {
 	secs := st.Files[file]
 	for i, s := range secs {
 		if s.Name != name {
 			continue
 		}
 		if s.Locked && s.Owner != owner {
-			return false, fmt.Errorf("%q in %s: %w (%s)", name, file, ErrLocked, s.Owner)
+			return fmt.Errorf("%q in %s: %w (%s)", name, file, ErrLocked, s.Owner)
 		}
 		st.Files[file] = append(secs[:i:i], secs[i+1:]...)
-		return true, nil
+		return nil
 	}
-	return false, nil
+	return nil
+}
+
+// All yields every section with its file: the files in Files order, the
+// sections of each in render order.
+func (st *State) All() iter.Seq2[string, Section] {
+	return func(yield func(string, Section) bool) {
+		for _, file := range Files {
+			for _, s := range st.Files[file] {
+				if !yield(file, s) {
+					return
+				}
+			}
+		}
+	}
 }
 
 // Render returns the content of file rendered from st.
@@ -180,20 +185,27 @@ func (s *Store) Path(file string) string { return filepath.Join(s.Dir, file) }
 // Load returns the state. Without a state file it imports the generated files
 // in memory, writes nothing, and reports imported.
 func (s *Store) Load() (st *State, imported bool, err error) {
-	data, err := os.ReadFile(s.StatePath)
+	st, err = s.readState()
 	if errors.Is(err, os.ErrNotExist) {
 		st, _, err := s.importFiles()
 		return st, true, err
 	}
+	return st, false, err
+}
+
+// readState reads the state file. A missing one gives an error matching
+// os.ErrNotExist, one that can't be decoded an error wrapping ErrCorrupt.
+func (s *Store) readState() (*State, error) {
+	data, err := os.ReadFile(s.StatePath)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
-	st = newState()
+	st := newState()
 	if err := yaml.Unmarshal(data, st); err != nil {
-		return nil, false, fmt.Errorf("%w: %s: %v", ErrCorrupt, s.StatePath, err)
+		return nil, fmt.Errorf("%w: %s: %v", ErrCorrupt, s.StatePath, err)
 	}
 	if st.Version != version {
-		return nil, false, fmt.Errorf("%s has version %d, this dis reads version %d", s.StatePath, st.Version, version)
+		return nil, fmt.Errorf("%s has version %d, this dis reads version %d", s.StatePath, st.Version, version)
 	}
 	if st.Files == nil {
 		st.Files = map[string][]Section{}
@@ -201,7 +213,7 @@ func (s *Store) Load() (st *State, imported bool, err error) {
 	if st.Rendered == nil {
 		st.Rendered = map[string]string{}
 	}
-	return st, false, nil
+	return st, nil
 }
 
 // importFiles builds a state from the sections of the generated files, and
@@ -258,61 +270,61 @@ func (s *Store) Status(st *State, file string) (Status, error) {
 // the first time), applies fn, saves the state and renders the generated
 // files. A file edited outside dis is backed up before it's overwritten.
 func (s *Store) Update(fn func(*State) error) error {
-	_, err := s.update(fn, false)
-	return err
+	return s.update(fn, false)
 }
 
 // UpdateKeepingEdits is Update, except that files edited outside dis are
-// left as they are. It returns those files.
-func (s *Store) UpdateKeepingEdits(fn func(*State) error) ([]string, error) {
+// left as they are.
+func (s *Store) UpdateKeepingEdits(fn func(*State) error) error {
 	return s.update(fn, true)
 }
 
-func (s *Store) update(fn func(*State) error, keepEdited bool) (kept []string, err error) {
+func (s *Store) update(fn func(*State) error, keepEdited bool) error {
 	if err := os.MkdirAll(filepath.Dir(s.StatePath), 0o755); err != nil {
-		return nil, err
+		return err
 	}
 	unlock, err := lock(s.StatePath + ".lock")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer unlock()
 
-	st, imported, err := s.Load()
+	st, err := s.readState()
 	if errors.Is(err, ErrCorrupt) {
 		// Rebuild from the rendered files, which carry the markers.
 		bak, bakErr := Backup(s.StatePath, s.Now())
 		if bakErr != nil {
-			return nil, err
+			return err
 		}
 		if err := os.Remove(s.StatePath); err != nil {
-			return nil, err
+			return err
 		}
 		fmt.Fprintf(s.Warn, "dis: %v; saved it to %s and rebuilt it from the generated files\n", err, bak)
-		st, imported, err = s.Load()
+		st, err = s.readState()
 	}
-	if err != nil {
-		return nil, err
-	}
-	if imported {
-		if err := s.migrate(st); err != nil {
-			return nil, err
+	if errors.Is(err, os.ErrNotExist) {
+		var skipped map[string][]string
+		if st, skipped, err = s.importFiles(); err == nil {
+			err = s.migrate(st, skipped)
 		}
 	}
+	if err != nil {
+		return err
+	}
 	if err := fn(st); err != nil {
-		return nil, err
+		return err
 	}
 	if err := s.save(st); err != nil {
-		return nil, err
+		return err
 	}
 
 	if err := os.MkdirAll(s.Dir, 0o755); err != nil {
-		return nil, err
+		return err
 	}
 	for _, file := range Files {
 		status, err := s.Status(st, file)
 		if err != nil {
-			return kept, err
+			return err
 		}
 		switch status {
 		case InSync:
@@ -320,32 +332,28 @@ func (s *Store) update(fn func(*State) error, keepEdited bool) (kept []string, e
 			continue
 		case Edited:
 			if keepEdited {
-				kept = append(kept, file)
 				continue
 			}
 			bak, err := Backup(s.Path(file), s.Now())
 			if err != nil {
-				return kept, fmt.Errorf("backing up %s: %w", s.Path(file), err)
+				return fmt.Errorf("backing up %s: %w", s.Path(file), err)
 			}
 			fmt.Fprintf(s.Warn, "dis: %s was edited outside dis; saved it to %s, then regenerated it\n", s.Path(file), bak)
 		}
 		out := Render(st, file)
-		if err := WriteFileAtomic(s.Path(file), out, 0o644); err != nil {
-			return kept, err
+		if err := tools.WriteFileAtomic(s.Path(file), out, 0o644); err != nil {
+			return err
 		}
 		st.Rendered[file] = hash(out)
 	}
-	return kept, s.save(st)
+	return s.save(st)
 }
 
 // migrate prepares a state imported from today's generated files: it backs up
 // the files and records their hashes, so the first render replaces them
-// without reporting them as edited.
-func (s *Store) migrate(st *State) error {
-	_, skipped, err := s.importFiles()
-	if err != nil {
-		return err
-	}
+// without reporting them as edited. skipped are the lines importFiles
+// couldn't import, per file, to warn about.
+func (s *Store) migrate(st *State, skipped map[string][]string) error {
 	var backups []string
 	for _, file := range Files {
 		data, err := os.ReadFile(s.Path(file))
@@ -378,7 +386,7 @@ func (s *Store) save(st *State) error {
 	if err := enc.Close(); err != nil {
 		return err
 	}
-	return WriteFileAtomic(s.StatePath, b.Bytes(), 0o644)
+	return tools.WriteFileAtomic(s.StatePath, b.Bytes(), 0o644)
 }
 
 // lock takes an exclusive lock on path, creating it, and returns the function
@@ -393,32 +401,6 @@ func lock(path string) (func(), error) {
 		return nil, fmt.Errorf("locking %s: %w", path, err)
 	}
 	return func() { f.Close() }, nil
-}
-
-// WriteFileAtomic writes data to path through a temp file in the same
-// directory and a rename, so readers see the old content or the new, never a
-// partial file. An existing file keeps its permissions; a new one gets perm.
-func WriteFileAtomic(path string, data []byte, perm os.FileMode) error {
-	if info, err := os.Stat(path); err == nil {
-		perm = info.Mode().Perm()
-	}
-	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".tmp-*")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tmp.Name()) // no-op after the rename
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		return err
-	}
-	if err := tmp.Chmod(perm); err != nil {
-		tmp.Close()
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		return err
-	}
-	return os.Rename(tmp.Name(), path)
 }
 
 // Backup copies path to path.bak-<timestamp>, with the same permissions, and
@@ -441,5 +423,5 @@ func Backup(path string, now time.Time) (string, error) {
 		}
 		dst = fmt.Sprintf("%s-%d", base, n)
 	}
-	return dst, WriteFileAtomic(dst, data, info.Mode().Perm())
+	return dst, tools.WriteFileAtomic(dst, data, info.Mode().Perm())
 }
