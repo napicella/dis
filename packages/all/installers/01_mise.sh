@@ -87,4 +87,4 @@ dis tools add-rc-path --name 'Mise path' --path '$HOME/.local/share/mise/shims'
 #
 # Non-interactive processes (cron, systemd, an IDE without the mise extension) get
 # no activate block, so the shims stand in for it:
-#   ~/go/bin:~/.local/share/mise/shims:~/.local/bin:~/.toolbox/bin:/usr/local/bin:/usr/bin:/bin
+#   ~/go/bin:~/.local/share/mise/shims:~/.local/bin:/usr/local/bin:/usr/bin:/bin

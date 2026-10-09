@@ -20,7 +20,7 @@ var rootCmd = &cobra.Command{
 Install state is recorded in: ~/.local/share/dis/installed.txt
 
 Configuration file (optional, written by 'dis pull'): ~/.config/dis/config.yaml
-  distro: ~/dotfiles/distros/home-server/home-server.yml`,
+  distro: ~/dotfiles/distros/laptop/laptop.yml`,
 }
 
 // Execute runs the root command with a background context.

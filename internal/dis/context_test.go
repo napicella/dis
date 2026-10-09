@@ -33,14 +33,14 @@ func findPackageContext(t *testing.T, names ...string) *InstallContext {
 }
 
 func TestFindPackage(t *testing.T) {
-	ic := findPackageContext(t, "tools/herdr", "common/git", "tools/git", "common/tmux")
+	ic := findPackageContext(t, "tools/neovim", "common/git", "tools/git", "common/tmux")
 
 	tests := []struct {
 		name string
 		want string
 	}{
-		{"tools/herdr", "tools/herdr"},
-		{"herdr", "tools/herdr"},
+		{"tools/neovim", "tools/neovim"},
+		{"neovim", "tools/neovim"},
 		{"tmux", "common/tmux"},
 		// An exact full name is never ambiguous.
 		{"tools/git", "tools/git"},
@@ -72,18 +72,18 @@ func TestFindPackageAmbiguous(t *testing.T) {
 }
 
 func TestFindPackageNotFound(t *testing.T) {
-	ic := findPackageContext(t, "tools/herdr")
+	ic := findPackageContext(t, "tools/neovim")
 
 	tests := []struct {
 		name            string
 		wantSuggestions []string
 	}{
 		// A typo still only gets suggestions, never a silent match.
-		{"hedrr", []string{"tools/herdr"}},
+		{"noevim", []string{"tools/neovim"}},
 		// Short names match exactly, including case.
-		{"Herdr", []string{"tools/herdr"}},
+		{"Neovim", []string{"tools/neovim"}},
 		// A name with a "/" is never resolved as a short name.
-		{"other/herdr", nil},
+		{"other/neovim", nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -33,7 +33,7 @@ local work is never touched. The distro is then written as 'distro:' to
 dis uses the git CLI, so your SSH config, keys and credential helpers apply.
 
 Examples:
-  dis pull git@github.com:napicella/dotfiles.git --distro distros/ubuntu-laptop/ubuntu-laptop.yml
+  dis pull git@github.com:you/dotfiles.git --distro distros/laptop/laptop.yml
   dis pull     # update the repos of the configured distro`,
 	Args:         cobra.MaximumNArgs(1),
 	RunE:         pullCmdFn,

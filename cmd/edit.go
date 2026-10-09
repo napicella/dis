@@ -25,7 +25,7 @@ script first, then the config files it references through $DIS_CONFIG_FOLDER
 the text files they contain, so binary configs such as wallpapers are skipped.
 
 The package may be given by its short name, the part after the last "/"
-(e.g. "herdr" for "tools/herdr"), when no other package shares it.
+(e.g. "starship" for "common/starship"), when no other package shares it.
 
   --installer  open the installer only
   --configs    open the config files only
@@ -49,7 +49,7 @@ Examples:
   dis edit common/starship
   dis edit common/starship --apply
   dis edit common/git --installer
-  DIS_EDITOR="code --wait" dis edit herdr`,
+  DIS_EDITOR="code --wait" dis edit starship`,
 	Args:    cobra.ExactArgs(1),
 	PreRunE: bindSharedConfigFlags,
 	RunE:    editCmdFn,

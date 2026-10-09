@@ -40,9 +40,9 @@ Before running each script the following env vars are set (same as install):
                       'dis config' so scripts can skip install-only steps
 
 Examples:
-  dis config --distro ~/dotfiles/dis/distros/home-server.yml
-  dis config --distro ~/dotfiles/dis/distros/home-server.yml common/starship
-  dis config --distro ~/dotfiles/dis/distros/home-server.yml --with-deps bundle/shell`,
+  dis config --distro ~/dotfiles/distros/laptop/laptop.yml
+  dis config --distro ~/dotfiles/distros/laptop/laptop.yml common/starship
+  dis config --distro ~/dotfiles/distros/laptop/laptop.yml --with-deps bundle/shell`,
 	Args:    cobra.MaximumNArgs(1),
 	PreRunE: bindSharedConfigFlags,
 	RunE:    configCmdFn,

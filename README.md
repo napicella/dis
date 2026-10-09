@@ -18,10 +18,10 @@ INSTALL_DIR=/usr/local/bin bash <(curl -fsSL https://raw.githubusercontent.com/n
 
 ```bash
 # Show the ordered install plan without executing anything
-dis plan --distro ~/dotfiles/distros/home-server/home-server.yml
+dis plan --distro ~/dotfiles/distros/laptop/laptop.yml
 
 # Run the installation
-dis install --distro ~/dotfiles/distros/home-server/home-server.yml
+dis install --distro ~/dotfiles/distros/laptop/laptop.yml
 ```
 
 ## Release

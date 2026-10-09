@@ -153,11 +153,11 @@ func TestCloneWithRef(t *testing.T) {
 
 func TestRepoNameFromURL(t *testing.T) {
 	for in, want := range map[string]string{
-		"git@github.com:napicella/dotfiles.git":        "dotfiles",
-		"https://github.com/napicella/dis.git":         "dis",
-		"https://github.com/napicella/dis/":            "dis",
-		"ssh://git.amazon.com:2222/pkg/NapicellBashrc": "NapicellBashrc",
-		"/tmp/upstream.git":                            "upstream",
+		"git@github.com:you/dotfiles.git":         "dotfiles",
+		"https://github.com/you/dis.git":          "dis",
+		"https://github.com/you/dis/":             "dis",
+		"ssh://git.example.com:2222/pkg/MyBashrc": "MyBashrc",
+		"/tmp/upstream.git":                       "upstream",
 	} {
 		if got := RepoNameFromURL(in); got != want {
 			t.Errorf("RepoNameFromURL(%q) = %q, want %q", in, got, want)

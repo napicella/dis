@@ -20,12 +20,12 @@
 #       "hooks": [
 #         {
 #           "type": "command",
-#           "command": "bash '/home/napicell/.claude/hooks/herdr-agent-state.sh' session",
+#           "command": "bash ~/.claude/hooks/herdr-agent-state.sh session",
 #           "timeout": 10
 #         },
 #         {
 #           "type": "command",
-#           "command": "bash '/home/napicell/.claude/hooks/herdr-claude-title.sh' title",
+#           "command": "bash ~/.claude/hooks/herdr-claude-title.sh title",
 #           "timeout": 10
 #         }
 #       ]

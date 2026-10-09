@@ -97,8 +97,8 @@ func TestPathPrependContent(t *testing.T) {
 		want string
 	}{
 		{"one dir", []string{"/opt/bin"}, line("/opt/bin")},
-		{"variables are kept literal", []string{"$HOME/.toolbox/bin"}, line("$HOME/.toolbox/bin")},
-		{"trailing slash is dropped", []string{"$HOME/.local/share/env-manager/"}, line("$HOME/.local/share/env-manager")},
+		{"variables are kept literal", []string{"$HOME/.cargo/bin"}, line("$HOME/.cargo/bin")},
+		{"trailing slash is dropped", []string{"$HOME/.local/share/mytool/"}, line("$HOME/.local/share/mytool")},
 		{"root is kept", []string{"/"}, line("/")},
 		{"first dir ends up first", []string{"/a", "/b"}, line("/b") + "\n" + line("/a")},
 	}

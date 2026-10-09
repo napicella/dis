@@ -203,8 +203,8 @@ func (ic *InstallContext) ListAvailablePackages() []PackageInfo {
 }
 
 // FindPackage returns the loaded package named name. A name without a "/" may
-// also be a short name, the part after the last "/" (e.g. "herdr" for
-// "tools/herdr"), as long as a single package has it. A short name shared by
+// also be a short name, the part after the last "/" (e.g. "neovim" for
+// "tools/neovim"), as long as a single package has it. A short name shared by
 // several packages returns an *AmbiguousPackageError listing them; a name that
 // matches nothing returns a *PackageNotFoundError with "Did you mean this?"
 // suggestions.

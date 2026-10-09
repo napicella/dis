@@ -44,9 +44,9 @@ because the dis binary directory is prepended to PATH.
 Installers run on the host machine.
 
 Examples:
-  dis install --distro ~/dotfiles/dis/distros/home-server.yml
-  dis install --distro ~/dotfiles/dis/distros/home-server.yml home-server/containers
-  dis install --distro ~/dotfiles/dis/distros/home-server.yml --with-deps bundle/cli-tools`,
+  dis install --distro ~/dotfiles/distros/laptop/laptop.yml
+  dis install --distro ~/dotfiles/distros/laptop/laptop.yml common/git
+  dis install --distro ~/dotfiles/distros/laptop/laptop.yml --with-deps bundle/cli-tools`,
 	Args:    cobra.MaximumNArgs(1),
 	PreRunE: bindSharedConfigFlags,
 	RunE:    installCmdFn,

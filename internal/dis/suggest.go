@@ -10,7 +10,7 @@ const maxSuggestions = 3
 
 // suggestPackages returns up to maxSuggestions candidates that name likely
 // refers to, best match first. A candidate matches when its basename (the part
-// after the last "/") equals name, e.g. "herdr" for "tools/herdr", or when it
+// after the last "/") equals name, e.g. "neovim" for "tools/neovim", or when it
 // is within a small edit distance of name. Comparisons are case-insensitive.
 func suggestPackages(name string, candidates []string) []string {
 	type match struct {
@@ -32,7 +32,7 @@ func suggestPackages(name string, candidates []string) []string {
 		lc := strings.ToLower(c)
 		base := lc[strings.LastIndex(lc, "/")+1:]
 
-		// Exact name but missing prefix (e.g. "herdr" for "tools/herdr"): the
+		// Exact name but missing prefix (e.g. "neovim" for "tools/neovim"): the
 		// strongest signal, so it ranks above any typo match.
 		if base == lname {
 			matches = append(matches, match{name: c, rank: 0})

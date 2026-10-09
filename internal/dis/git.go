@@ -132,7 +132,7 @@ func parseAheadBehind(s string) (int, int, error) {
 }
 
 // samePath reports whether a and b name the same directory, following symlinks
-// (e.g. /home -> /local/home on Cloud Desktops).
+// (e.g. a home directory that is a symlink to another disk).
 func samePath(a, b string) bool {
 	ra, err1 := filepath.EvalSymlinks(a)
 	rb, err2 := filepath.EvalSymlinks(b)
@@ -150,7 +150,7 @@ func normalizeGitURL(u string) string {
 }
 
 // RepoNameFromURL returns the last path element of a git URL without ".git",
-// e.g. "git@github.com:napicella/dotfiles.git" -> "dotfiles".
+// e.g. "git@github.com:you/dotfiles.git" -> "dotfiles".
 func RepoNameFromURL(u string) string {
 	u = normalizeGitURL(u)
 	if i := strings.LastIndexAny(u, "/:"); i >= 0 {

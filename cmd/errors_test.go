@@ -19,9 +19,9 @@ func TestRenderPackageNotFound(t *testing.T) {
 	}{
 		{
 			name: "with suggestions",
-			err:  &dis.PackageNotFoundError{Name: "herdr", Suggestions: []string{"tools/herdr", "tools/herd"}},
-			wantOutput: "Error: package \"herdr\" not found in any of the configured sources\n" +
-				"\nDid you mean this?\n\ttools/herdr\n\ttools/herd\n",
+			err:  &dis.PackageNotFoundError{Name: "neovim", Suggestions: []string{"tools/neovim", "tools/neovide"}},
+			wantOutput: "Error: package \"neovim\" not found in any of the configured sources\n" +
+				"\nDid you mean this?\n\ttools/neovim\n\ttools/neovide\n",
 			wantSilent: true,
 		},
 		{

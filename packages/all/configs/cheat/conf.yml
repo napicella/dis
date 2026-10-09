@@ -41,7 +41,7 @@ pager: /usr/bin/less -FRX
 cheatpaths:
 
   # Community cheatsheets (https://github.com/cheat/cheatsheets):
-  # To install: git clone https://github.com/cheat/cheatsheets /home/napicell/.config/cheat/cheatsheets/community
+  # To install: git clone https://github.com/cheat/cheatsheets ~/.config/cheat/cheatsheets/community
   - name: community
     path: ${HOME}/.config/cheat/cheatsheets/community
     tags: [ community ]

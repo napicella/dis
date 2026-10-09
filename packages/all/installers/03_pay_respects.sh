@@ -12,7 +12,7 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
   echo "Installing pay-respects via cargo..."
   # Build with the physical path of CARGO_HOME. pay-respects' templates (askama)
   # are found through a relative path with '..', which leaves the crate when the
-  # home dir is a symlink (Cloud Desktops: /home/x -> /local/home/x), and the
+  # home dir is a symlink (e.g. /home/x -> /local/home/x), and the
   # build fails with "couldn't read .../templates/init.bash".
   _cargo_home="${CARGO_HOME:-$HOME/.cargo}"
   mkdir -p "$_cargo_home"

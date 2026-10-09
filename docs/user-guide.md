@@ -184,7 +184,7 @@ through `$DIS_CONFIG_FOLDER`, so helper scripts that installers `source` belong
 elsewhere, e.g. in a `lib/` folder under the package root:
 
 ```bash
-source "$DIS_PKG_ROOT/lib/toolbox-lib.sh"
+source "$DIS_PKG_ROOT/lib/helpers.sh"
 ```
 
 `.sh` files without a manifest block are not treated as installers, so a `lib/`
@@ -212,16 +212,16 @@ The following variables are set by dis in the installer's environment:
 
 Given this distro source entry:
 ```
-~/dotfiles/tools/env-manager
+~/dotfiles/tools/mytool
 ```
 with no `dis.ws.yml` present, and an installer at:
 ```
-~/dotfiles/tools/env-manager/env_manager_installer.sh
+~/dotfiles/tools/mytool/install.sh
 ```
 dis sets:
 ```
-DIS_PKG_ROOT   = /home/nicola/dotfiles/tools/env-manager
-DIS_INSTALLER  = /home/nicola/dotfiles/tools/env-manager/env_manager_installer.sh
+DIS_PKG_ROOT   = /home/user/dotfiles/tools/mytool
+DIS_INSTALLER  = /home/user/dotfiles/tools/mytool/install.sh
 DIS_CONFIG_FOLDER = (empty — not declared)
 ```
 
@@ -239,9 +239,9 @@ and an installer at:
 ```
 dis sets:
 ```
-DIS_PKG_ROOT      = /home/nicola/dis/packages/all
-DIS_INSTALLER     = /home/nicola/dis/packages/all/installers/00_bash_config.sh
-DIS_CONFIG_FOLDER = /home/nicola/dis/packages/all/configs
+DIS_PKG_ROOT      = /home/user/dis/packages/all
+DIS_INSTALLER     = /home/user/dis/packages/all/installers/00_bash_config.sh
+DIS_CONFIG_FOLDER = /home/user/dis/packages/all/configs
 ```
 
 **Example 3 — exporting and importing values between packages**
@@ -554,7 +554,7 @@ dis reads an optional config file from `~/.config/dis/config.yaml`. Values defin
 
 ```yaml
 # ~/.config/dis/config.yaml
-distro: ~/dotfiles/distros/home-server/home-server.yml
+distro: ~/dotfiles/distros/laptop/laptop.yml
 ```
 
 Supported keys:
