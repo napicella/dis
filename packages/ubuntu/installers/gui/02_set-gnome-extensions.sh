@@ -142,7 +142,7 @@ gsettings set $SCHEMA detect-urls-voip true
 gsettings set $SCHEMA force-x11-gdk-backend false
 gsettings set $SCHEMA hide-animation 'ease-in-quad'
 gsettings set $SCHEMA hide-animation-duration 0.15000000000000000
-gsettings set $SCHEMA hide-when-focus-lost true
+gsettings set $SCHEMA hide-when-focus-lost false
 gsettings set $SCHEMA hide-window-on-esc false
 gsettings set $SCHEMA highlight-background-color '#000000'
 gsettings set $SCHEMA highlight-colors-set false
@@ -212,4 +212,4 @@ gsettings set $SCHEMA window-position 'top'
 gsettings set $SCHEMA window-resizable false
 gsettings set $SCHEMA window-size 1.0
 gsettings set $SCHEMA window-skip-taskbar true
-gsettings set $SCHEMA window-stick true
+gsettings set $SCHEMA window-stick false
