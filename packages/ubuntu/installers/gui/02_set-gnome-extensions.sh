@@ -89,6 +89,25 @@ gsettings set org.gnome.shell.extensions.tilingshell outer-gaps 14
 # almost all the screen (interferes with a 1 tile layout).
 gsettings set org.gnome.mutter auto-maximize false
 
+# Exclude apps from tilingshell autotiling (e.g. ulauncher would get tiled as a normal window).
+# Tilingshell has no setting for it yet (https://github.com/domferr/tilingshell/issues/200),
+# so patch the installed extension: an extension update wipes the patch, re-apply it with
+# 'dis config gui/gnome-extensions', then log out and back in (Wayland) to reload the extension.
+# Values are WM_CLASS names, compared lowercase. Find one with: Alt+F2, lg, Windows tab.
+TILINGSHELL_AUTOTILE_EXCLUDE=(ulauncher)
+tilingshell_manager=~/.local/share/gnome-shell/extensions/tilingshell@ferrarodomenico.com/components/tilingsystem/tilingManager.js
+if [[ -f "$tilingshell_manager" ]]; then
+  exclude_js=$(printf "'%s'," "${TILINGSHELL_AUTOTILE_EXCLUDE[@]}")
+  # Drop a previous patch line (the list may have changed), then add it as the first line of _autoTile.
+  sed -i '/dis: autotile-exclude/d' "$tilingshell_manager"
+  sed -i -E "s|^( *)_autoTile\(([a-zA-Z_]+), ([a-zA-Z_]+)\) \{$|&\n\1  if ([${exclude_js%,}].includes((\2.get_wm_class() ?? '').toLowerCase())) return; // dis: autotile-exclude|" "$tilingshell_manager"
+  if grep -q 'dis: autotile-exclude' "$tilingshell_manager"; then
+    echo "tilingshell: autotiling disabled for ${TILINGSHELL_AUTOTILE_EXCLUDE[*]}, log out and back in to apply"
+  else
+    echo "WARNING: tilingshell autotile-exclude patch not applied: _autoTile not found in $tilingshell_manager" >&2
+  fi
+fi
+
 # Configure ddterm
 #
 # Get the ddterm GSettings schema.
