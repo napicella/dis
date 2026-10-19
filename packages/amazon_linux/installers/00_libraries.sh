@@ -11,10 +11,12 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
       yum install -y sudo
   fi
 
-  # Install the required packages
+  # Install the required packages.
+  # curl and gpg are requested by path: AL2023 ships curl-minimal and gnupg2-minimal,
+  # which conflict with the full curl and gnupg2 packages. Any provider will do.
   sudo yum groupinstall -y "Development Tools"
   sudo yum install -y \
-      wget curl zip unzip tar gzip jq xz which gnupg2 gettext hostname \
+      wget /usr/bin/curl zip unzip tar gzip jq xz which /usr/bin/gpg gettext hostname \
       autoconf bison clang \
       openssl-devel zlib-devel libyaml-devel readline-devel ncurses-devel libffi-devel gdbm-devel jemalloc-devel \
       socat sqlite sqlite-devel strace \
