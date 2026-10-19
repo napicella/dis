@@ -21,6 +21,9 @@ CONFIG="${SSH_DIR}/config"
 KNOWN_HOSTS="${SSH_DIR}/known_hosts"
 BEGIN_MARK="# BEGIN dis github-ssh"
 END_MARK="# END dis github-ssh"
+# Not $HOSTNAME: /etc/profile on Amazon Linux overwrites it, empty without hostnamectl.
+HOST="$(uname -n)"
+HOST="${HOST%%.*}"
 
 usage() {
   echo "Usage: github-ssh.sh [--key PATH]"
@@ -117,7 +120,7 @@ create_key() {
     echo "==> Using the existing key ${KEY}"
   else
     echo "==> Creating ${KEY} (press Enter for no passphrase)"
-    ssh-keygen -t ed25519 -f "${KEY}" -C "${USER:-$(id -un)}@${HOSTNAME%%.*}" </dev/tty
+    ssh-keygen -t ed25519 -f "${KEY}" -C "${USER:-$(id -un)}@${HOST}" </dev/tty
   fi
   if [[ ! -f "${KEY}.pub" ]]; then
     ssh-keygen -y -f "${KEY}" > "${KEY}.pub" </dev/tty
@@ -144,7 +147,7 @@ create_key
 
 echo
 echo "==> Add this public key on GitHub: https://github.com/settings/ssh/new"
-echo "    Title: ${HOSTNAME%%.*}  Key type: Authentication Key"
+echo "    Title: ${HOST}  Key type: Authentication Key"
 echo "    (If it's already there, just press Enter.)"
 echo
 cat "${KEY}.pub"
