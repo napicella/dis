@@ -14,6 +14,20 @@ To install to a custom location:
 INSTALL_DIR=/usr/local/bin bash <(curl -fsSL https://raw.githubusercontent.com/napicella/dis/main/install.sh)
 ```
 
+### GitHub SSH key for a new host
+
+`dis pull` runs `git`, so private GitHub repos cloned over SSH need a key on the host first:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/napicella/dis/main/github-ssh.sh | bash
+# or pick the key name (defaults to github_ed25519): ... | bash -s -- --key ~/.ssh/my_github
+```
+
+It pins GitHub's host keys in `~/.ssh/known_hosts`, adds a `Host github.com` block to `~/.ssh/config`,
+creates `~/.ssh/github_ed25519` unless it exists, prints the public key to add at
+https://github.com/settings/ssh/new, and checks that GitHub accepts it. Safe to re-run: it stops
+right away on a host that's already set up.
+
 ## Usage
 
 ```bash
