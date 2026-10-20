@@ -60,7 +60,8 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
   # Compile gsettings schemas in order to be able to set extension configs
   # sudo cp ~/.local/share/gnome-shell/extensions/tactile@lundal.io/schemas/org.gnome.shell.extensions.tactile.gschema.xml /usr/share/glib-2.0/schemas/
   sudo cp ~/.local/share/gnome-shell/extensions/switcher@landau.fi/schemas/org.gnome.shell.extensions.switcher.gschema.xml /usr/share/glib-2.0/schemas/
-  sudo cp ~/.local/share/gnome-shell/extensions/ddterm@amezin.github.com/schemas/org.gnome.shell.extensions.ddterm.gschema.xml /usr/share/glib-2.0/schemas
+  # The ddterm schema name depends on the extension version (see ddterm_schema below), copy whichever it ships.
+  sudo cp ~/.local/share/gnome-shell/extensions/ddterm@amezin.github.com/schemas/*.gschema.xml /usr/share/glib-2.0/schemas
   sudo cp ~/.local/share/gnome-shell/extensions/tilingshell\@ferrarodomenico.com/schemas/org.gnome.shell.extensions.tilingshell.gschema.xml /usr/share/glib-2.0/schemas
   sudo glib-compile-schemas /usr/share/glib-2.0/schemas/
 fi
