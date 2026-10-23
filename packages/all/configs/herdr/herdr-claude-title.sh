@@ -123,6 +123,25 @@ if hook_input.get("agent_id"):
     log(f"exit: subagent detected (agent_id={hook_input['agent_id']!r}), skipping")
     raise SystemExit(0)
 
+# An agent started with `herdr agent start <name>` already has the label it was
+# given; reporting the session title would replace that name in the sidebar and
+# could rename its tab. Only unnamed sessions get the title.
+try:
+    result = subprocess.run(
+        ["herdr", "agent", "get", os.environ["HERDR_PANE_ID"]],
+        capture_output=True,
+        timeout=5,
+    )
+    if result.returncode == 0:
+        agent_name = json.loads(result.stdout).get("result", {}).get("agent", {}).get("name")
+        if agent_name:
+            log(f"exit: pane hosts named agent {agent_name!r}, keeping its label")
+            raise SystemExit(0)
+except SystemExit:
+    raise
+except Exception as exc:
+    log(f"agent name lookup exception: {exc}")
+
 
 def clean(value):
     if not isinstance(value, str):
