@@ -11,6 +11,9 @@ if [[ -n "${DIS_INSTALL:-}" ]]; then
   curl -fsSL https://herdr.dev/install.sh | sh
 fi
 
+# herdr's own Claude hook (agent state in the sidebar). Idempotent; it goes first so the
+# title hook below joins its SessionStart block.
+"$(command -v herdr || echo "${HERDR_INSTALL_DIR:-$HOME/.local/bin}/herdr")" integration install claude
 mkdir -p ~/.claude/hooks && cp "$DIS_CONFIG_FOLDER/herdr/herdr-claude-title.sh" ~/.claude/hooks/
 bash "$DIS_CONFIG_FOLDER/herdr/install-claude-title-hook.sh"
 mkdir -p ~/.claude/skills && cp -r "$DIS_CONFIG_FOLDER/herdr/spin-chat-herdr" ~/.claude/skills/
