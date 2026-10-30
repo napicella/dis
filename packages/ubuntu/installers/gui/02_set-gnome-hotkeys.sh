@@ -8,6 +8,9 @@
 # Alt+F4 is very cumbersome
 gsettings set org.gnome.desktop.wm.keybindings close "['<Super>w']"
 
+# Toggle mic mute/unmute
+gsettings set org.gnome.settings-daemon.plugins.media-keys mic-mute "['<Super><Shift>m']"
+
 # Use 6 fixed workspaces instead of dynamic mode
 gsettings set org.gnome.mutter dynamic-workspaces false
 gsettings set org.gnome.desktop.wm.preferences num-workspaces 6
