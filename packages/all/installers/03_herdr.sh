@@ -1,6 +1,6 @@
 ### -- Manifest
 ### provides: common/herdr
-### depends_on: [common/os-libs]
+### depends_on: [common/os-libs, common/gum]
 ### distro: [all]
 ### -- End
 

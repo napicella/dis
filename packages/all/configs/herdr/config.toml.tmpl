@@ -234,6 +234,12 @@ command = "bash \"$HOME/.config/herdr/herdr-shell-tab.sh\""
 description = "jump to the shell tab, creating it if missing"
 
 [[keys.command]]
+key = "alt+q"
+type = "shell"
+command = "bash \"$HOME/.config/herdr/herdr-shell-tab.sh\" chat --no-create"
+description = "jump to the chat tab, if there is one"
+
+[[keys.command]]
 key = "prefix+/"
 type = "popup"
 command = "bash \"$HOME/.config/herdr/herdr-keys.sh\""
