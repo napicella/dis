@@ -73,9 +73,8 @@ type bwsSecret struct {
 // requires_env and writes each to a file that envForInstaller injects the
 // path of. toRun is what will actually execute. When none of them needs a
 // secret it does nothing: no bws, no token, no network, and returns nil.
-// Otherwise it installs bws if needed, reads the token (asking for it when
-// ~/.config/dis/bws-token is missing), and runs one `bws secret list`. The
-// caller must Close the result.
+// Otherwise it fetches them from their managers (bwsValues). The caller must
+// Close the result.
 func (ic *InstallContext) PrepareSecrets(toRun []Manifest) (*SecretFiles, error) {
 	// needed maps each secret name to the packages that need it.
 	needed := map[string][]string{}
@@ -95,41 +94,26 @@ func (ic *InstallContext) PrepareSecrets(toRun []Manifest) (*SecretFiles, error)
 	}
 	slices.Sort(names)
 
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return nil, fmt.Errorf("resolving home directory: %w", err)
-	}
-	bws, err := bwsExecutable(home)
-	if err != nil {
-		return nil, err
-	}
-	token, err := loadToken(home)
-	if err != nil {
-		return nil, err
-	}
-	if err := ensureBwsStateDir(home); err != nil {
-		return nil, err
-	}
-	list, err := fetchSecrets(bws, token)
-	if err != nil {
-		return nil, err
-	}
-
 	values := make(map[string]string, len(names))
-	for _, name := range names {
-		key := ic.Cfg.Secrets[name]
-		found := 0
-		for _, s := range list {
-			if s.Key == key {
-				values[name] = s.Value
-				found++
+	for _, manager := range secretManagers {
+		var group []string
+		for _, name := range names {
+			if ic.Cfg.Secrets[name].Manager == manager {
+				group = append(group, name)
 			}
 		}
-		switch {
-		case found == 0:
-			return nil, fmt.Errorf("secret %s: BWS key %s not found (needed by %s)", name, key, strings.Join(needed[name], ", "))
-		case found > 1:
-			return nil, fmt.Errorf("secret %s: BWS key %s found %d times: keys must be unique", name, key, found)
+		if len(group) == 0 {
+			continue
+		}
+		var err error
+		switch manager {
+		case secretManagerBWS:
+			err = ic.bwsValues(group, needed, values)
+		default:
+			err = fmt.Errorf("no fetch for secret manager %q", manager)
+		}
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -149,6 +133,50 @@ func (ic *InstallContext) PrepareSecrets(toRun []Manifest) (*SecretFiles, error)
 		ic.secretFiles[name] = path
 	}
 	return sf, nil
+}
+
+// bwsValues fetches the named secrets from Bitwarden Secrets Manager into
+// values. needed maps each name to the packages that need it. It installs bws
+// if needed, reads the token (asking for it when ~/.config/dis/bws-token is
+// missing), and runs one `bws secret list`.
+func (ic *InstallContext) bwsValues(names []string, needed map[string][]string, values map[string]string) error {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("resolving home directory: %w", err)
+	}
+	bws, err := bwsExecutable(home)
+	if err != nil {
+		return err
+	}
+	token, err := loadToken(home)
+	if err != nil {
+		return err
+	}
+	if err := ensureBwsStateDir(home); err != nil {
+		return err
+	}
+	list, err := fetchSecrets(bws, token)
+	if err != nil {
+		return err
+	}
+
+	for _, name := range names {
+		key := ic.Cfg.Secrets[name].Key
+		found := 0
+		for _, s := range list {
+			if s.Key == key {
+				values[name] = s.Value
+				found++
+			}
+		}
+		switch {
+		case found == 0:
+			return fmt.Errorf("secret %s: BWS key %s not found (needed by %s)", name, key, strings.Join(needed[name], ", "))
+		case found > 1:
+			return fmt.Errorf("secret %s: BWS key %s found %d times: keys must be unique", name, key, found)
+		}
+	}
+	return nil
 }
 
 // fetchSecrets runs `bws secret list` with the token in BWS_ACCESS_TOKEN, never

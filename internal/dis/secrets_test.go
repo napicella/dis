@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -58,8 +59,13 @@ func writeToken(t *testing.T, home, token string, mode os.FileMode) {
 	}
 }
 
-// secretsContext is an install context whose distro maps the given secrets.
-func secretsContext(secrets map[string]string) *InstallContext {
+// secretsContext is an install context whose distro maps the given secrets
+// to BWS keys.
+func secretsContext(bws map[string]string) *InstallContext {
+	secrets := Secrets{}
+	for name, key := range bws {
+		secrets[name] = SecretRef{Manager: secretManagerBWS, Key: key}
+	}
 	return &InstallContext{Cfg: DistroConfig{Secrets: secrets}, parameters: map[string]string{}}
 }
 
@@ -331,5 +337,111 @@ func assertMode(t *testing.T, path string, want os.FileMode) {
 	}
 	if got := info.Mode().Perm(); got != want {
 		t.Errorf("%s: mode %o, want %o", path, got, want)
+	}
+}
+
+// loadSecrets loads a distro file with the given secrets: block.
+func loadSecrets(t *testing.T, block string) (Secrets, error) {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "distro.yml")
+	if err := os.WriteFile(path, []byte("os: all\n"+block), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := loadDistro(path)
+	return cfg.Secrets, err
+}
+
+func TestSecretsYAMLLoads(t *testing.T) {
+	got, err := loadSecrets(t, "secrets:\n  bws:\n    ONE: test/one\n    TWO: test/two\n")
+	if err != nil {
+		t.Fatalf("loadDistro: %v", err)
+	}
+	want := Secrets{"ONE": {Manager: "bws", Key: "test/one"}, "TWO": {Manager: "bws", Key: "test/two"}}
+	if len(got) != len(want) || got["ONE"] != want["ONE"] || got["TWO"] != want["TWO"] {
+		t.Errorf("Secrets = %v, want %v", got, want)
+	}
+}
+
+func TestSecretsYAMLEmpty(t *testing.T) {
+	for name, block := range map[string]string{
+		"no secrets":    "",
+		"secrets empty": "secrets:\n",
+		"secrets {}":    "secrets: {}\n",
+		"bws {}":        "secrets:\n  bws: {}\n",
+		"bws empty":     "secrets:\n  bws:\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			got, err := loadSecrets(t, block)
+			if err != nil || len(got) != 0 {
+				t.Errorf("Secrets = %v, %v; want none, nil", got, err)
+			}
+		})
+	}
+}
+
+func TestSecretsYAMLErrors(t *testing.T) {
+	tests := []struct {
+		name  string
+		block string
+		want  []string // substrings of the error
+	}{
+		{
+			"NAME: key directly under secrets",
+			"secrets:\n  AUTHELIA_SESSION_SECRET: authelia/session_secret\n",
+			[]string{"line 3", `unknown secret manager "AUTHELIA_SESSION_SECRET" (known: bws)`, "write secrets: {bws: {NAME: key}}"},
+		},
+		{
+			"unknown manager",
+			"secrets:\n  vault:\n    ONE: test/one\n",
+			[]string{"line 3", `unknown secret manager "vault" (known: bws)`},
+		},
+		{
+			"manager twice",
+			"secrets:\n  bws:\n    ONE: test/one\n  bws:\n    TWO: test/two\n",
+			[]string{"line 5", `secrets: "bws" already defined at line 3`},
+		},
+		{"manager not a map", "secrets:\n  bws: [ONE]\n", []string{"line 3"}},
+		{"secrets not a map", "secrets: [ONE]\n", []string{"line 2", "secrets: must be a map"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := loadSecrets(t, tt.block)
+			if err == nil {
+				t.Fatal("loadDistro succeeded, want an error")
+			}
+			for _, w := range tt.want {
+				if !strings.Contains(err.Error(), w) {
+					t.Errorf("error %q does not contain %q", err, w)
+				}
+			}
+		})
+	}
+}
+
+// A name under two managers is an error. bws is the only manager today, so
+// this calls the step that adds a manager's group.
+func TestSecretsSameNameUnderTwoManagers(t *testing.T) {
+	s := Secrets{}
+	if err := s.add("bws", map[string]string{"ONE": "test/one"}); err != nil {
+		t.Fatal(err)
+	}
+	err := s.add("other", map[string]string{"ONE": "x"})
+	if err == nil || !strings.Contains(err.Error(), "secret ONE is under both bws and other") {
+		t.Errorf("add = %v, want the both managers error", err)
+	}
+}
+
+// A manager dis knows how to read but not to fetch from fails, rather than
+// writing empty secret files.
+func TestPrepareSecretsManagerWithoutFetch(t *testing.T) {
+	secretsEnv(t)
+	old := secretManagers
+	secretManagers = append(slices.Clone(old), "other")
+	t.Cleanup(func() { secretManagers = old })
+	ic := &InstallContext{Cfg: DistroConfig{Secrets: Secrets{"ONE": {Manager: "other", Key: "k"}}}, parameters: map[string]string{}}
+	sf, err := ic.PrepareSecrets([]Manifest{needsOne})
+	if err == nil || !strings.Contains(err.Error(), `no fetch for secret manager "other"`) {
+		sf.Close()
+		t.Errorf("PrepareSecrets = %v, want the no fetch error", err)
 	}
 }

@@ -207,10 +207,23 @@ func findDistros(repoDir string) ([]string, error) {
 		if ext := filepath.Ext(p); ext != ".yml" && ext != ".yaml" {
 			return nil
 		}
-		cfg, err := dis.LoadDistro(p)
-		if err == nil && cfg.OS != "" && len(cfg.Packages) > 0 {
-			found = append(found, p)
+		// A distro has os: and packages:. Read only those first, so a distro
+		// that doesn't load is reported instead of dropped from the choice.
+		var head struct {
+			OS       string    `yaml:"os"`
+			Packages yaml.Node `yaml:"packages"`
 		}
+		data, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		if yaml.Unmarshal(data, &head) != nil || head.OS == "" || len(head.Packages.Content) == 0 {
+			return nil
+		}
+		if _, err := dis.LoadDistro(p); err != nil {
+			return err
+		}
+		found = append(found, p)
 		return nil
 	})
 	sort.Strings(found)

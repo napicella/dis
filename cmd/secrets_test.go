@@ -44,7 +44,7 @@ touch `+out+`/ran
 	write(t, pre, "touch "+out+"/pre\n", 0o755)
 	distro = filepath.Join(dir, "distro.yml")
 	write(t, distro, "os: ubuntu\nsources: ["+src+"]\npackages: [t/one]\n"+
-		"preconditions: [{script: "+pre+"}]\nsecrets: {ONE: "+key+"}\n", 0o644)
+		"preconditions: [{script: "+pre+"}]\nsecrets: {bws: {ONE: "+key+"}}\n", 0o644)
 	return distro, out, fakeLog
 }
 

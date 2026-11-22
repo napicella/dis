@@ -1,6 +1,12 @@
 package dis
 
-import "gopkg.in/yaml.v3"
+import (
+	"fmt"
+	"slices"
+	"strings"
+
+	"gopkg.in/yaml.v3"
+)
 
 // ParameterValue represents a single entry in the distro parameters map.
 // It can be unmarshalled from a plain string (global parameter):
@@ -89,10 +95,72 @@ type DistroConfig struct {
 	// Preconditions is a list of checks that run before any installer.
 	Preconditions []Precondition `yaml:"preconditions"`
 
-	// Secrets maps an env var name to a key in Bitwarden Secrets Manager. An
-	// installer that lists the name in requires_env gets the path of a file
-	// holding the value, never the value itself.
-	Secrets map[string]string `yaml:"secrets"`
+	// Secrets maps an env var name to where its value is kept. An installer
+	// that lists the name in requires_env gets the path of a file holding the
+	// value, never the value itself.
+	Secrets Secrets `yaml:"secrets"`
+}
+
+// secretManagerBWS is Bitwarden Secrets Manager, the only secret manager.
+const secretManagerBWS = "bws"
+
+// secretManagers are the keys allowed under secrets:.
+var secretManagers = []string{secretManagerBWS}
+
+// SecretRef is where a secret's value is kept: a key in a secret manager.
+type SecretRef struct {
+	Manager string
+	Key     string
+}
+
+// Secrets maps an env var name to its SecretRef. In the distro file the names
+// are under their manager:
+//
+//	secrets:
+//	  bws:
+//	    AUTHELIA_SESSION_SECRET: authelia/session_secret
+type Secrets map[string]SecretRef
+
+// UnmarshalYAML reads secrets: as managers, each holding NAME: key entries.
+// An unknown manager and a name under two managers are errors.
+func (s *Secrets) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind != yaml.MappingNode {
+		return fmt.Errorf("line %d: secrets: must be a map of secret managers (%s)", node.Line, strings.Join(secretManagers, ", "))
+	}
+	out := Secrets{}
+	seen := map[string]int{} // manager -> line, as YAML refuses a key twice
+	for i := 0; i+1 < len(node.Content); i += 2 {
+		k, v := node.Content[i], node.Content[i+1]
+		if line, ok := seen[k.Value]; ok {
+			return fmt.Errorf("line %d: secrets: %q already defined at line %d", k.Line, k.Value, line)
+		}
+		seen[k.Value] = k.Line
+		if !slices.Contains(secretManagers, k.Value) {
+			return fmt.Errorf("line %d: secrets: unknown secret manager %q (known: %s): write secrets: {bws: {NAME: key}}",
+				k.Line, k.Value, strings.Join(secretManagers, ", "))
+		}
+		var group map[string]string
+		if err := v.Decode(&group); err != nil {
+			return fmt.Errorf("secrets: %s: %w", k.Value, err)
+		}
+		if err := out.add(k.Value, group); err != nil {
+			return fmt.Errorf("line %d: %w", k.Line, err)
+		}
+	}
+	*s = out
+	return nil
+}
+
+// add puts a manager's group of name -> key into s. A name s already holds
+// under another manager is an error.
+func (s Secrets) add(manager string, group map[string]string) error {
+	for name, key := range group {
+		if prev, ok := s[name]; ok {
+			return fmt.Errorf("secret %s is under both %s and %s: a name must be under one manager", name, prev.Manager, manager)
+		}
+		s[name] = SecretRef{Manager: manager, Key: key}
+	}
+	return nil
 }
 
 // WorkspacePackage describes one package entry within a dis.workspace file.

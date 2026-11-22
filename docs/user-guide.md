@@ -78,7 +78,7 @@ packages:
 - **`os`** — the target operating system (`ubuntu`, `amazon_linux`, or `all`).
 - **`repos`** — git repos the sources live in, referenced as `${repos.<name>}`. See [Repos and dis pull](#repos-and-dis-pull).
 - **`parameters`** — static key/value pairs injected into installers that declare them in `requires_env`. These are *global* parameters available to every package. Supports `${home}` which expands to the user's home directory.
-- **`secrets`** — env var names mapped to keys in Bitwarden Secrets Manager. See [Secrets](#secrets).
+- **`secrets`** — secret managers (`bws`, Bitwarden Secrets Manager), each mapping env var names to its keys. See [Secrets](#secrets).
 - **`sources`** — directories dis walks to discover installer scripts. If a `dis.ws.yml` is present in a source, dis uses it to scope which subdirectories to walk.
 - **`packages`** — the list of package names to install, in the order you declare them. Transitive dependencies are resolved automatically.
 
@@ -133,7 +133,7 @@ List fields may span multiple lines using continuation lines:
 
 ### requires_env syntax
 
-- **Bare name** (`FOO`) — injected from the distro's `parameters` map, or, for a name in its `secrets` map, the path of a file holding the secret (see [Secrets](#secrets)).
+- **Bare name** (`FOO`) — injected from the distro's `parameters` map, or, for a name in its `secrets`, the path of a file holding the secret (see [Secrets](#secrets)).
 - **Bare glob** (`FOO_*`) — all parameters matching that prefix are injected.
 - **Qualified name** (`pkg:VAR`) — value exported by a prior installer (`pkg`).
 - **Qualified glob** (`pkg:PREFIX*`) — all exports from `pkg` matching the prefix.
@@ -711,12 +711,15 @@ So a scoped value always overrides a global with the same name.
 
 ## Secrets
 
-Secrets (passwords, API keys) live in [Bitwarden Secrets Manager](https://bitwarden.com/products/secrets-manager/) (BWS), not in the distro repo. The distro maps an env var name to a BWS key:
+Secrets (passwords, API keys) live in a secret manager, not in the distro repo. Under `secrets:`, each manager maps env var names to keys in it. The only manager is `bws`, [Bitwarden Secrets Manager](https://bitwarden.com/products/secrets-manager/) (BWS):
 
 ```yaml
 secrets:
-  AUTHELIA_SESSION_SECRET: authelia/session_secret
+  bws:
+    AUTHELIA_SESSION_SECRET: authelia/session_secret
 ```
+
+A manager dis doesn't know (including a `NAME: key` written directly under `secrets:`) is an error at load, and so is a name under two managers.
 
 An installer that lists the name in `requires_env` gets the **path of a file** holding the value, never the value:
 
@@ -767,7 +770,7 @@ dis pull GIT-URL [--distro FILE] [--path DIR]   # first time on a machine
 dis pull                                        # later: update the configured distro's repos
 ```
 
-With a URL, dis clones that repo (default `~/<repo-name>`) and finds the distro file in it: `--distro` is relative to the repo, and can be omitted when the repo contains exactly one distro. It then clones or updates every declared repo and writes `distro:` to `~/.config/dis/config.yaml`.
+With a URL, dis clones that repo (default `~/<repo-name>`) and finds the distro file in it: `--distro` is relative to the repo, and can be omitted when the repo contains exactly one distro (a YAML file with `os:` and `packages:`; without `--distro`, one that doesn't load is an error). It then clones or updates every declared repo and writes `distro:` to `~/.config/dis/config.yaml`.
 
 Repos that already exist are fetched and fast-forwarded only when the work tree is clean, on a branch that tracks an upstream, and not diverged. Otherwise they are skipped with the reason, so local work is never touched. `install`, `config` and `plan` never touch the network and read the local clones, so local edits take effect right away.
 

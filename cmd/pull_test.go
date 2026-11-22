@@ -80,3 +80,26 @@ func TestPickDistro(t *testing.T) {
 		t.Error("missing explicit distro: expected an error")
 	}
 }
+
+// A distro file that doesn't load (here NAME: key directly under secrets:) is an
+// error naming it, not skipped: skipping it would make the other distro the
+// default without a word.
+func TestPickDistroBrokenDistro(t *testing.T) {
+	repo := t.TempDir()
+	for rel, content := range map[string]string{
+		"d1/server.yml": "os: ubuntu\npackages: [a/b]\nsecrets:\n  ONE: test/one\n",
+		"d2/laptop.yml": "os: ubuntu\npackages: [a/b]\n",
+	} {
+		p := filepath.Join(repo, rel)
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := pickDistro(repo, "")
+	if err == nil || !strings.Contains(err.Error(), "d1/server.yml") || !strings.Contains(err.Error(), "unknown secret manager") {
+		t.Errorf("pickDistro = %q, %v; want an error naming d1/server.yml and why", got, err)
+	}
+}
