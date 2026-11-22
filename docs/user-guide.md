@@ -27,6 +27,13 @@ dis pull git@github.com:me/dotfiles.git --distro distros/laptop/laptop.yml
 dis install
 ```
 
+Or in one command, which first gives the host its GitHub SSH key (`github-ssh.sh`, see the README):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/napicella/dis/main/install.sh | bash -s -- \
+  git@github.com:me/dotfiles.git distros/laptop/laptop.yml
+```
+
 ---
 
 ## Getting started
@@ -71,6 +78,7 @@ packages:
 - **`os`** — the target operating system (`ubuntu`, `amazon_linux`, or `all`).
 - **`repos`** — git repos the sources live in, referenced as `${repos.<name>}`. See [Repos and dis pull](#repos-and-dis-pull).
 - **`parameters`** — static key/value pairs injected into installers that declare them in `requires_env`. These are *global* parameters available to every package. Supports `${home}` which expands to the user's home directory.
+- **`secrets`** — env var names mapped to keys in Bitwarden Secrets Manager. See [Secrets](#secrets).
 - **`sources`** — directories dis walks to discover installer scripts. If a `dis.ws.yml` is present in a source, dis uses it to scope which subdirectories to walk.
 - **`packages`** — the list of package names to install, in the order you declare them. Transitive dependencies are resolved automatically.
 
@@ -125,7 +133,7 @@ List fields may span multiple lines using continuation lines:
 
 ### requires_env syntax
 
-- **Bare name** (`FOO`) — injected from the distro's `parameters` map.
+- **Bare name** (`FOO`) — injected from the distro's `parameters` map, or, for a name in its `secrets` map, the path of a file holding the secret (see [Secrets](#secrets)).
 - **Bare glob** (`FOO_*`) — all parameters matching that prefix are injected.
 - **Qualified name** (`pkg:VAR`) — value exported by a prior installer (`pkg`).
 - **Qualified glob** (`pkg:PREFIX*`) — all exports from `pkg` matching the prefix.
@@ -698,6 +706,37 @@ When dis builds the environment for a package it applies parameters in this orde
 2. Scoped `parameters` whose `packages` list includes this package.
 
 So a scoped value always overrides a global with the same name.
+
+---
+
+## Secrets
+
+Secrets (passwords, API keys) live in [Bitwarden Secrets Manager](https://bitwarden.com/products/secrets-manager/) (BWS), not in the distro repo. The distro maps an env var name to a BWS key:
+
+```yaml
+secrets:
+  AUTHELIA_SESSION_SECRET: authelia/session_secret
+```
+
+An installer that lists the name in `requires_env` gets the **path of a file** holding the value, never the value:
+
+```bash
+### requires_env: [AUTHELIA_SESSION_SECRET]
+install -m 600 "$AUTHELIA_SESSION_SECRET" /etc/authelia/session_secret
+```
+
+When an installer that will run needs a secret, dis does this before the preconditions and installers:
+
+1. **bws.** It installs the BWS CLI it pins, bws 2.1.0 (the static Linux build, checked against its sha256), to `~/.local/share/dis/bin/bws-2.1.0`, unless it is there. It needs the system CA certificates (the `ca-certificates` package). To use another bws, set `DIS_BWS` to its path.
+2. **The token.** It reads the BWS access token from `~/.config/dis/bws-token`: one line, mode 600, owned by you. When the file is missing, dis asks for the token on the terminal, without echo, and saves it there. With no terminal, it fails.
+3. **The secrets.** It runs `bws secret list` once, with the token in the environment (never on the command line), and writes each secret the run needs to a file of mode 600, in a directory of mode 700 on tmpfs (`$XDG_RUNTIME_DIR`, else `/dev/shm`; never on disk). The directory is removed when dis exits, also on Ctrl-C or SIGTERM.
+
+A run needs a secret when a package it runs lists one in `requires_env`: `dis install` skips installed packages (unless `--reinstall`), so they don't count, while `dis config` runs every package. A run that needs none does nothing of this: no bws, no token, no network. A distro without `secrets:` behaves as before.
+
+A key BWS doesn't have, a key it has twice, or a token BWS rejects stops the run before any precondition or installer. Values are never printed, cached or written to rc files.
+
+- **Replacing the token.** Delete `~/.config/dis/bws-token`; the next run that needs a secret asks again.
+- **No prompt at all.** Write the token file beforehand, under the same rules: cloud-init (`write_files` with `owner`, `permissions: '0600'` and `defer: true`), an image, or a USB stick. The file opens every secret its BWS projects hold, so use one token per host, never bake it into a shared image, wipe the USB copy, and revoke the token in Bitwarden if the medium leaks.
 
 ---
 

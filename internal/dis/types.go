@@ -88,6 +88,11 @@ type DistroConfig struct {
 
 	// Preconditions is a list of checks that run before any installer.
 	Preconditions []Precondition `yaml:"preconditions"`
+
+	// Secrets maps an env var name to a key in Bitwarden Secrets Manager. An
+	// installer that lists the name in requires_env gets the path of a file
+	// holding the value, never the value itself.
+	Secrets map[string]string `yaml:"secrets"`
 }
 
 // WorkspacePackage describes one package entry within a dis.workspace file.

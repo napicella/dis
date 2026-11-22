@@ -38,6 +38,10 @@ Before running each script the following env vars are set (same as install):
                       here to export values to downstream installers
   DIS_INSTALL       - set to "1" only by 'dis install'; absent when running
                       'dis config' so scripts can skip install-only steps
+  NAME              - for each name the installer lists in requires_env: its
+                      distro parameter, or, for a name under the distro's
+                      secrets:, the path of a file holding the secret (fetched
+                      from Bitwarden Secrets Manager before any installer runs)
 
 Examples:
   dis config --distro ~/dotfiles/distros/laptop/laptop.yml
@@ -67,6 +71,30 @@ func configCmdFn(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Resolve what runs first: the secrets it needs are fetched before the
+	// preconditions and installers. Every package runs, installed or not.
+	var toRun []dis.Manifest
+	switch {
+	case len(args) == 1 && configWithDeps:
+		if toRun, err = ic.ResolveInstallOrderFor(args[0]); err != nil {
+			return renderPackageNotFound(cmd, err)
+		}
+	case len(args) == 1:
+		// An unknown package is reported by RunConfig below.
+		if m, ok := ic.Manifest(args[0]); ok {
+			toRun = []dis.Manifest{m}
+		}
+	default:
+		if toRun, err = ic.ResolveInstallOrder(); err != nil {
+			return fmt.Errorf("resolving deps: %w", err)
+		}
+	}
+	secrets, err := ic.PrepareSecrets(toRun)
+	if err != nil {
+		return err
+	}
+	defer secrets.Close()
+
 	ctx := cmd.Context()
 	runner, err := dis.NewInstaller(sys.Machine())
 	if err != nil {
@@ -80,17 +108,12 @@ func configCmdFn(cmd *cobra.Command, args []string) error {
 
 	// With --with-deps, configure the named package and everything it depends on.
 	if len(args) == 1 && configWithDeps {
-		pkgName := args[0]
-		toRun, err := ic.ResolveInstallOrderFor(pkgName)
-		if err != nil {
-			return renderPackageNotFound(cmd, err)
-		}
 		for _, manifest := range toRun {
 			if err := runner.RunConfig(ctx, ic, manifest.Provides); err != nil {
 				return fmt.Errorf("config %q failed: %w", manifest.Provides, err)
 			}
 		}
-		fmt.Printf("✅ %s and its dependencies configured successfully.\n", pkgName)
+		fmt.Printf("✅ %s and its dependencies configured successfully.\n", args[0])
 		return nil
 	}
 
@@ -104,12 +127,7 @@ func configCmdFn(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Otherwise, resolve install order and re-apply configs for all packages.
-	toRun, err := ic.ResolveInstallOrder()
-	if err != nil {
-		return fmt.Errorf("resolving deps: %w", err)
-	}
-
+	// Otherwise, re-apply configs for all packages in install order.
 	for _, manifest := range toRun {
 		if err := runner.RunConfig(ctx, ic, manifest.Provides); err != nil {
 			return fmt.Errorf("config %q failed: %w", manifest.Provides, err)

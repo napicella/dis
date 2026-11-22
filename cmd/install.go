@@ -35,6 +35,10 @@ Before running each installer script the following env vars are set:
   DIS_EXPORTS_FILE  - path to a per-installer temp file; write KEY=value lines
                       here to export values to downstream installers
   DIS_INSTALL       - set to "1"; use this to guard install-only steps in scripts
+  NAME              - for each name the installer lists in requires_env: its
+                      distro parameter, or, for a name under the distro's
+                      secrets:, the path of a file holding the secret (fetched
+                      from Bitwarden Secrets Manager before any installer runs)
 
 Each installer is run inside a wrapper that sources ~/rc/configs-generated/bash_env,
 bash_paths and bash_aliases so that exports and PATH additions from earlier
@@ -77,6 +81,37 @@ func installCmdFn(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Resolve what runs first: the secrets it needs are fetched before the
+	// preconditions and installers.
+	var toRun []dis.Manifest
+	switch {
+	case len(args) == 1 && installWithDeps:
+		if toRun, err = ic.ResolveInstallOrderFor(args[0]); err != nil {
+			return renderPackageNotFound(cmd, err)
+		}
+	case len(args) == 1:
+		// An unknown package is reported by RunInstaller below.
+		if m, ok := ic.Manifest(args[0]); ok {
+			toRun = []dis.Manifest{m}
+		}
+	default:
+		if toRun, err = ic.ResolveInstallOrder(); err != nil {
+			return fmt.Errorf("resolving deps: %w", err)
+		}
+	}
+	// Without --reinstall, installed packages are skipped and need no secrets.
+	willRun := toRun
+	if !installReinstall {
+		if willRun, err = ic.NotInstalled(toRun); err != nil {
+			return err
+		}
+	}
+	secrets, err := ic.PrepareSecrets(willRun)
+	if err != nil {
+		return err
+	}
+	defer secrets.Close()
+
 	ctx := cmd.Context()
 	runner, err := dis.NewInstaller(sys.Machine())
 	if err != nil {
@@ -91,17 +126,12 @@ func installCmdFn(cmd *cobra.Command, args []string) error {
 
 	// With --with-deps, run the named package and everything it depends on.
 	if len(args) == 1 && installWithDeps {
-		pkgName := args[0]
-		toRun, err := ic.ResolveInstallOrderFor(pkgName)
-		if err != nil {
-			return renderPackageNotFound(cmd, err)
-		}
 		for _, manifest := range toRun {
 			if err := runner.RunInstaller(ctx, ic, manifest.Provides); err != nil {
 				return fmt.Errorf("installer %q failed: %w", manifest.Provides, err)
 			}
 		}
-		fmt.Printf("✅ %s and its dependencies installed successfully.\n", pkgName)
+		fmt.Printf("✅ %s and its dependencies installed successfully.\n", args[0])
 		return nil
 	}
 
@@ -121,12 +151,7 @@ func installCmdFn(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Otherwise, resolve install order and run all packages.
-	toRun, err := ic.ResolveInstallOrder()
-	if err != nil {
-		return fmt.Errorf("resolving deps: %w", err)
-	}
-
+	// Otherwise, run all packages in install order.
 	for _, manifest := range toRun {
 		if err := runner.RunInstaller(ctx, ic, manifest.Provides); err != nil {
 			return fmt.Errorf("installer %q failed: %w", manifest.Provides, err)

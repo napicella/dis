@@ -37,6 +37,9 @@ type InstallContext struct {
 	manifests []Manifest
 	// pkgm is the dependency graph of all installer manifests for this distro.
 	pkgm *packageManager
+	// secretFiles maps each secret name PrepareSecrets fetched to the path of
+	// the file holding its value.
+	secretFiles map[string]string
 }
 
 // NewInstallContext loads the distro configuration from distroFile, resolves
@@ -189,6 +192,28 @@ func (ic *InstallContext) ResolveInstallOrderFor(name string) ([]Manifest, error
 	return ic.pkgm.depsFor(name)
 }
 
+// Manifest returns the manifest of the package named name, a full package
+// name, and whether it was found.
+func (ic *InstallContext) Manifest(name string) (Manifest, bool) {
+	return ic.pkgm.get(name)
+}
+
+// NotInstalled returns the manifests in ms whose packages are not recorded as
+// installed: the ones dis install runs without --reinstall.
+func (ic *InstallContext) NotInstalled(ms []Manifest) ([]Manifest, error) {
+	var out []Manifest
+	for _, m := range ms {
+		installed, err := ic.State.IsInstalled(m.Provides)
+		if err != nil {
+			return nil, fmt.Errorf("checking install state for %q: %w", m.Provides, err)
+		}
+		if !installed {
+			out = append(out, m)
+		}
+	}
+	return out, nil
+}
+
 // ListAvailablePackages returns the list of all the packages that have been loaded from the provided sources.
 func (ic *InstallContext) ListAvailablePackages() []PackageInfo {
 	var pkgInfos []PackageInfo
@@ -264,18 +289,19 @@ func (ic *InstallContext) MissingDeps(name string) ([]string, error) {
 }
 
 // envForInstaller returns the env var map for the given installer, resolved
-// from rc.parameters and rc.scopedParameters. RequiresEnv entries come in
+// from ic.parameters and ic.scopedParameters. RequiresEnv entries come in
 // four forms:
 //
-//  1. Bare name ("FOO"): looked up first in the package's scoped parameters,
-//     then in rc.parameters (globals).
+//  1. Bare name ("FOO"): a name in the distro's secrets gets the path of the
+//     file PrepareSecrets wrote its value to. Any other is looked up first in
+//     the package's scoped parameters, then in ic.parameters (globals).
 //  2. Bare glob ("FOO_*"): all keys matching the prefix are collected from
 //     scoped parameters first, then globals (scoped wins on conflict).
-//  3. Qualified name ("pkg:VAR"): looked up in rc.parameters under the
+//  3. Qualified name ("pkg:VAR"): looked up in ic.parameters under the
 //     qualified key and injected under the bare name (VAR).
-//  4. Qualified glob ("pkg:PREFIX*"): all rc.parameters keys matching the
+//  4. Qualified glob ("pkg:PREFIX*"): all ic.parameters keys matching the
 //     qualified prefix are injected under their bare names.
-func (rc *InstallContext) envForInstaller(manifest Manifest) (map[string]string, error) {
+func (ic *InstallContext) envForInstaller(manifest Manifest) (map[string]string, error) {
 	env := make(map[string]string, len(manifest.RequiresEnv))
 	for _, envVar := range manifest.RequiresEnv {
 		if strings.Contains(envVar, ":") {
@@ -285,7 +311,7 @@ func (rc *InstallContext) envForInstaller(manifest Manifest) (map[string]string,
 			if strings.HasSuffix(varPart, "*") {
 				prefix := envVar[:len(envVar)-1]
 				matched := 0
-				for k, v := range rc.parameters {
+				for k, v := range ic.parameters {
 					if strings.HasPrefix(k, prefix) {
 						bareKey := strings.SplitN(k, ":", 2)[1]
 						env[bareKey] = v
@@ -299,7 +325,7 @@ func (rc *InstallContext) envForInstaller(manifest Manifest) (map[string]string,
 					)
 				}
 			} else {
-				val := rc.parameters[envVar]
+				val := ic.parameters[envVar]
 				if val == "" {
 					return nil, fmt.Errorf(
 						"installer %q requires %q but it has not been exported by %q (is it in depends_on and was it run?)",
@@ -315,13 +341,13 @@ func (rc *InstallContext) envForInstaller(manifest Manifest) (map[string]string,
 			prefix := envVar[:len(envVar)-1]
 			matched := 0
 			// Globals first, then scoped overrides.
-			for k, v := range rc.parameters {
+			for k, v := range ic.parameters {
 				if strings.HasPrefix(k, prefix) {
 					env[k] = v
 					matched++
 				}
 			}
-			for k, v := range rc.scopedParameters[manifest.Provides] {
+			for k, v := range ic.scopedParameters[manifest.Provides] {
 				if strings.HasPrefix(k, prefix) {
 					env[k] = v
 					matched++
@@ -336,10 +362,20 @@ func (rc *InstallContext) envForInstaller(manifest Manifest) (map[string]string,
 			continue
 		}
 
+		// A secret: the path of the file holding its value.
+		if _, ok := ic.Cfg.Secrets[envVar]; ok {
+			path, ok := ic.secretFiles[envVar]
+			if !ok {
+				return nil, fmt.Errorf("installer %q requires secret %q but it was not fetched", manifest.Provides, envVar)
+			}
+			env[envVar] = path
+			continue
+		}
+
 		// Bare name: scoped parameters take priority over globals.
-		val := rc.scopedParameters[manifest.Provides][envVar]
+		val := ic.scopedParameters[manifest.Provides][envVar]
 		if val == "" {
-			val = rc.parameters[envVar]
+			val = ic.parameters[envVar]
 		}
 		if val == "" {
 			return nil, fmt.Errorf(
@@ -353,11 +389,11 @@ func (rc *InstallContext) envForInstaller(manifest Manifest) (map[string]string,
 }
 
 // envForPrecondition returns the env var map for the given precondition,
-// injecting only the variables declared in pc.Uses from rc.parameters.
-func (rc *InstallContext) envForPrecondition(pc Precondition) (map[string]string, error) {
+// injecting only the variables declared in pc.Uses from ic.parameters.
+func (ic *InstallContext) envForPrecondition(pc Precondition) (map[string]string, error) {
 	env := make(map[string]string, len(pc.Uses))
 	for _, varName := range pc.Uses {
-		val := rc.parameters[varName]
+		val := ic.parameters[varName]
 		if val == "" {
 			return nil, fmt.Errorf(
 				"precondition script %q requires parameter %q but it is not defined in distro parameters",
@@ -370,10 +406,10 @@ func (rc *InstallContext) envForPrecondition(pc Precondition) (map[string]string
 }
 
 // addExports reads the exportsFilePath and merges the exported values into
-// rc.parameters under qualified keys ("pkg:VAR"), making them available to
+// ic.parameters under qualified keys ("pkg:VAR"), making them available to
 // downstream installers via requires_env. It also persists the values to the
 // exports cache so they are available in future runs when the package is skipped.
-func (rc *InstallContext) addExports(exportsFilePath, providerPkg string) error {
+func (ic *InstallContext) addExports(exportsFilePath, providerPkg string) error {
 	data, err := os.ReadFile(exportsFilePath)
 	if err != nil {
 		return err
@@ -391,8 +427,8 @@ func (rc *InstallContext) addExports(exportsFilePath, providerPkg string) error 
 		key := strings.TrimSpace(line[:idx])
 		val := line[idx+1:]
 		qualifiedKey := providerPkg + ":" + key
-		rc.parameters[qualifiedKey] = val
+		ic.parameters[qualifiedKey] = val
 		newEntries[qualifiedKey] = val
 	}
-	return rc.State.UpdateExports(newEntries)
+	return ic.State.UpdateExports(newEntries)
 }
